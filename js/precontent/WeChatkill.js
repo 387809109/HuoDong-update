@@ -14750,10 +14750,8 @@ const packs = function () {
                         case 0:
                             return lib.inpile.some(name => !player.hasCard(card => get.type2(card, player) == get.type2(name)), 'h');
                         case 1:
-                            return player.canMoveCard();
-                        case 2:
                             return player.hasCard(lib.filter.cardRecastable, 'he')
-                        case 3:
+                        case 2:
                             return true;
                     }
                 },
@@ -14765,15 +14763,16 @@ const packs = function () {
                         case 1: {
                             const list = lib.inpile.filter(name => !player.hasCard(card => get.type2(card, player) == get.type2(name)), 'h').map(name => get.type2(name));
                             if (!list.length) return;
-                            const card = get.cardPile2(card => get.type2(card, false) == list.randomGet(), 'random');
-                            if (card) await player.gain(card, 'gain2');
+                            const gain = [];
+                            while (gain.length < 2) {
+                                const card = get.cardPile2(card => get.type2(card, false) == list.randomGet() && !gain.includes(card), 'random');
+                                if (card) gain.push(card);
+                                else break;
+                            }
+                            if (gain.length) await player.gain(gain, 'gain2');
                             break;
                         }
                         case 2: {
-                            await player.moveCard(true);
-                            break;
-                        }
-                        case 3: {
                             if (!player.hasCard(lib.filter.cardRecastable, 'he')) return;
                             const result = await player.chooseCard('he', true, '请重铸任意张同类型牌', (card, player) => {
                                 if (!player.canRecast(card)) return false;
@@ -14788,7 +14787,7 @@ const packs = function () {
                                 await player.recast(result.cards);
                             }
                         }
-                        case 4: {
+                        case 3: {
                             await player.addSkills(get.info(event.name).derivation);
                             await player.link(true);
                             break;
@@ -19012,7 +19011,7 @@ const packs = function () {
             wechatsbtongye_info: '锁定技。结束阶段，你猜测场上装备牌数与你下一个准备阶段的场上装备牌数是否相等，并获得以下效果：你下一个准备阶段，若你猜对且“业”数小于2，你获得1枚“业”。',
             wechat_zhiyin_zhugeke: '极诸葛恪',
             wechatxingbi: '兴愎',
-            wechatxingbi_info: `锁定技。当你使用【杀】或锦囊牌后，你依次执行本轮未被执行的一项：1.获得一张你手牌中缺少类型的牌；2.移动场上一张牌；3.重铸任意张同类型牌；4.获得${get.poptip('wechatchizu')}并横置。`,
+            wechatxingbi_info: `锁定技。当你使用【杀】或锦囊牌后，你依次执行本轮未被执行的一项：1.获得两张你手牌中缺少类型的牌；2.重铸任意张同类型牌；3.获得${get.poptip('wechatchizu')}并横置。`,
             wechatxiangke: '飨恪',
             wechatxiangke_info: '当你装备区牌数发生变化后，你可以将手牌数调整至X，然后你可以对一名体力值为X的角色造成1点火焰伤害（X为你的装备区牌数）。',
             wechatchizu: '赤族',
