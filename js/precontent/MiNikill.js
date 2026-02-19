@@ -3046,65 +3046,70 @@ const packs = function () {
             miniyise: {
                 audio: 'yise',
                 trigger: { global: 'gainAfter', player: 'loseAsyncAfter' },
-                filter(event, player) {
+                filter(event, player, name, target) {
                     if (event.name == 'loseAsync') {
                         if (event.type != 'gain') return false;
                     }
-                    var cards = event.getl(player).cards2;
-                    return game.hasPlayer(function (current) {
-                        if (current == player) return false;
-                        var cardsx = event.getg(current);
-                        for (var i of cardsx) {
-                            if (cards.includes(i)) return true;
-                        }
-                        return false;
-                    });
+                    return target?.isIn();
                 },
                 getIndex(event, player) {
-                    var cards = event.getl(player).cards2;
-                    return game.filterPlayer(function (current) {
+                    const cards = event.getl?.(player)?.cards2;
+                    if (!cards?.length) return false;
+                    return game.filterPlayer(current => {
                         if (current == player) return false;
-                        var cardsx = event.getg(current);
-                        for (var i of cardsx) {
-                            if (cards.includes(i)) return true;
-                        }
-                        return false;
+                        return event.getg?.(current)?.some(card => cards.includes(card));
                     }).sortBySeat();
                 },
-                direct: true,
-                content() {
-                    'step 0'
-                    for (var i of cards) {
-                        event[get.color(i, player)] = true;
-                        if (event.red && event.black) break;
+                async cost(event, trigger, player) {
+                    const target = event.indexedData;
+                    const colors = ['red', 'black'].filter(color => trigger.getg(target).some(card => trigger.getl(player).cards2.includes(card) && get.color(card, player) == color));
+                    const result = await player.chooseButton([
+                        get.prompt(event.skill),
+                        [
+                            [
+                                ['draw', '令自己摸一张牌'],
+                                ['recover', `令${get.translation(target)}回复1点体力`],
+                                ['damage', `令${get.translation(target)}下次受到【杀】造成的伤害+1`],
+                            ],
+                            'textbutton',
+                        ],
+                    ], [1, colors.length]).set('filterButton', button => {
+                        const { player, target, colors } = get.event();
+                        const link = button.link;
+                        if (link == 'draw') return colors.includes('red') && !ui.selected.buttons.some(buttonx => buttonx.link == 'recover');
+                        if (link == 'recover') return colors.includes('red') && target.isDamaged() && !ui.selected.buttons.some(buttonx => buttonx.link == 'draw');
+                        return colors.includes('black');
+                    }).set('ai', button => {
+                        const { player, target, colors } = get.event();
+                        const link = button.link;
+                        if (link == 'recover' && get.recoverEffect(target, player, player) > 0) return 2;
+                        if (link == 'draw' && get.effect(player, { name: 'draw' }, player, player) > 0) return 1;
+                        if (link == 'damage' && get.attitude(player, target) < 0) return 1;
+                        return 0;
+                    }).set('target', target).set('colors', colors).forResult();
+                    if (result?.bool) {
+                        const targets = [];
+                        if (result.links.includes('draw')) targets.push(player);
+                        if (['recover', 'damage'].some(link => result.links.includes(link))) targets.push(target);
+                        event.result = {
+                            bool: true,
+                            cost_data: result.links,
+                            targets: targets.sortBySeat(),
+                        }
                     }
-                    if (event.red) {
-                        var list = ['摸牌'], choiceList = [
-                            '令自己摸一张牌',
-                            '令' + get.translation(target) + '回复1点体力'
-                        ];
-                        if (target.isDamaged()) list.push('回复体力');
-                        else choiceList[1] = '<span style="opacity:0.5">' + choiceList[1] + '</span>';
-                        list.push('cancel2');
-                        player.chooseControl(list).set('prompt', get.prompt('miniyise', target)).set('ai', function () {
-                            if (list.includes('回复体力') && get.recoverEffect(_status.event.getParent().target, _status.event.player, _status.event.player) > 0) return '回复体力';
-                            return '摸牌';
-                        }).set('choiceList', choiceList);
+                },
+                async content(event, trigger, player) {
+                    const { indexedData: target, cost_data } = event;
+                    if (cost_data.includes('draw')) {
+                        await player.draw();
                     }
-                    'step 1'
-                    if (event.red && result.control != 'cancel2') {
-                        player.logSkill('miniyise', target);
-                        if (result.control == '摸牌') player.draw();
-                        else target.recover();
+                    if (cost_data.includes('recover')) {
+                        await target.recover();
                     }
-                    if (!event.black) event.finish();
-                    'step 2'
-                    player.chooseBool(get.prompt('miniyise', target), '令' + get.translation(target) + '下次受到【杀】造成的伤害+1').set('choice', get.attitude(player, target) < 0);
-                    'step 3'
-                    if (result.bool) {
-                        player.logSkill('miniyise', target);
+                    if (cost_data.includes('damage')) {
+                        target.addSkill('yse_damage');
                         target.addMark('yise_damage', 1, false);
-                        target.addSkill('yise_damage');
+                        game.log(target, '下一次受到【杀】的伤害', '#g+1');
                     }
                 },
             },
