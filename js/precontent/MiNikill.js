@@ -33367,7 +33367,7 @@ const packs = function () {
                     return game.hasPlayer(target => lib.skill.minilunce.derivation.some(i => !target.hasSkill(i)));
                 },
                 async cost(event, trigger, player) {
-                    event.result = await player.chooseTarget(get.prompt(event.name), (card, player, target) => {
+                    event.result = await player.chooseTarget(get.prompt(event.skill), (card, player, target) => {
                         return lib.skill.minilunce.derivation.some(i => !target.hasSkill(i));
                     }, '选择一名角色并为其分配一个计策').set('ai', target => 1 + Math.random()).forResult();
                 },
@@ -33502,7 +33502,10 @@ const packs = function () {
                             return lib.skill.minilunce.derivation.some(i => !current.hasSkill(i));
                         });
                         if (!targets.length) return;
-                        await player.useSkill('minilunce');
+                        const result = await player.chooseTarget('览害：你可以发动一次【论策】', (card, player, target) => {
+                            return lib.skill.minilunce.derivation.some(i => !target.hasSkill(i));
+                        }, '选择一名角色并为其分配一个计策').set('ai', target => 1 + Math.random()).forResult();
+                        if (result?.targets?.length) await player.useSkill('minilunce', result.targets);
                     }
                     else {
                         if (player.countMark('minilanhai') < 3) {
@@ -33512,6 +33515,7 @@ const packs = function () {
                         await player.recover();
                     }
                 },
+                drevitation: 'minilunce',
             },
             //精卫
             minitianhai: {
@@ -41704,7 +41708,7 @@ const packs = function () {
             'minilunce_下策': '下策',
             'minilunce_下策_info': '其回合结束时，若其本回合未于出牌阶段使用【杀】造成过伤害，则你可以交给其至多三张牌并令其回复1点体力。',
             minilanhai: '览害',
-            minilanhai_info: '锁定技。一名角色的回合结束时，若本回合你的计策被成功执行，则你可以摸X张牌并发动一次〖论策〗（X为你本轮策略被成功执行的次数）；否则你增加1点体力上限并回复1点体力（你以此法至多增加3点体力上限）。',
+            minilanhai_info: `锁定技。一名角色的回合结束时，若本回合你的计策被成功执行，则你可以摸X张牌并发动一次${get.poptip('minilunce')}（X为你本轮策略被成功执行的次数）；否则你增加1点体力上限并回复1点体力（你以此法至多增加3点体力上限）。`,
             minitianhai: '填海',
             minitianhai_info: '锁定技。①当你使用或打出手牌时，若此牌有点数且你未记录，则你记录之。②其他角色使用或打出与你〖填海①〗记录的点数相同的牌时，若此牌点数：不大于4，其下次受到的伤害+1；大于4且小于10，你摸一张牌；不小于10，其须弃置任意张牌直到这些牌的点数不小于此牌点数。',
             minihaiku: '海枯',
