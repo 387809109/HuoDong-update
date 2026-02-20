@@ -26116,23 +26116,23 @@ const packs = function () {
                     var cards = trigger.getg(player).filter(i => player.getCards('h').includes(i)).slice();
                     var str = '弃置任意张此次获得的牌';
                     if (target?.isIn()) str += '，令' + get.translation(target) + '本回合使用【杀】的次数+X（X为你以此法弃置的花色数）';
-                    event.result = await player.chooseToDiscard(get.prompt('minizjjuxiang'), str, (card, player) => _status.event.cards.includes(card), [1, cards.length]).set('ai', card => {
+                    event.result = await player.chooseToDiscard(get.prompt(event.skill), str, (card, player) => _status.event.cards.includes(card), [1, cards.length]).set('ai', card => {
                         if (!_status.event.goon) return 0;
                         var player = _status.event.player, target = _status.currentPhase;
                         if (ui.selected.cards.some(cardx => get.suit(cardx, player) == get.suit(card, player))) return 0;
                         var num = target.countCards('hs', card => card.name == 'sha') - target.getCardUsable({ name: 'sha' });
                         if (ui.selected.cards.length < num) return 7 - get.value(card);
                         return 0;
-                    }).set('cards', cards).set('complexCard', true).set('goon', lib.skill.minizjjuxiang.checkx(trigger, player)).set('logSkill', 'minizjjuxiang').forResult();
+                    }).set('cards', cards).set('complexCard', true).set('goon', lib.skill.minizjjuxiang.checkx(trigger, player)).set('chooseonly', true).forResult();
                 },
-                popup: false,
-                content() {
-                    var target = _status.currentPhase;
+                async content(event, trigger, player) {
+                    await player.discard(event.cards);
+                    const target = _status.currentPhase;
                     if (target?.isIn()) {
-                        var num = result.cards.reduce((list, card) => list.add(get.suit(card, player)), []).length;
+                        const num = event.cards.reduce((list, card) => list.add(get.suit(card, player)), []).length;
                         target.addTempSkill('jsrgjuxiang_sha');
                         target.addMark('jsrgjuxiang_sha', num, false);
-                        var evt = trigger.getParent('phaseUse');
+                        const evt = trigger.getParent('phaseUse');
                         if (evt?.name == 'phaseUse' && !evt.skill) {
                             evt.player.addTempSkill('jsrgjuxiang_buff', 'phaseUseAfter');
                             evt.player.addMark('jsrgjuxiang_buff', num, false);
@@ -34030,10 +34030,9 @@ const packs = function () {
                     if (!target.hasSkill('minidoumao') && target.countCards('e', function (card) {
                         return player.canEquip(card);
                     }) > 0) list.push('将' + str + '装备区内的一张牌移动至自己的装备区');
-                    const result = await player.chooseControl('cancel2').set('choiceList', list).set('prompt', get.prompt('minimiaoqieting', target)).set('ai', function () {
-                        var evt = _status.event.getParent();
-                        var player = evt.player, target = evt.target;
-                        var list = _status.event.choiceList;
+                    const result = await player.chooseControl('cancel2').set('choiceList', list).set('prompt', get.prompt(event.skill, target)).set('ai', function () {
+                        const { player, target } = get.event();
+                        const list = _status.event.choiceList;
                         if (get.attitude(player, target) > 0 || list.length == 1) return 0;
                         if (target.hasSkill('minidoumao')) return 1;
                         var val = (target.hasSkillTag('noe') ? 6 : 0);
@@ -34041,7 +34040,7 @@ const packs = function () {
                             return player.canEquip(card) && get.value(card, target) > val && get.effect(player, card, player, player) > 0;
                         }) > 0) return 1;
                         return 0;
-                    }).set('list', list).forResult();
+                    }).set('list', list).set('target', target).forResult();
                     event.result = {
                         bool: result?.control && result.control !== 'cancel2',
                         cost_data: result?.index,
