@@ -19279,6 +19279,9 @@ const packs = function () {
             wechatgaoshi: {
                 audio: 'ext:活动武将/audio/skill:2',
                 trigger: { player: 'useCardAfter' },
+                filter(event, player) {
+                    return get.itemtype(event.cards?.[0]) === 'card';
+                },
                 forced: true,
                 async content(event, trigger, player) {
                     const card = trigger.cards[0], num = get.cardNameLength(card);
