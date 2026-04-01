@@ -575,7 +575,7 @@ export async function content(config, pack) {
 					'old_yuanji',
 					'old_ol_yuanji',
 					'junk_duanwei',
-					'old_yj_zhanghe',
+					'old_sb_zhanghe',
 					'old_zhoufei',
 					'old_sunluyu',
 					'zhaoxiang',
@@ -660,33 +660,50 @@ export async function content(config, pack) {
 		addRank(rank);
 	}
 
-	//名称重置
-	if (lib.config.extension_活动武将_HD_REname) {
-		const changeMap = {
-			'张机': '张仲景',
-			'蔡琰': '蔡文姬',
-			'卧龙': '卧龙诸葛',
-			'严虎': '严白虎',
-			'甄宓': '甄姬',
-			'伏寿': '伏皇后',
-			'吉本': '吉平',
-		};
-		const BanIdList = ['jsrg_zhenji'].concat(_status?._HD_REname?.BanIdList ?? []);//不修改名称的ID白名单，必须ID完全符合才不替换
-		const BanTransList = ['卧龙凤雏', '祭风卧龙'].concat(_status?._HD_REname?.BanTransList ?? []);//不修改名称的translate白名单，包含此翻译的均不替换
-		for (const name in lib.translate) {
-			const translation = lib.translate[name];
-			if (typeof translation !== 'string' || get.character(name).isNull) continue;
-			if (BanIdList.includes(name) || BanTransList.some(str => translation.includes(str))) continue;
-			const item = Object.keys(changeMap).find(str => translation.includes(str));
-			/*
-			if (item) {
-				const num = translation.indexOf(item);
-				lib.translate[name] = translation.slice(0, num) + changeMap[item] + translation.slice(num + item.length, translation.length);
+	//名称还原
+	const changeMap = new Map([
+		['张机', '张仲景'],
+		['蔡琰', '蔡文姬'],
+		['卧龙', '诸葛亮'],//线上也叫诸葛亮就不用卧龙诸葛了//['卧龙', '卧龙诸葛'],
+		['严虎', '严白虎'],
+		['甄宓', '甄姬'],
+		['伏寿', '伏皇后'],
+		['吉本', '吉平'],
+		...[...(_status._HD_REname?.changeMap ?? new Map([])).entries()],
+	]);
+	const BanIdList = ['jsrg_zhenji'].concat(_status._HD_REname?.BanIdList ?? []);//不修改名称的ID白名单，必须ID完全符合才不替换
+	const BanTransList = [].concat(_status._HD_REname?.BanTransList ?? []);//不修改名称的translate白名单，包含此翻译的均不替换
+	const getRawName = function (name, str) {
+		let str2 = str;
+		if (str2) {
+			if (lib.translate[`${name}_prefix`]) {
+				let prefixList = lib.translate[`${name}_prefix`].split('|');
+				while (prefixList.length) {
+					const prefix = prefixList.shift();
+					if (str2.startsWith(prefix)) {
+						str2 = str2.slice(prefix.length);
+						continue;
+					}
+					break;
+				}
 			}
-			*/
-			if (item) lib.translate[name] = lib.translate[name].replace(item, changeMap[item]);
+			return str2;
 		}
-	}
+		return '';
+	};
+	lib.translate = new Proxy(lib.translate, {
+		get(target, name, receiver) {
+			const translation = Reflect.get(target, name, receiver);
+			if (lib.config.extension_活动武将_HD_REname) {
+				if (typeof name === 'string' && typeof translation === 'string' && !BanIdList.includes(name) && !BanTransList.includes(translation)) {
+					let character = name, rawtranslate = getRawName(name, translation);
+					if (character.endsWith('_ab')) character = character.slice(name.slice(0, -'_ab'.length));
+					if (lib.character[character] && changeMap.has(rawtranslate)) return `${translation.slice(0, -rawtranslate.length)}${changeMap.get(rawtranslate)}`;
+				}
+			}
+			return translation;
+		},
+	});
 
 	//precA
 	//配音
@@ -698,6 +715,8 @@ export async function content(config, pack) {
 	//技能配音修正
 	lib.skill.juntun.audio = 'ext:活动武将/audio/skill:true';
 	lib.skill.jiaojie.audio = 'ext:活动武将/audio/skill:true';
+	lib.skill.old_sbqiaobian.audio = 'sbqiaobian';
+	lib.skill.old_sbqiaobian.subSkill.draw.audio = 'sbqiaobian';
 
 	//武将配音audioname添加
 	game.HDsetAudioname = function (skills, list) {
@@ -811,7 +830,7 @@ export async function content(config, pack) {
 		ol_lusu: ['lusu'],
 		re_yuanshao: ['yuanshao'],
 		yuanji: ['old_yuanji', 'old_ol_yuanji'],
-		zhanghe: ['old_zhanghe'],
+		zhanghe: ['old_zhanghe', 'old_sb_zhanghe'],
 		zhugejin: ['old_zhugejin'],
 		xiaoqiao: ['old_ol_xiaoqiao'],
 		xunchen: ['old_xunchen'],
@@ -888,7 +907,7 @@ export async function content(config, pack) {
 	//怀旧包
 	lib.characterSort.old.bilibili_buchong_online2 = ['junk_guanyu', 'old_ol_xiaoqiao', 'old_zhangbao', 'old_sunluyu', 'old_ol_yuanji'];
 	lib.characterSort.old.bilibili_buchong_yijiang2 = ['old_yuanji', 'junk_duanwei', 'old_zhoufei'];
-	lib.characterSort.old.bilibili_buchong_mobile2 = ['old_pot_dengai', 'old_shen_sunce', 'old_shen_taishici', 'old_shen_xunyu', 'old_zhaoxiang', 'old_sb_ganning', 'old_zhouchu', 'old_xunchen', 'old_sp_kongrong', 'old_zhangzhongjing', 'oldx_zhangzhongjing', 'old_zhangyì', 'old_yanghuiyu', 'old_liuzhang', 'old_sp_sunshao', 'old_wangling', 'old_sp_huaxin', 'old_sp_mifuren', 'old_sp_jianggan'];
+	lib.characterSort.old.bilibili_buchong_mobile2 = ['old_sb_zhanghe', 'old_pot_dengai', 'old_shen_sunce', 'old_shen_taishici', 'old_shen_xunyu', 'old_zhaoxiang', 'old_sb_ganning', 'old_zhouchu', 'old_xunchen', 'old_sp_kongrong', 'old_zhangzhongjing', 'oldx_zhangzhongjing', 'old_zhangyì', 'old_yanghuiyu', 'old_liuzhang', 'old_sp_sunshao', 'old_wangling', 'old_sp_huaxin', 'old_sp_mifuren', 'old_sp_jianggan'];
 	lib.characterSort.old.bilibili_buchong_menfashizu = ['old_clan_xunshu', 'old_clan_xunchen', 'old_clan_xuncai', 'old_clan_xuncan', 'oldx_clan_xuncai'];
 	game.HDaddCharacter('old_clan_xunshu', ['male', 'qun', 3, ['old_shenjun', 'old_balong', 'clandaojie'], ['clan:颍川荀氏', 'tempname:clan_xunshu', 'die:clan_xunshu']], 'old');
 	game.HDaddCharacter('old_clan_xunchen', ['male', 'qun', 3, ['old_sankuang', 'old_beishi', 'clandaojie'], ['clan:颍川荀氏', 'tempname:clan_xunchen', 'die:clan_xunchen']], 'old');
@@ -924,6 +943,7 @@ export async function content(config, pack) {
 	game.HDaddCharacter('old_zhaoxiang', ['female', 'shu', 4, ['xinfanghun', 'xinfuhan'], ['die:zhaoxiang']], 'old');
 	game.HDaddCharacter('old_zhoufei', ['female', 'wu', 3, ['liangyin', 'kongsheng'], ['die:zhoufei']], 'old');
 	game.HDaddCharacter('old_pot_dengai', ['male', 'wei', 3, ['old_pottuntian', 'old_potjixi', 'old_potzaoxian'], ['die:pot_dengai']], 'old');
+	game.HDaddCharacter('old_sb_zhanghe', ['male', 'wei', 4, ['old_sbqiaobian'], ['die:sb_zhanghe']], 'old');
 
 	//DIY
 	lib.characterSort.diy.diy_trashbin.addArray(['old_yj_ganning', 'lusu', 'yuanshao', 'bol_zhangzhongjing', 'bol_sp_huaxin', 'bfake_zuoci', 'bfake_yangfu', 'bfake_chengpu', 'bfake_sundeng', 'old_shen_sunquan', 'old_shen_ganning', 'bfake_chengui', 'old_ol_xiaoqiao', 'old_zhanghe', 'old_zhugejin', 'oldx_zhangfei', 'oldx_guanyu', 'oldx_zhaoyun', 'oldx_yujin']);
@@ -1075,80 +1095,80 @@ export async function content(config, pack) {
 		gz_liuba: '刘巴',
 
 		//添加武将翻译
-		old_clan_xunshu: '旧荀淑',
-		old_clan_xunshu_prefix: '旧',
-		old_clan_xunchen: '旧荀谌',
-		old_clan_xunchen_prefix: '旧',
-		old_clan_xuncai: '旧荀采',
-		old_clan_xuncai_prefix: '旧',
-		old_clan_xuncan: '旧荀粲',
-		old_clan_xuncan_prefix: '旧',
-		oldx_clan_xuncai: '旧荀采',
-		oldx_clan_xuncai_prefix: '旧',
-		old_shen_xunyu: '旧神荀彧',
-		old_shen_xunyu_prefix: '旧神',
-		old_shen_taishici: '旧神太史慈',
-		old_shen_taishici_prefix: '旧神',
-		old_shen_sunce: '旧神孙策',
-		old_shen_sunce_prefix: '旧神',
-		old_zhangyì: '旧张翼',
-		old_zhangyì_prefix: '旧',
-		old_yanghuiyu: '旧羊徽瑜',
-		old_yanghuiyu_prefix: '旧',
+		old_clan_xunshu: `${get.poptip('rule_mamba')}荀淑`,
+		old_clan_xunshu_prefix: get.poptip('rule_mamba'),
+		old_clan_xunchen: `${get.poptip('rule_mamba')}荀谌`,
+		old_clan_xunchen_prefix: get.poptip('rule_mamba'),
+		old_clan_xuncai: `${get.poptip('rule_mamba')}荀采`,
+		old_clan_xuncai_prefix: get.poptip('rule_mamba'),
+		old_clan_xuncan: `${get.poptip('rule_mamba')}荀粲`,
+		old_clan_xuncan_prefix: get.poptip('rule_mamba'),
+		oldx_clan_xuncai: `${get.poptip('rule_mamba')}荀采`,
+		oldx_clan_xuncai_prefix: get.poptip('rule_mamba'),
+		old_shen_xunyu: `${get.poptip('rule_mamba')}神荀彧`,
+		old_shen_xunyu_prefix: `${get.poptip('rule_mamba')}|神`,
+		old_shen_taishici: `${get.poptip('rule_mamba')}神太史慈`,
+		old_shen_taishici_prefix: `${get.poptip('rule_mamba')}|神`,
+		old_shen_sunce: `${get.poptip('rule_mamba')}神孙策`,
+		old_shen_sunce_prefix: `${get.poptip('rule_mamba')}|神`,
+		old_zhangyì: `${get.poptip('rule_mamba')}张翼`,
+		old_zhangyì_prefix: get.poptip('rule_mamba'),
+		old_yanghuiyu: `${get.poptip('rule_mamba')}羊徽瑜`,
+		old_yanghuiyu_prefix: get.poptip('rule_mamba'),
 		junk_zhangrang: '新杀张让',
 		junk_zhangrang_prefix: '新杀',
 		bolx_jsp_guanyu: '★SP关羽',
 		bolx_jsp_guanyu_prefix: '★SP',
 		bol_sunluban: '用间孙鲁班',
 		bol_sunluban_prefix: '用间',
-		old_zhoufei: '旧周妃',
-		old_zhoufei_prefix: '旧',
+		old_zhoufei: `${get.poptip('rule_mamba')}周妃`,
+		old_zhoufei_prefix: get.poptip('rule_mamba'),
 		old_yj_ganning: '☆甘宁',
 		old_yj_ganning_prefix: '☆',
-		old_xunchen: '旧荀谌',
-		old_xunchen_prefix: '旧',
-		old_liuzhang: '旧刘璋',
-		old_liuzhang_prefix: '旧',
-		old_sp_sunshao: '旧孙邵',
-		old_sp_sunshao_prefix: '旧',
-		old_zhaoxiang: '旧赵襄',
-		old_zhaoxiang_prefix: '旧',
+		old_xunchen: `${get.poptip('rule_mamba')}荀谌`,
+		old_xunchen_prefix: get.poptip('rule_mamba'),
+		old_liuzhang: `${get.poptip('rule_mamba')}刘璋`,
+		old_liuzhang_prefix: get.poptip('rule_mamba'),
+		old_sp_sunshao: `${get.poptip('rule_mamba')}孙邵`,
+		old_sp_sunshao_prefix: get.poptip('rule_mamba'),
+		old_zhaoxiang: `${get.poptip('rule_mamba')}赵襄`,
+		old_zhaoxiang_prefix: get.poptip('rule_mamba'),
 		old_bulianshi: '手杀步练师',
 		old_bulianshi_prefix: '手杀',
 		ol_yuanshu: '手杀袁术',
 		ol_yuanshu_prefix: '手杀',
 		old_yuanshu: '手杀界袁术',
 		old_yuanshu_prefix: '手杀界',
-		old_wangling: '旧王淩',
-		old_wangling_prefix: '旧',
-		old_sp_huaxin: '旧华歆',
-		old_sp_huaxin_prefix: '旧',
-		old_sp_kongrong: '旧孔融',
-		old_sp_kongrong_prefix: '旧',
-		old_sp_mifuren: '旧糜夫人',
-		old_sp_mifuren_prefix: '旧',
-		old_zhouchu: '旧周处',
-		old_zhouchu_prefix: '旧',
-		old_sb_ganning: '旧甘宁',
-		old_sb_ganning_prefix: '旧',
-		old_zhangbao: '旧张宝',
-		old_zhangbao_prefix: '旧',
-		old_sunluyu: '旧孙鲁育',
-		old_sunluyu_prefix: '旧',
-		old_ol_xiaoqiao: '旧界小乔',
-		old_ol_xiaoqiao_prefix: '旧|界',
+		old_wangling: `${get.poptip('rule_mamba')}王淩`,
+		old_wangling_prefix: get.poptip('rule_mamba'),
+		old_sp_huaxin: `${get.poptip('rule_mamba')}华歆`,
+		old_sp_huaxin_prefix: get.poptip('rule_mamba'),
+		old_sp_kongrong: `${get.poptip('rule_mamba')}孔融`,
+		old_sp_kongrong_prefix: get.poptip('rule_mamba'),
+		old_sp_mifuren: `${get.poptip('rule_mamba')}糜夫人`,
+		old_sp_mifuren_prefix: get.poptip('rule_mamba'),
+		old_zhouchu: `${get.poptip('rule_mamba')}周处`,
+		old_zhouchu_prefix: get.poptip('rule_mamba'),
+		old_sb_ganning: `${get.poptip('rule_mamba')}甘宁`,
+		old_sb_ganning_prefix: get.poptip('rule_mamba'),
+		old_zhangbao: `${get.poptip('rule_mamba')}张宝`,
+		old_zhangbao_prefix: get.poptip('rule_mamba'),
+		old_sunluyu: `${get.poptip('rule_mamba')}孙鲁育`,
+		old_sunluyu_prefix: get.poptip('rule_mamba'),
+		old_ol_xiaoqiao: `${get.poptip('rule_mamba')}界小乔`,
+		old_ol_xiaoqiao_prefix: `${get.poptip('rule_mamba')}|界`,
 		old_zhanghe: '张郃',
 		old_zhugejin: '诸葛瑾',
 		ol_maliang: '手杀马良',
 		ol_maliang_prefix: '手杀',
-		junk_duanwei: '旧段煨',
-		junk_duanwei_prefix: '旧',
+		junk_duanwei: `${get.poptip('rule_mamba')}段煨`,
+		junk_duanwei_prefix: get.poptip('rule_mamba'),
 		oldx_zhangfei: '张翼德',
 		oldx_guanyu: '关云长',
 		oldx_zhaoyun: '赵子龙',
 		oldx_yujin: '于文则',
-		old_yuanji: '旧袁姬',
-		old_yuanji_prefix: '旧',
+		old_yuanji: `${get.poptip('rule_mamba')}袁姬`,
+		old_yuanji_prefix: get.poptip('rule_mamba'),
 		bfake_yangfu: '杨阜',
 		bfake_zuoci: '谋左慈',
 		bfake_zuoci_prefix: '谋',
@@ -1161,16 +1181,19 @@ export async function content(config, pack) {
 		bol_sp_huaxin: 'TW华歆',
 		bol_sp_huaxin_prefix: 'TW',
 		bfake_chengui: '陈珪',
-		old_zhangzhongjing_prefix: '旧',
-		oldx_zhangzhongjing_prefix: '旧',
+		old_zhangzhongjing: `${get.poptip('rule_mamba')}张机`,
+		old_zhangzhongjing_prefix: get.poptip('rule_mamba'),
+		oldx_zhangzhongjing: `${get.poptip('rule_mamba')}张机`,
+		oldx_zhangzhongjing_prefix: get.poptip('rule_mamba'),
+		bol_zhangzhongjing: 'TW张机',
 		bol_zhangzhongjing_prefix: 'TW',
 		ol_shen_dianwei: 'OL神典韦',
 		ol_shen_dianwei_prefix: 'OL神',
-		old_ol_yuanji: '旧OL袁姬',
-		old_ol_yuanji_prefix: '旧|OL',
+		old_ol_yuanji: `${get.poptip('rule_mamba')}OL袁姬`,
+		old_ol_yuanji_prefix: `${get.poptip('rule_mamba')}|OL`,
 		'#ext:活动武将/audio/die/old_xunchen:die': '点击播放阵亡配音',
-		old_sp_jianggan: '旧蒋干',
-		old_sp_jianggan_prefix: '旧',
+		old_sp_jianggan: `${get.poptip('rule_mamba')}蒋干`,
+		old_sp_jianggan_prefix: get.poptip('rule_mamba'),
 		lusu: '鲁肃',
 		yuanshao: '袁绍',
 		old_wanglang: '手杀王朗',
@@ -1184,12 +1207,14 @@ export async function content(config, pack) {
 		ol_huaxiong: '手杀界华雄',
 		ol_huaxiong_prefix: '手杀|界',
 		'#junk_guanyu:die': '点击播放阵亡配音',
-		old_pot_dengai: '旧势邓艾',
-		old_pot_dengai_prefix: '旧|势',
+		old_pot_dengai: `${get.poptip('rule_mamba')}势邓艾`,
+		old_pot_dengai_prefix: `${get.poptip('rule_mamba')}|势`,
 		ol_shen_guanyu: 'OL神关羽',
 		ol_shen_guanyu_prefix: 'OL|神',
 		mb_shen_caocao: '手杀神曹操',
 		mb_shen_caocao_prefix: '手杀|神',
+		old_sb_zhanghe: `${get.poptip('rule_mamba')}谋张郃`,
+		old_sb_zhanghe_prefix: `${get.poptip('rule_mamba')}|谋`,
 
 		//武将分包翻译
 		bilibili_buchong_online: '武将补充·Online',

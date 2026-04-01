@@ -201,7 +201,7 @@ export let config = {
 	},
 	HD_REname: {
 		name: '名称还原',
-		intro: '开启此选项后，游戏内部分武将的名称翻译将调整为和官服一致（重启生效）',
+		intro: '开启此选项后，游戏内部分武将的名称翻译将调整为和官服一致（实时生效）',
 		init: false,
 	},
 	Boss_TZ_level: {
