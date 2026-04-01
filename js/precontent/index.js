@@ -628,16 +628,29 @@ export async function precontent(bilibilicharacter) {
             },
             {
                 type: 'players',
-                data: [
-                ],
+                data: (() => {
+                    _status.HDWJ_ChangeLog_character = {
+                        'MiNikill': ['Mbaby_star_zhangchunhua'],
+                    };
+                    return Object.values(_status.HDWJ_ChangeLog_character).flat();
+                })(),
             },
             {
                 type: 'text',
                 textAlign: 'left',
-                data: [
-                    'bugfix、素材补充、技能调整',
-                    'To be continued...',
-                ],
+                get data() {
+                    return [
+                        'bugfix、素材补充、技能调整',
+                        ...(() => {
+                            const map = _status.HDWJ_ChangeLog_character ?? {};
+                            return Object.keys(map).map(ext => {
+                                const str = lib.translate[`${ext}_character_config`] || lib.translate[ext] || ext;
+                                return `${str}：${map[ext].map(name => lib.translate[name]).join('、')}`;
+                            });
+                        })(),
+                        'To be continued...',
+                    ];
+                },
             },
         ];
         return _status.HDWJ_ChangeLog;

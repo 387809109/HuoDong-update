@@ -35,7 +35,7 @@ const packs = function () {
                     ...['chengyu'].map(i => `Mbaby_dc_sb_${i}`),
                     ...[],
                 ],
-                MiNi_starCharacter: ['yuanshao', 'sunshangxiang', 'xunyu', 'yuanshu'].map(i => `Mbaby_star_${i}`),
+                MiNi_starCharacter: ['zhangchunhua', 'yuanshao', 'sunshangxiang', 'xunyu', 'yuanshu'].map(i => `Mbaby_star_${i}`),
                 MiNi_yueCharacter: ['daqiao'].map(i => `Mbaby_yue_${i}`),
                 MiNi_miaoKill: ['mayunlu', 'guanyinping', 'caoying', 'caiwenji', 'diaochan', 'caifuren', 'zhangxingcai', 'zhurong', 'huangyueying', 'daqiao', 'wangyi', 'zhangchunhua', 'zhenji', 'sunshangxiang', 'xiaoqiao', 'lvlingqi'].map(i => `Mmiao_${i}`),
                 MiNi_nianKill: ['caopi', 'zhugeliang', 'lvbu', 'zhouyu'].map(i => `Mnian_${i}`),
@@ -142,6 +142,7 @@ const packs = function () {
             Mbaby_caochun: ['male', 'wei', 4, ['minishanjia']],
             Mbaby_xiahoumao: ['male', 'wei', 4, ['tongwei', 'minicuguo'], ['name:夏侯|楙']],
             Mbaby_ol_wangyi: ['female', 'wei', 4, ['olzhenlie', 'olmiji']],
+            Mbaby_star_zhangchunhua: ['female', 'wei', 3, ['miniliangyan', 'starminghui']],
             //蜀
             Mbaby_guanyu: ['male', 'shu', 4, ['miniwusheng']],
             Mbaby_re_guanyu: ['male', 'shu', 4, ['minirewusheng', 'minituodao', 'jsrgguanjue']],
@@ -7232,6 +7233,59 @@ const packs = function () {
                         await player.useCard(card, trigger.target);
                     }
                 }
+            },
+            //星张春华
+            miniliangyan: {
+                audio: 'starliangyan',
+                inherit: 'starliangyan',
+                chooseButton: {
+                    dialog(event, player) {
+                        const name = get.translation(event.result.targets[0]);
+                        const list = ['你摸一张牌，其弃置一张牌', '你弃置一张牌，其摸一张牌', '你摸两张牌，其弃置两张牌', '你弃置两张牌，其摸两张牌'].map((item, i) => [i, item]);
+                        const dialog = ui.create.dialog(`梁燕：请选择你与${name}要执行的选项`, [list.slice(0, 2), 'tdnodes'], [list.slice(2, 4), 'tdnodes'], 'hidden');
+                        return dialog;
+                    },
+                    filter(button, player) {
+                        const link = button.link;
+                        if (link % 2 === 0) return true;
+                        return player.countDiscardableCards(player, 'he') >= (link + 1) / 2;
+                    },
+                    check(button) {
+                        return button.link === 2 ? 100 : (1 + Math.random());
+                    },
+                    prompt(links) {
+                        const str = ['你摸一张牌，其弃置一张牌', '你弃置一张牌，其摸一张牌', '你摸两张牌，其弃置两张牌', '你弃置两张牌，其摸两张牌'][links[0]];
+                        return `###梁燕###<div class="text center">${str.replace('其', get.translation(get.event().result.targets[0]))}</div>`;
+                    },
+                    backup(links) {
+                        return {
+                            audio: 'miniliangyan',
+                            target: get.event().result.targets[0],
+                            link: links[0],
+                            filterTarget(card, player, target) {
+                                return target === lib.skill.miniliangyan_backup.target;
+                            },
+                            selectTarget: -1,
+                            async content(event, trigger, player) {
+                                const { target, link } = lib.skill[event.name];
+                                const num = link <= 1 ? 1 : 2;
+                                const fn = ['draw', 'chooseToDiscard'];
+                                if (link % 2 === 1) fn.reverse();
+                                await player[fn[0]](num, true, 'he');
+                                await target[fn[1]](num, true, 'he');
+                                const skipper = [player, target][link % 2];
+                                if (skipper?.isIn()) {
+                                    skipper.skip('phaseDiscard');
+                                    game.log(skipper, '跳过了下一个', '#y弃牌阶段');
+                                }
+                            },
+                        };
+                    },
+                },
+                ai: {
+                    order: 10,
+                    result: { target: -1 },
+                },
             },
             //蜀
             //关羽
@@ -31698,7 +31752,7 @@ const packs = function () {
                     player.addMark('minirenjie', trigger.num || 1);
                 },
                 marktext: '忍',
-                intro: { name: '忍', content: 'mark' },
+                intro: { name2: '忍', content: 'mark' },
                 subSkill: {
                     lose: {
                         audio: 'renjie2',
@@ -41010,6 +41064,7 @@ const packs = function () {
             Mbaby_caochun: '欢杀曹纯',
             Mbaby_xiahoumao: '欢杀夏侯楙',
             Mbaby_ol_wangyi: '欢杀界王异',
+            Mbaby_star_zhangchunhua: '欢杀星张春华',
             miniluoshen: '洛神',
             miniluoshen_info: '准备阶段，你可以进行一次判定并获得判定牌，若判定结果为黑色，你可重复此流程。',
             minireluoshen: '洛神',
@@ -41282,6 +41337,8 @@ const packs = function () {
             minishanjia_info: '出牌阶段开始时，你可以摸三张牌，然后弃置三张牌（本局游戏你每失去过一张装备牌则少弃置一张）。若你没有以此法弃置：基本牌，此阶段你使用【杀】的次数上限+1；锦囊牌，此阶段你使用牌无距离限制；基本牌和锦囊牌，你可以视为使用一张【杀】。',
             minicuguo: '蹙国',
             minicuguo_info: '锁定技。当你于一回合使用牌首次被抵消后，你弃置一张牌，视为对此牌的目标角色使用一张该被抵消的牌。',
+            miniliangyan: '梁燕',
+            miniliangyan_info: '出牌阶段限一次，你可以选择一名其他角色，你摸/弃置至多两张牌，令其弃置/摸等量的牌。以此法摸牌的角色跳过其下一个弃牌阶段。',
             //蜀
             Mbaby_guanyu: '欢杀关羽',
             Mbaby_re_guanyu: '欢杀界关羽',
