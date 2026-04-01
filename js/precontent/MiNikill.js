@@ -31666,19 +31666,21 @@ const packs = function () {
             },
             minidingli: {
                 audio: 'ext:活动武将/audio/skill:2',
-                trigger: { global: 'logSkill' },
+                trigger: { global: 'removeMark' },
                 filter(event, player) {
-                    return event.skill == 'miniquanxue_remove' && event.player != player;
+                    return event.markName == 'miniquanxue' && event.player != player;
                 },
                 check(event, player) {
-                    if (event.player.hp >= player.hp && player.isHealthy()) return false;
-                    return true;
+                    return event.player.getHp() < player.getHp() || player.isDamaged();
+                },
+                prompt2(event, player) {
+                    return event.player.getHp() < player.getHp() ? `摸${get.cnNumber(Math.min(2, player.getHp() - event.player.getHp()))}张牌` : '回复1点体力';
                 },
                 round: 1,
                 logTarget: 'player',
                 content() {
-                    if (trigger.player.hp >= player.hp) player.recover();
-                    else player.draw(Math.min(2, player.hp - trigger.player.hp));
+                    if (trigger.player.getHp() >= player.getHp()) player.recover();
+                    else player.draw(Math.min(2, player.getHp() - trigger.player.getHp()));
                 },
                 ai: { combo: 'miniquanxue' },
             },
