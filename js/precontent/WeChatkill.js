@@ -18739,15 +18739,13 @@ const packs = function () {
                     await player.draw(3);
                     let result;
                     if (player.hasMark(event.name) && player.countGainableCards(player, 'he')) result = await player.chooseToDiscard('he', true, player.countMark(event.name)).set('ai', get.disvalue).forResult();
-                    let bool = false;
-                    if (result?.cards?.length) {
-                        if (!result.cards.some(card => get.type(card) === 'equip')) bool = true;
-                    }
                     const next = player.chooseUseTarget({ name: 'sha', isCard: true }, false, 'nodistance');
-                    if (bool) next.set('oncard', card => {
-                        const evt = _status.event;
-                        evt.baseDamage++;
-                    });
+                    if (!result?.bool || !result.cards?.some(card => get.type(card) !== 'equip')) {
+                        next.set('oncard', card => {
+                            const evt = _status.event;
+                            evt.baseDamage++;
+                        });
+                    }
                     await next;
                 },
                 ai: {
