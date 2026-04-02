@@ -918,6 +918,7 @@ const packs = function () {
                     if (get.tag(event.card, 'damage')) return true;
                     return false;
                 },
+                usable: 1,
                 async content(event, trigger, player) {
                     const { targets: [target] } = event;
                     const list = ['basic', 'trick', 'equip'].map(type => ['', '', `${event.name}_${type}`]);
