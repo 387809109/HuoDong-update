@@ -669,6 +669,7 @@ export async function content(config, pack) {
 		['甄宓', '甄姬'],
 		['伏寿', '伏皇后'],
 		['吉本', '吉平'],
+		['南华', '南华老仙'],
 		...[...(_status._HD_REname?.changeMap ?? new Map([])).entries()],
 	]);
 	const BanIdList = ['jsrg_zhenji'].concat(_status._HD_REname?.BanIdList ?? []);//不修改名称的ID白名单，必须ID完全符合才不替换
@@ -698,7 +699,7 @@ export async function content(config, pack) {
 				if (typeof name === 'string' && typeof translation === 'string' && !BanIdList.includes(name) && !BanTransList.includes(translation)) {
 					let character = name, rawtranslate = getRawName(name, translation);
 					if (character.endsWith('_ab')) character = character.slice(name.slice(0, -'_ab'.length));
-					if (lib.character[character] && changeMap.has(rawtranslate)) return `${translation.slice(0, -rawtranslate.length)}${changeMap.get(rawtranslate)}`;
+					if (!get.character(character).isNull && changeMap.has(rawtranslate)) return `${translation.slice(0, -rawtranslate.length)}${changeMap.get(rawtranslate)}`;
 				}
 			}
 			return translation;
