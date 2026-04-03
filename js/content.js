@@ -696,10 +696,10 @@ export async function content(config, pack) {
 		get(target, name, receiver) {
 			const translation = Reflect.get(target, name, receiver);
 			if (lib.config.extension_活动武将_HD_REname) {
-				if (typeof name === 'string' && typeof translation === 'string' && !BanIdList.includes(name) && !BanTransList.includes(translation)) {
+				if (typeof name === 'string' && typeof translation === 'string' && !BanTransList.includes(translation)) {
 					let character = name, rawtranslate = getRawName(name, translation);
 					if (character.endsWith('_ab')) character = character.slice(name.slice(0, -'_ab'.length));
-					if (!get.character(character).isNull && changeMap.has(rawtranslate)) return `${translation.slice(0, -rawtranslate.length)}${changeMap.get(rawtranslate)}`;
+					if (!get.character(character).isNull && !BanIdList.includes(character) && changeMap.has(rawtranslate)) return `${translation.slice(0, -rawtranslate.length)}${changeMap.get(rawtranslate)}`;
 				}
 			}
 			return translation;
