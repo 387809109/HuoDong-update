@@ -9933,7 +9933,7 @@ const packs = function () {
                     trigger.num++;
                 },
             },
-            //大姐
+            //情人姐
             bilibili_roulin: {
                 audio: 'ext:活动武将/audio/skill:1',
                 inherit: 'roulin',
@@ -13760,7 +13760,7 @@ const packs = function () {
             bilibili_huiyan_info: '锁定技。①其他角色的手牌对你可见。②准备阶段，你令一名其他角色选择一项：1.令你回复1点体力；2.令你摸一张牌。',
             bilibili_shenren: '神人',
             bilibili_shenren_info: '锁定技，四字神人对你造成的伤害+1；你对四字神人造成的伤害+1。',
-            bilibili_yanjing_friend1: '大姐',
+            bilibili_yanjing_friend1: '情人姐',
             bilibili_roulin: '肉林',
             bilibili_roulin_info: '锁定技，你对异性角色/异性角色对你使用的【杀】需要额外使用一张【闪】响应。',
             bilibili_yanjing_friend2: '胖哥',
@@ -13774,7 +13774,7 @@ const packs = function () {
                 '锁定技。①四字神人对你造成的伤害+1；你对四字神人造成的伤害+1。',
                 '②若你的武将牌有“眼睛”：' + [
                     `游戏开始时，你获得“神人”朋友${(() => {
-                        return ['大姐', '胖哥', '公鸭嗓'].map((name, index) => {
+                        return ['情人姐', '胖哥', '公鸭嗓'].map((name, index) => {
                             return get.poptip({
                                 id: `character_bilibili_yanjing_friend${index + 1}`,
                                 name: `“${name}”`,
