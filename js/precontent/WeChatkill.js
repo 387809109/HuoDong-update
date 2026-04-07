@@ -18247,6 +18247,7 @@ const packs = function () {
                     return !event.hasNature('linked');
                 },
                 forced: true,
+                popup: false,
                 content() {
                     game.setNature(trigger, 'fire');
                 },
@@ -20594,7 +20595,7 @@ const packs = function () {
             wechatsbliyu_info: `当你使用【杀】对一名其他角色造成伤害后，你可获得其区域内至多等同于伤害值张牌，然后其摸一张牌。若你与其因此获得了三种类别的牌，其选择一项：①你视为对其指定的另一名其他角色使用一张【决斗】；②其获得${get.poptip('wushuang')}直至其回合结束。`,
             wechat_sb_sp_zhugeliang: '小程序谋诸葛亮',
             wechatsbhuoji: '火计',
-            wechatsbhuoji_info: `使命技。使命：你造成的非属性伤害改为火属性；出牌阶段限一次。你可以对一名其他角色造成1点伤害。成功准备阶段，若你本局游戏已对其他角色造成的火焰伤害不小于本局游戏总角色数，则你失去〖火计〗和〖看破〗，然后获得${get.poptip('wechatsbguanxing')}和${get.poptip('wechatsbkongcheng')}：失败：你于使命成功前进入濒死状态。`,
+            wechatsbhuoji_info: `使命技。使命：你造成的非属性伤害改为火属性；出牌阶段限一次。你可以对一名其他角色造成1点伤害。成功：准备阶段，若你本局游戏已对其他角色造成的火焰伤害不小于本局游戏总角色数，则你失去〖火计〗和〖看破〗，然后获得${get.poptip('wechatsbguanxing')}和${get.poptip('wechatsbkongcheng')}：失败：你于使命成功前进入濒死状态。`,
             wechat_sb_zhugeliang: '小程序谋诸葛亮',
             wechatsbguanxing: '观星',
             wechatsbguanxing_info: '每回合限两次，准备阶段/出牌阶段/结束阶段，你可以观看牌堆顶[7]张牌，然后选择使用其中一张牌或调整这些牌以任意顺序置于牌堆顶或牌堆底。',

@@ -31776,8 +31776,9 @@ const packs = function () {
                 group: ['minijilve_guicai', 'minijilve_fangzhu', 'minijilve_wansha', 'minijilve_jizhi'],
                 trigger: { player: ['useSkill', 'logSkillBegin'] },
                 filter(event, player) {
-                    if (!lib.skill.minijilve.derivation.includes(event.skill)) return false;
-                    return player.getHistory('useSkill', evt => lib.skill.minijilve.derivation.includes(evt.skill)).length == 1;
+                    return player.getHistory('useSkill', evt => {
+                        return lib.skill.minijilve.derivation.includes(evt.skill);
+                    }).map(evt => evt.event).indexOf(event.log_event || event) === 0;
                 },
                 frequent: true,
                 content() {
@@ -31830,7 +31831,7 @@ const packs = function () {
                         popup: false,
                         content() {
                             'step 0'
-                            player.respond(result.cards, 'highlight', 'minijilve_guicai', 'noOrdering');
+                            player.respond(event.cards, 'highlight', 'minijilve_guicai', 'noOrdering');
                             'step 1'
                             if (result?.bool && result.cards?.length) {
                                 player.removeMark('minirenjie', 1);
