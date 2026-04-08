@@ -22457,12 +22457,12 @@ const packs = function () {
                 trigger: { player: 'phaseUseBegin' },
                 filter(event, player) {
                     return game.hasPlayer(target => {
-                        return target != player || game.hasPlayer(current => target.canUse({ name: 'sha' }, current, false) && target.inRange(current));
+                        return target != player || game.hasPlayer(current => target.canUse({ name: 'sha' }, current, false) && target.inRange(current) && current != player);
                     });
                 },
                 async cost(event, trigger, player) {
                     const goon = game.hasPlayer(target => {
-                        return game.hasPlayer(current => target.canUse({ name: 'sha' }, current, false) && target.inRange(current));
+                        return game.hasPlayer(current => target.canUse({ name: 'sha' }, current, false) && target.inRange(current) && current != player);
                     });
                     const choiceList = ['令一名角色视为对其攻击范围内另一名你指定的角色使用一张【杀】，此【杀】结算后若此【杀】造成伤害，你摸两张牌', '选择一名其他角色，与其各摸一张牌，且其下回合使用【杀】的次数上限+1'];
                     const choices = [];
@@ -22482,10 +22482,10 @@ const packs = function () {
                     const next = player.chooseTarget(get.prompt(event.name.slice(0, -5)), choiceList[index], true, num);
                     if (bool) {
                         next.set('filterTarget', (card, player, target) => {
-                            if (ui.selected.targets.length) return ui.selected.targets[0].canUse({ name: 'sha' }, target, false) && ui.selected.targets[0].inRange(target);
-                            return game.hasPlayer(current => target.canUse({ name: 'sha' }, current, false) && target.inRange(current));
+                            if (ui.selected.targets.length) return ui.selected.targets[0].canUse({ name: 'sha' }, target, false) && ui.selected.targets[0].inRange(target) && target != player;
+                            return game.hasPlayer(current => target.canUse({ name: 'sha' }, current, false) && target.inRange(current) && current != player);
                         });
-                        next.set('complexSelect', true);
+                        next.set('multitarget', true);
                         next.set('targetprompt', ['出杀者', '出杀目标']);
                         next.set('ai', target => {
                             const player = get.player();
@@ -34718,7 +34718,7 @@ const packs = function () {
                     if (event.triggername == 'phaseEnd') event.result = { bool: true };
                     else event.result = await player.chooseCardTarget({
                         prompt: get.prompt(event.skill),
-                        prompt2: '弃置一张牌，失去【逗猫】并令一名其他角色获得【逗猫】，然后其摸一张牌',
+                        prompt2: '弃置一张牌，失去【逗猫】并令一名其他角色获得【逗猫】，然后其摸一张牌。',
                         filterTarget: lib.filter.notMe,
                         filterCard: lib.filter.cardDiscardable,
                         position: 'he',
@@ -35812,34 +35812,36 @@ const packs = function () {
             //喵小乔
             minimiaotianxiang: {
                 audio: 'ext:活动武将/audio/skill:2',
-                trigger: { player: 'damageBegin3' },
+                trigger: { player: 'damageBegin4' },
                 filter(event, player) {
-                    return player.countCards('h', { suit: 'heart' }) && event.num > 0;
+                    return player.countCards('h', { suit: 'heart' }) && event.num > 0 && game.hasPlayer(current => current != player);
                 },
+                preHidden: true,
                 async cost(event, trigger, player) {
                     event.result = await player.chooseCardTarget({
                         filterCard(card, player) {
-                            return get.suit(card) == 'heart' && lib.filter.cardDiscardable(card, player);
+                            return get.suit(card) == 'heart';
                         },
                         filterTarget: lib.filter.notMe,
                         ai1(card) {
                             return 10 - get.value(card);
                         },
                         ai2(target) {
-                            var player = _status.event.player;
-                            var num = (target.hasSkill('minidoumao') ? 2 : 1);
-                            var att = get.attitude(player, target);
+                            const player = get.player();
+                            const num = (target.hasSkill('minidoumao') ? 2 : 1);
+                            const att = get.attitude(player, target);
                             return -att * num;
                         },
-                        prompt: get.prompt2('minimiaotianxiang')
-                    }).forResult();
+                        prompt: get.prompt2(event.skill),
+                    }).setHiddenSkill(event.skill).forResult();
                 },
-                content() {
-                    var target = targets[0];
-                    player.give(cards, target);
-                    player.addTempSkill('minimiaotianxiang2');
+                async content(event, trigger, player) {
+                    const [target] = event.targets;
                     trigger.cancel();
-                    target.damage(trigger.source ? trigger.source : 'nosource', trigger.nature, trigger.num).set('card', trigger.card).set('cards', trigger.cards);
+                    await player.give(event.cards, target);
+                    await target.damage(trigger.source || 'nosource', 'nocard');
+                    if (target.hasSkill('minidoumao')) await target.damage();
+                    else await player.discardPlayerCard(target, 'he', true);
                 },
                 ai: {
                     maixie_defend: true,
@@ -35852,20 +35854,6 @@ const packs = function () {
                     threaten(player, target) {
                         if (!target.countCards('h')) return 2;
                     },
-                },
-            },
-            minimiaotianxiang2: {
-                charlotte: true,
-                trigger: { global: ['damageAfter', 'damageCancelled', 'damageZero'] },
-                filter(event, player) {
-                    return event.minimiaotianxiang2 && event.minimiaotianxiang2.includes(player) && event.player.isIn();
-                },
-                forced: true,
-                popup: false,
-                content() {
-                    player.line(trigger.player);
-                    if (trigger.player.hasSkill('minidoumao')) trigger.player.damage();
-                    else player.discardPlayerCard(trigger.player, 'he', true);
                 },
             },
             minimiaohongyan: {
@@ -42988,7 +42976,6 @@ const packs = function () {
             minimiaoxiaoji: '枭姬',
             minimiaoxiaoji_info: `当你失去装备区里的一张牌后，你可以摸两张牌，然后若你没有${get.poptip('minidoumao')}，你可以弃置场上一张牌。`,
             minimiaotianxiang: '天香',
-            minimiaotianxiang2: '天香',
             minimiaotianxiang_info: `当你受到伤害时，你可以将一张红桃牌交给一名其他角色并将此伤害转移给其。若如此做，此伤害结算完毕后，若其拥有${get.poptip('minidoumao')}，你对其造成1点伤害；没有${get.poptip('minidoumao')}，你弃置其一张牌。`,
             minimiaohongyan: '红颜',
             minimiaohongyan_info: `锁定技。①你的黑桃牌视为红桃牌。②没有${get.poptip('minidoumao')}的角色的红桃判定牌生效后，你回复1点体力并摸一张牌。`,

@@ -12628,7 +12628,7 @@ const packs = function () {
                 forced: true,
                 locked: false,
                 filter(event, player) {
-                    return (event.name != 'phase' || game.phaseNumber == 0) && player.countCards('h') < game.countPlayer2();
+                    return event.name != 'phase' || game.phaseNumber == 0;
                 },
                 async content(event, trigger, player) {
                     await player.drawTo(game.countPlayer2());
