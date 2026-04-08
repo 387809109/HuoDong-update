@@ -31830,9 +31830,9 @@ const packs = function () {
                         popup: false,
                         content() {
                             'step 0'
-                            player.respond(event.cards, 'highlight', 'minijilve_guicai', 'noOrdering');
+                            event._result = player.respond(event.cards, 'highlight', 'minijilve_guicai', 'noOrdering');
                             'step 1'
-                            if (result?.bool && result.cards?.length) {
+                            if (result.cards?.length) {
                                 player.removeMark('minirenjie', 1);
                                 if (trigger.player.judging[0].clone) {
                                     trigger.player.judging[0].clone.delete();
