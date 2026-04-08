@@ -21030,7 +21030,7 @@ const packs = function () {
                 frequent: true,
                 async content(event, trigger, player) {
                     await player.drawTo(player.maxHp);
-                    if (get.info('minidiaodu')?.filter?.(null, player)) await game.createTrigger(event.triggername, 'minidiaodu', player, trigger).goto(1);
+                    if (get.info('minidiaodu')?.filter?.(null, player)) await game.createTrigger(event.triggername, 'minidiaodu', player, trigger);
                 },
             },
             //葛玄
@@ -42125,7 +42125,7 @@ const packs = function () {
             minidiaodu: '调度',
             minidiaodu_info: '出牌阶段开始时，你可以获得一名距离不大于1的一名角色A装备区里的一张牌，然后你将此牌交给另一名角色B，然后B选择是否使用此牌，若B使用/不使用，则你/B摸一张牌。',
             minidiancai: '典财',
-            minidiancai_info: '一名角色的出牌阶段结束时，若你于此阶段失去了至少X张牌，则你可以将手牌摸至体力上限（X为你的体力值且X至多为5）。然后你可以发动一次〖调度〗。',
+            minidiancai_info: `一名角色的出牌阶段结束时，若你于此阶段失去了至少X张牌，则你可以将手牌摸至体力上限（X为你的体力值且X至多为5）。然后你可以发动一次${get.poptip('minidiaodu')}。`,
             minilianhua: '炼化',
             minilianhua_info: '①你的回合外，其他角色受到伤害后，你获得1枚“丹血”标记（该角色与你阵营一致时为红色，不一致为黑色，此颜色对所有玩家均不可见）。②准备阶段，你失去所有“丹血”标记，根据你失去的“丹血”标记的数量和颜色，从牌堆/弃牌堆中获得相应的牌以及相应技能直到回合结束：3枚或以下，〖英姿〗和【桃】；红色“丹血”较多，〖观星〗和【无中生有】；黑色“丹血”较多，〖直言〗和【顺手牵羊】；红色和黑色一样多，〖攻心〗和【杀】【决斗】。',
             mininiji: '逆击',
