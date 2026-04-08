@@ -31740,32 +31740,31 @@ const packs = function () {
                 ai: { combo: 'miniquanxue' },
             },
             minirenjie: {
-                group: 'minirenjie_lose',
                 audio: 'renjie2',
                 trigger: { player: ['enterGame', 'damageEnd'], global: 'phaseBefore' },
                 filter(event, player) {
                     if (event.num == 'damage') return event.num > 0;
                     return event.name != 'phase' || game.phaseNumber == 0;
                 },
-                notemp: true,
                 forced: true,
                 content() {
                     player.addMark('minirenjie', trigger.num || 1);
                 },
                 marktext: '忍',
                 intro: { name2: '忍', content: 'mark' },
+                group: 'minirenjie_lose',
                 subSkill: {
                     lose: {
                         audio: 'renjie2',
                         trigger: { player: 'loseAfter' },
                         filter(event, player) {
-                            if (event.type != 'discard' || !event.cards2) return false;
-                            var evt = event.getParent('phaseDiscard');
-                            return evt?.name == 'phaseDiscard' && evt.player == player;
+                            if (event.type != 'discard' || !event.hs?.length) return false;
+                            const evt = event.getParent('phaseDiscard');
+                            return evt.name == 'phaseDiscard' && evt.player == player;
                         },
                         forced: true,
                         content() {
-                            player.addMark('minirenjie', trigger.cards2.length);
+                            player.addMark('minirenjie', trigger.hs.length);
                         },
                     },
                 },
@@ -42779,7 +42778,7 @@ const packs = function () {
             minidingli: '鼎立',
             minidingli_info: '每轮限一次，其他角色移除“学”时，如果其体力值不小于你，你可以回复1点体力；如果其体力值小于你，你可以摸X张牌（X为其与你的体力值之差且至多为2）。',
             minirenjie: '忍戒',
-            minirenjie_info: '锁定技，游戏开始时/当你受到伤害后/当你于弃牌阶段弃牌后，你获得1/X/Y枚“忍”标记。（X为伤害值，Y为你本次的弃牌数）',
+            minirenjie_info: '锁定技，游戏开始时/当你受到伤害后/当你于弃牌阶段弃置手牌后，你获得1/伤害值/等量枚“忍”标记。',
             minijilve: '极略',
             minijilve_info: '①你可以于合理的时机弃置1枚“忍”并发动以下技能：〖鬼才〗、〖放逐〗、〖完杀〗、〖集智〗。②当你于每回合第一次发动〖极略①〗时，你可以摸一张牌。',
             minijilve_guicai: '鬼才',
