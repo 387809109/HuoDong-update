@@ -7819,17 +7819,16 @@ const packs = function () {
                 multiline: true,
                 line: 'fire',
                 async content(event, trigger, player) {
-                    const targets = event.targets.sortBySeat();
+                    const targets = [...event.targets].sortBySeat();
                     for (const i of targets) await i.damage();
-                    for (let j = 0; j < targets.length; j++) {
-                        await targets[j].draw(j == targets.length - 1 ? '' : 'nodelay');
-                    }
+                    await game.asyncDraw(targets);
+                    await game.delayx();
                 },
                 ai: {
                     order: 7,
                     result: {
-                        target(player, target) {
-                            return get.damageEffect(target, player, player) * Math.sign(Math.sign(get.attitude(player, target)) - 0.5);
+                        player(player, target) {
+                            return get.damageEffect(target, player, player) + get.effect(target, { name: 'draw' }, player, player);
                         },
                     },
                 },

@@ -14949,8 +14949,8 @@ const packs = function () {
                             },
                             ai: {
                                 result: {
-                                    target(player, target) {
-                                        return get.damageEffect(target, player, player) * Math.sign(Math.sign(get.attitude(player, target)) - 0.5);
+                                    player(player, target) {
+                                        return get.damageEffect(target, player, player);
                                     },
                                 },
                             },
