@@ -29666,9 +29666,10 @@ const packs = function () {
                 },
                 async content(event, trigger, player) {
                     const { cards, targets: [target] } = event;
-                    const name = ['damage', 'phase'].includes(trigger.name) ? trigger.name : 'gain';
+                    const tag = ['damage', 'phase'].includes(trigger.name) ? trigger.name : 'gain';
+                    player.getHistory('custom').push({ [`${event.name}_${tag}`]: true });
                     player.addTempSkill(event.name + '_used', 'roundStart');
-                    player.markAuto(event.name + '_used', [name]);
+                    player.markAuto(event.name + '_used', [tag]);
                     await player.discard(cards);
                     if (trigger.name == 'damage') trigger.cancel();
                     else if (trigger.name == 'phase') {
@@ -29682,7 +29683,7 @@ const packs = function () {
                         }
                     } else await target.draw(2);
                     const list = lib.inpile.filter(name => get.type(name) == 'basic' && !['sha'].concat(player.getStorage('minixiafeng')).includes(name));
-                    if (['damage', 'phase', 'gain'].every(tag => game.getRoundHistory('everything', evt => evt.name == event.name && evt.player == player).some(evt => evt[`${event.name}_${tag}`])) && player.hasSkill('minixiafeng', null, null, false) && list.length) {
+                    if (['damage', 'phase', 'gain'].every(tag => player.getRoundHistory('custom', evt => evt[`${event.name}_${tag}`]).length) && player.hasSkill('minixiafeng', null, null, false) && list.length) {
                         const result = await player.chooseButton(['逐义：你可以为〖侠锋〗添加一个基本牌牌名', [list, 'vcard']]).set('ai', button => {
                             const player = get.player();
                             const name = button.link[2];
@@ -29693,6 +29694,7 @@ const packs = function () {
                         if (result?.bool && result?.links?.length) player.markAuto('minixiafeng', [result.links[0][2]]);
                     }
                 },
+                derivation: 'minixiafeng',
                 subSkill: {
                     used: {
                         charlotte: true,
@@ -42462,7 +42464,7 @@ const packs = function () {
             minitaoluan: '滔乱',
             minitaoluan_info: '每回合每种花色限一次，你可将一张牌当做任意一张你未以此法使用过的基本牌或普通锦囊牌使用，然后你令一名其他角色选择一项：1.交给你一张与本次〖滔乱〗声明的牌类别不同的牌；2.本回合〖滔乱〗失效，若你为当前回合角色，则回合结束时其失去1点体力。',
             minizhuyi: '逐义',
-            minizhuyi_info: '每轮每项各限一次。①当你获得牌后，你可以弃置一张牌令一名角色摸两张牌；②一名角色受到伤害时，你可以弃置一张牌防止之；③一名角色的回合的开始时，你可以弃置一张牌令其获得一张基本牌且以此法获得的牌的回复值或伤害值+1。然后若你执行了所有选项，你可以为〖侠锋〗添加一个基本牌牌名。',
+            minizhuyi_info: `每轮每项各限一次。①当你获得牌后，你可以弃置一张牌令一名角色摸两张牌；②一名角色受到伤害时，你可以弃置一张牌防止之；③一名角色的回合的开始时，你可以弃置一张牌令其获得一张基本牌且以此法获得的牌的回复值或伤害值+1。然后若你执行了所有选项，你可以为${get.poptip('minixiafeng')}添加一个基本牌牌名。`,
             minixiafeng: '侠锋',
             minixiafeng_info: '每回合限一次。当你使用【杀】后，你可以对场上体力值最大的角色造成1点伤害或令场上体力值最小的角色回复1点体力。',
             minisbyangwei: '扬威',
