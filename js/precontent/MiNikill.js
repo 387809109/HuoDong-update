@@ -15009,52 +15009,35 @@ const packs = function () {
             },
             minireqianxun: {
                 audio: 'reqianxun',
-                trigger: { target: 'useCardToBegin', player: 'judgeBefore' },
-                filter(event, player) {
-                    if (!player.countCards('h') || !player.getHp()) return false;
-                    if (event.name == 'judge') return event.getParent().name == 'phaseJudge';
-                    if (event.card && get.type(event.card) == 'trick') return true;
-                },
+                inherit: 'reqianxun',
                 async cost(event, trigger, player) {
-                    var num = Math.min(player.countCards('h'), player.getHp());
+                    const num = Math.min(player.countCards('h'), player.getHp());
                     event.result = await player.chooseCard(get.prompt('minireqianxun'), '将至多' + get.cnNumber(num) + '张手牌置于武将牌上', [1, num]).set('ai', card => 1 / (get.value(card) || 0.5)).forResult();
                 },
                 content() {
-                    player.addSkill('minireqianxun2');
-                    player.addToExpansion(cards, 'giveAuto', player).gaintag.add('minireqianxun2');
+                    player.addSkill('minireqianxun_effect');
+                    player.addToExpansion(cards, 'giveAuto', player).gaintag.add('minireqianxun_effect');
                 },
-                ai: {
-                    effect(card, player, target) {
-                        if (!target.hasFriend()) return;
-                        var type = get.type(card);
-                        var nh = Math.min(target.countCards(), game.countPlayer(i => get.attitude(target, i) > 0));
-                        if (type == 'trick') {
-                            if (!get.tag(card, 'multitarget') || get.info(card).singleCard) {
-                                if (get.tag(card, 'damage')) return [1.5, nh - 1];
-                                return [1, nh];
-                            }
-                        }
-                        else if (type == 'delay') return [0.5, 0.5];
+                subSkill: {
+                    effect: {
+                        charlotte: true,
+                        audio: 'reqianxun',
+                        trigger: { global: 'phaseEnd' },
+                        forced: true,
+                        content() {
+                            const cards = player.getExpansions('minireqianxun_effect');
+                            if (cards.length) player.gain(cards, 'draw');
+                            player.removeSkill('minireqianxun_effect');
+                        },
+                        intro: {
+                            mark(dialog, storage, player) {
+                                const cards = player.getExpansions('minireqianxun_effect');
+                                if (player.isUnderControl(true)) dialog.addAuto(cards);
+                                else return '共有' + get.cnNumber(cards.length) + '张牌';
+                            },
+                            markcount: 'expansion',
+                        },
                     },
-                },
-            },
-            minireqianxun2: {
-                charlotte: true,
-                audio: 'reqianxun',
-                trigger: { global: 'phaseEnd' },
-                forced: true,
-                content() {
-                    var cards = player.getExpansions('minireqianxun2');
-                    if (cards.length) player.gain(cards, 'draw');
-                    player.removeSkill('minireqianxun2');
-                },
-                intro: {
-                    mark(dialog, storage, player) {
-                        var cards = player.getExpansions('minireqianxun2');
-                        if (player.isUnderControl(true)) dialog.addAuto(cards);
-                        else return '共有' + get.cnNumber(cards.length) + '张牌';
-                    },
-                    markcount: 'expansion',
                 },
             },
             minilianying: {
@@ -41714,8 +41697,7 @@ const packs = function () {
             miniqianxun: '谦逊',
             miniqianxun_info: '锁定技，当你成为锦囊牌的唯一目标时，你摸一张牌，然后可以交给一名其他角色一张手牌。',
             minireqianxun: '谦逊',
-            minireqianxun2: '谦逊',
-            minireqianxun_info: '当一张锦囊牌对你生效时，你可以将至多X张手牌置于武将牌上（X为你的体力值）。回合结束时，你获得这些牌。',
+            minireqianxun_info: '当一张锦囊牌对你生效时，若你是此牌的唯一目标，你可以将至多X张手牌置于武将牌上（X为你的体力值）。回合结束时，你获得这些牌。',
             minilianying: '连营',
             minilianying_info: '当你失去最后的手牌时，你可以摸两张牌，然后可以交给一名其他角色一张手牌。',
             minitianyi: '天义',
