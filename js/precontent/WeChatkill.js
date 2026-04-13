@@ -258,7 +258,7 @@ const packs = function () {
             wechat_sb_huaxiong: ['male', 'qun', 4, ['wechatsbyaowu', 'sbyangwei']],
             wechat_sb_yujin: ['male', 'wei', 4, ['sbxiayuan', 'wechatsbjieyue']],
             wechat_sb_lvmeng: ['male', 'wu', 4, ['wechatsbkeji', 'wechatsbdujiang']],
-            wechat_sb_lvbu: ['male', 'qun', 4, ['wechatsbwushuang', 'sbliyu']],
+            wechat_sb_lvbu: ['male', 'qun', 5, ['wechatsbwushuang', 'sbliyu']],
             wechat_sb_sp_zhugeliang: ['male', 'shu', 3, ['wechatsbhuoji', 'twkanpo'], ['name:诸葛|亮']],
             wechat_sb_zhugeliang: ['male', 'shu', 3, ['wechatsbguanxing', 'wechatsbkongcheng'], ['name:诸葛|亮', 'unseen']],
             wechat_sb_zhouyu: ['male', 'wu', 3, ['wechatsbyingzi', 'wechatsbfanjian']],
