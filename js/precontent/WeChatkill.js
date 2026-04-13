@@ -19467,6 +19467,7 @@ const packs = function () {
                             })) num--;
                             break;
                         }
+                        if (history[i].isRound) break;
                     }
                     event.set('wechatguanji_cards', [cards.slice(0, num), cards.slice(-num).reverse()]);
                 },
