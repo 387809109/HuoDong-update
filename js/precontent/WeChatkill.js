@@ -19461,7 +19461,6 @@ const packs = function () {
                             return evt.name === 'chooseToUse' && evt.wechatguanji;
                         });
                         if (history2.length) {
-                            const history3 = history2.at(-1);
                             if (!player.actionHistory[i].useCard.some(evt => {
                                 return evt.getParent() === history2.at(-1) && evt.skill === 'wechatguanji_backup';
                             })) num--;
