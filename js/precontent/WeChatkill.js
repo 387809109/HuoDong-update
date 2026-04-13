@@ -258,7 +258,7 @@ const packs = function () {
             wechat_sb_huaxiong: ['male', 'qun', 4, ['wechatsbyaowu', 'sbyangwei']],
             wechat_sb_yujin: ['male', 'wei', 4, ['sbxiayuan', 'wechatsbjieyue']],
             wechat_sb_lvmeng: ['male', 'wu', 4, ['wechatsbkeji', 'wechatsbdujiang']],
-            wechat_sb_lvbu: ['male', 'qun', 4, ['wechatsbwushuang', 'wechatsbliyu']],
+            wechat_sb_lvbu: ['male', 'qun', 4, ['wechatsbwushuang', 'sbliyu']],
             wechat_sb_sp_zhugeliang: ['male', 'shu', 3, ['wechatsbhuoji', 'twkanpo'], ['name:诸葛|亮']],
             wechat_sb_zhugeliang: ['male', 'shu', 3, ['wechatsbguanxing', 'wechatsbkongcheng'], ['name:诸葛|亮', 'unseen']],
             wechat_sb_zhouyu: ['male', 'wu', 3, ['wechatsbyingzi', 'wechatsbfanjian']],
@@ -18187,56 +18187,6 @@ const packs = function () {
                 inherit: 'sbwushuang',
                 usable: Infinity,
             },
-            wechatsbliyu: {
-                audio: 'sbliyu',
-                inherit: 'sbliyu',
-                async content(event, trigger, player) {
-                    const cards = event.cards, target = trigger.player;
-                    const draw = (await target.draw().forResult()).cards;
-                    if (Array.isArray(cards) && Array.isArray(draw)) {
-                        let types = [...cards, ...draw].map(card => get.type2(card)).unique();
-                        if (types.length >= 3) {
-                            let result, list = [`${get.translation(player)}视为对你指定的另一名其他角色使用一张【决斗】`, `获得${get.poptip('wushuang')}直至你下个回合结束`];
-                            const juedou = game.hasPlayer(current => current !== player && current != target && player.canUse(new lib.element.VCard({ name: 'juedou', isCard: true }), current, false));
-                            const wushuang = !target.hasSkill('wushuang', null, false, false);
-                            if (juedou || wushuang) {
-                                if (!juedou) result = { control: '选项二' };
-                                else if (!wushuang) result = { control: '选项一' };
-                                else {
-                                    result = await target.chooseControl().set('ai', () => {
-                                        const player = get.player(), source = get.event().getParent().player;
-                                        const juedou = new lib.element.VCard({ name: 'juedou', isCard: true });
-                                        return game.hasPlayer(target => {
-                                            return ![player, source].includes(target) && source.canUse(juedou, target, false) && get.effect(target, juedou, source, player) > 0;
-                                        }) ? '选项一' : '选项二';
-                                    }).set('choiceList', list).set('prompt', get.translation(event.name) + '：请选择一项').forResult();
-                                }
-                                if (!result?.control) return;
-                                player.logSkill(event.name, null, null, null, [result.control == '选项一' ? get.rand(3, 4) : 5]);
-                                if (result.control == '选项一') {
-                                    const result2 = await target.chooseTarget((card, player, target) => {
-                                        const evt = get.event().getParent();
-                                        return evt.player.canUse({ name: 'juedou' }, target) && target != get.player();
-                                    }, '利驭：请选择一名角色，视为' + get.translation(player) + '对其使用【决斗】', true).set('ai', target => {
-                                        const evt = get.event().getParent();
-                                        return get.effect(target, { name: 'juedou' }, evt.player, get.player());
-                                    }).set('animate', false).forResult();
-                                    if (result2?.bool && result2.targets?.length) {
-                                        target.line2([player, result2.targets[0]]);
-                                        await game.delayx();
-                                        await player.useCard(new lib.element.VCard({ name: 'juedou', isCard: true }), result2.targets[0], false, 'noai').set('animate', false);
-                                    }
-                                }
-                                else {
-                                    const skill = event.name + '_effect';
-                                    await target.addAdditionalSkills(skill, 'wushuang');
-                                    target.addTempSkill(skill, { player: 'phaseAfter' });
-                                }
-                            }
-                        }
-                    }
-                },
-            },
             //谋诸葛亮
             wechatsbhuoji: {
                 audio: 'sbhuoji',
@@ -20591,7 +20541,6 @@ const packs = function () {
             wechatsbdujiang_info: `觉醒技，准备阶段，若你的护甲数不少于3，你获得${get.poptip('sbduojing')}。`,
             wechat_sb_lvbu: '小程序谋吕布',
             wechatsbwushuang_info: '锁定技。①你使用的【杀】需两张【闪】才能抵消；与你进行【决斗】的角色每次需要打出两张【杀】。②当你使用【杀】或【决斗】造成伤害时，若受伤角色没有使用或打出过【杀】或【闪】响应此牌，则此伤害+1。',
-            wechatsbliyu_info: `当你使用【杀】对一名其他角色造成伤害后，你可获得其区域内至多等同于伤害值张牌，然后其摸一张牌。若你与其因此获得了三种类别的牌，其选择一项：①你视为对其指定的另一名其他角色使用一张【决斗】；②其获得${get.poptip('wushuang')}直至其回合结束。`,
             wechat_sb_sp_zhugeliang: '小程序谋诸葛亮',
             wechatsbhuoji: '火计',
             wechatsbhuoji_info: `使命技。使命：你造成的非属性伤害改为火属性；出牌阶段限一次。你可以对一名其他角色造成1点伤害。成功：准备阶段，若你本局游戏已对其他角色造成的火焰伤害不小于本局游戏总角色数，则你失去〖火计〗和〖看破〗，然后获得${get.poptip('wechatsbguanxing')}和${get.poptip('wechatsbkongcheng')}：失败：你于使命成功前进入濒死状态。`,
