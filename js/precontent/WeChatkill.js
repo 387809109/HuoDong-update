@@ -19787,6 +19787,13 @@ const packs = function () {
                 if (bool) str = str.replace(/此技能失效直到本回合结束/, `本回合你不能对其发动此技能`);
                 return str;
             },
+            wechatguanji(player, skill) {
+                const storage = player.storage[skill];
+                let xi = '昔：观看牌堆顶三张牌并使用其中一张', jin = '今：观看牌堆底三张牌并使用其中一张';
+                if ((storage || 0) % 2) jin = `<span class='bluetext'>${jin}</span>`;
+                else xi = `<span class='firetext'>${xi}</span>`;
+                return `${get.poptip('rule_yizhiSkill')}。当你需要使用基本牌或伤害类锦囊牌时，你可以：${xi}；${jin}。若你未使用牌，则本轮下次发动此技能观看牌数-1。结束阶段，若你的手牌数小于两张，则你用所有手牌交换牌堆底三张牌并${get.poptip('rule_yizhi')}。`;
+            },
         },
         translate: {
             //武将分包
