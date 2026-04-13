@@ -35,8 +35,8 @@ const packs = function () {
                     ...['chengyu'].map(i => `Mbaby_dc_sb_${i}`),
                     ...[],
                 ],
-                MiNi_starCharacter: ['zhangchunhua', 'yuanshao', 'sunshangxiang', 'xunyu', 'yuanshu'].map(i => `Mbaby_star_${i}`),
-                MiNi_yueCharacter: ['daqiao'].map(i => `Mbaby_yue_${i}`),
+                MiNi_starCharacter: ['simayi', 'zhangchunhua', 'yuanshao', 'sunshangxiang', 'xunyu', 'yuanshu'].map(i => `Mbaby_star_${i}`),
+                MiNi_yueCharacter: ['diaochan', 'daqiao'].map(i => `Mbaby_yue_${i}`),
                 MiNi_miaoKill: ['mayunlu', 'guanyinping', 'caoying', 'caiwenji', 'diaochan', 'caifuren', 'zhangxingcai', 'zhurong', 'huangyueying', 'daqiao', 'wangyi', 'zhangchunhua', 'zhenji', 'sunshangxiang', 'xiaoqiao', 'lvlingqi'].map(i => `Mmiao_${i}`),
                 MiNi_nianKill: ['caopi', 'zhugeliang', 'lvbu', 'zhouyu'].map(i => `Mnian_${i}`),
                 MiNi_fightKill: ['huangzhong', 'zhangliao', 'luxun', 'dianwei', 'machao', 'jiangwei'].map(i => `Mfight_${i}`),
@@ -143,6 +143,7 @@ const packs = function () {
             Mbaby_xiahoumao: ['male', 'wei', 4, ['tongwei', 'minicuguo'], ['name:夏侯|楙']],
             Mbaby_ol_wangyi: ['female', 'wei', 4, ['olzhenlie', 'olmiji']],
             Mbaby_star_zhangchunhua: ['female', 'wei', 3, ['miniliangyan', 'starminghui']],
+            Mbaby_star_simayi: ['male', 'wei', 3, ['minilanggu', 'minijibian'], ['unseen']],
             //蜀
             Mbaby_guanyu: ['male', 'shu', 4, ['miniwusheng']],
             Mbaby_re_guanyu: ['male', 'shu', 4, ['minirewusheng', 'minituodao', 'jsrgguanjue']],
@@ -462,6 +463,7 @@ const packs = function () {
             Mbaby_mangyachang: ['male', 'qun', 4, ['minijiedao']],
             Mbaby_re_hucheer: ['male', 'qun', 4, ['redaoji', 'minifuzhong']],
             Mbaby_star_yuanshao: ['male', 'qun', 4, ['ministarxiaoyan', 'ministarzongshi', 'ministarjiaowang', 'ministaraoshi'], ['zhu']],
+            Mbaby_yue_diaochan: ['female', 'qun', 3, ['minitanban', 'dcdiou']],
             //神
             Mbaby_shen_zhugeliang: ['male', 'shen', 3, ['qixing', 'minikuangfeng', 'minidawu'], ['shu', 'name:诸葛|亮']],
             Mbaby_shen_lvbu: ['male', 'shen', 6, ['miniwuqian', 'minishenfen'], ['qun']],
@@ -7275,6 +7277,13 @@ const packs = function () {
                     order: 10,
                     result: { target: -1 },
                 },
+            },
+            //星司马懿
+            minilanggu: {
+                audio: 'ext:活动武将/audio/skill:2',
+            },
+            minijibian: {
+                audio: 'ext:活动武将/audio/skill:2',
             },
             //蜀
             //关羽
@@ -30734,6 +30743,44 @@ const packs = function () {
                     }
                 }
             },
+            //乐貂蝉
+            minitanban: {
+                audio: 'dctanban',
+                trigger: {
+                    global: 'phaseBefore',
+                    player: ['enterGame', 'phaseDrawEnd'],
+                },
+                filter(event, player, name) {
+                    if (!player.countCards('h')) return false;
+                    return name !== 'phase' || game.phaseNumber === 0;
+                },
+                async cost(event, trigger, player) {
+                    event.result = await player.chooseCard(get.prompt(event.skill), [1, Infinity], '选择任意张手牌，令这些牌增加或清除“檀板”标记').set('ai', card => {
+                        const player = get.player(), cards = [...player.getCards('h')].sort((a, b) => player.getUseValue(a) - player.getUseValue(b));
+                        const trigger = get.event().getTrigger();
+                        if (trigger.name === 'phase' && trigger.player === player && (!trigger.phaseList?.includes('phaseUse') || player.skipList.includes('phaseUse'))) return 1;
+                        let list = [[], []];
+                        for (let i = 0; i < cards.length; i++) list[i % 2].push(cards[i]);
+                        return list[0].includes(card) !== card.hasGaintag('dctanban') ? 1 : 0;
+                    }).forResult();
+                },
+                async content(event, trigger, player) {
+                    const cards = event.cards;
+                    const add = cards.filter(card => !card.hasGaintag('dctanban'));
+                    const remove = cards.filter(card => card.hasGaintag('dctanban'));
+                    player.addGaintag(add, 'dctanban');
+                    player.removeGaintag('dctanban', remove);
+                },
+                locked: false,
+                mod: {
+                    ignoredHandcard(card) {
+                        if (card.hasGaintag('dctanban')) return true;
+                    },
+                    cardDiscardable(card, _, name) {
+                        if (name == 'phaseDiscard' && card.hasGaintag('dctanban')) return false;
+                    },
+                },
+            },
             //神
             miniwuqian: {
                 derivation: 'wushuang',
@@ -40881,6 +40928,7 @@ const packs = function () {
             Mbaby_xiahoumao: '欢杀夏侯楙',
             Mbaby_ol_wangyi: '欢杀界王异',
             Mbaby_star_zhangchunhua: '欢杀星张春华',
+            Mbaby_star_simayi: '欢杀星司马懿',
             miniluoshen: '洛神',
             miniluoshen_info: '准备阶段，你可以进行一次判定并获得判定牌，若判定结果为黑色，你可重复此流程。',
             minireluoshen: '洛神',
@@ -41154,6 +41202,10 @@ const packs = function () {
             minicuguo_info: '锁定技。当你于一回合使用牌首次被抵消后，你弃置一张牌，视为对此牌的目标角色使用一张该被抵消的牌。',
             miniliangyan: '梁燕',
             miniliangyan_info: '出牌阶段限一次，你可以选择一名其他角色，你摸/弃置至多两张牌，令其弃置/摸等量的牌。以此法摸牌的角色跳过其下一个弃牌阶段。',
+            minilanggu: '狼顾',
+            minilanggu_info: '没写',
+            minijibian: '机变',
+            minijibian_info: '没写',
             //蜀
             Mbaby_guanyu: '欢杀关羽',
             Mbaby_re_guanyu: '欢杀界关羽',
@@ -42086,6 +42138,7 @@ const packs = function () {
             Mbaby_mangyachang: '欢杀忙牙长',
             Mbaby_re_hucheer: '欢杀胡车儿',
             Mbaby_star_yuanshao: '欢杀星袁绍',
+            Mbaby_yue_diaochan: '欢杀乐貂蝉',
             miniweidi: '伪帝',
             miniweidi_info: '弃牌阶段结束时，你可以将其中一张弃置的牌交给一名其他角色。',
             minimingce: '明策',
@@ -42519,6 +42572,8 @@ const packs = function () {
             ministarjiaowang_info: `每轮结束时，若本轮没有角色死亡，则你可以失去1点体力并发动${get.poptip('ministarxiaoyan')}。`,
             ministaraoshi: '傲势',
             ministaraoshi_info: `主公技，其他群势力角色的出牌阶段限一次，其可以交给你一张手牌，然后你可以发动一次${get.poptip('ministarzongshi')}。`,
+            minitanban: '檀板',
+            minitanban_info: '①游戏开始时/摸牌阶段结束时，你可为任意张手牌增加或移除“檀板”标记。②你的“檀板”牌不计入手牌上限。',
             //神
             Mbaby_shen_lvbu: '欢杀神吕布',
             Mbaby_shen_guanyu: '欢杀神关羽',
@@ -43244,6 +43299,11 @@ const packs = function () {
             '#ext:活动武将/audio/skill/miniezhi2': '冤家路窄，仅容一人！',
             '#ext:活动武将/audio/skill/minigujing1': '并敌一向，千里杀将！',
             '#ext:活动武将/audio/die/Mbaby_shen_weiyan:die': '我……不服！',
+            '#ext:活动武将/audio/skill/minilanggu1': '顾盼之间，社稷又由谁主？',
+            '#ext:活动武将/audio/skill/minilanggu2': '来者汹汹，吾当暗夺其利。',
+            '#ext:活动武将/audio/skill/minijibian1': '机变之道，游刃虚实之间。',
+            '#ext:活动武将/audio/skill/minijibian2': '一击得手，乘胜追击！',
+            '#ext:活动武将/audio/die/Mbaby_star_simayi:die': '隐忍数十载，到头来只是一场空！',
         },
     };
     MiNikill_sight();//加载欢杀界面逻辑
