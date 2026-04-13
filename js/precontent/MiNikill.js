@@ -30756,18 +30756,16 @@ const packs = function () {
                 },
                 async cost(event, trigger, player) {
                     event.result = await player.chooseCard(get.prompt(event.skill), [1, Infinity], '选择任意张手牌，令这些牌增加或清除“檀板”标记').set('ai', card => {
-                        const player = get.player(), cards = [...player.getCards('h')].sort((a, b) => player.getUseValue(a) - player.getUseValue(b));
-                        const trigger = get.event().getTrigger();
+                        const player = get.player(), trigger = get.event().getTrigger();
                         if (trigger.name === 'phase' && trigger.player === player && (!trigger.phaseList?.includes('phaseUse') || player.skipList.includes('phaseUse'))) return 1;
-                        let list = [[], []];
+                        let list = [[], []], cards = [...player.getCards('h')].sort((a, b) => player.getUseValue(a) - player.getUseValue(b));
                         for (let i = 0; i < cards.length; i++) list[i % 2].push(cards[i]);
                         return list[0].includes(card) !== card.hasGaintag('dctanban') ? 1 : 0;
                     }).forResult();
                 },
                 async content(event, trigger, player) {
-                    const cards = event.cards;
-                    const add = cards.filter(card => !card.hasGaintag('dctanban'));
-                    const remove = cards.filter(card => card.hasGaintag('dctanban'));
+                    const add = event.cards.filter(card => !card.hasGaintag('dctanban'));
+                    const remove = event.cards.filter(card => card.hasGaintag('dctanban'));
                     player.addGaintag(add, 'dctanban');
                     player.removeGaintag('dctanban', remove);
                 },
