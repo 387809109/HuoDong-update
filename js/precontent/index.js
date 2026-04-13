@@ -632,6 +632,7 @@ export async function precontent(bilibilicharacter) {
                     _status.HDWJ_ChangeLog_character = {
                         '牢武将': ['old_sb_zhanghe'],
                         'MiNikill': ['Mbaby_star_zhangchunhua'],
+                        'WeChatkill': ['wechat_zhi_liubiao'],
                     };
                     return Object.values(_status.HDWJ_ChangeLog_character).flat();
                 })(),

@@ -8010,7 +8010,7 @@ const packs = function () {
                 filter(event, player) {
                     return lib.skill.dcyingtu.filterx(event, player, player.getPrevious());
                 },
-                logTarget: (evnet, player) => player.getPrevious(),
+                logTarget: (event, player) => player.getPrevious(),
                 check(event, player) {
                     return lib.skill.dcyingtu.check(player, player.getPrevious());
                 },
@@ -8046,7 +8046,7 @@ const packs = function () {
                             if (event.card.name != 'sha' && event.card.name != 'juedou') return false;
                             return !event.targets.includes(player) && !event.targets.includes(player.getPrevious()) && event.player.canUse(event.card, player.getPrevious(), false);
                         },
-                        logTarget: (evnet, player) => player.getNext(),
+                        logTarget: (event, player) => player.getNext(),
                         line: false,
                         check(event, player) {
                             var sum = event.targets.reduce((num, target) => {

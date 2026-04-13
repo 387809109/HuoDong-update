@@ -51,7 +51,7 @@ const packs = function () {
                     ...[],
                 ].map(i => `wechat_${i}`),
                 wechat_zhiyin: ['yuanshu', 'caorui', 'pangtong', 'qinmi', 'zhugeke', 'mayunlu', 'bulianshi', 'diaochan', 'taishici', 'luxun', 'sunshangxiang', 'xunyou', 'dianwei', 'zhaoyun', 'xinxianying', 'guohuanghou', 'kongrong', 'caopi', 'jiaxu', 'zhangfei', 'dongzhuo', 'wangyi', 'zhangchunhua', 'hetaihou', 'zhurong', 'jiangwei', 'caozhi', 'liubei', 'sunce', 'xunyu', 'zhenji', 'xuzhu', 'yuanshao', 'lusu', 'guojia', 'lvbu', 'daqiao', 'xiaoqiao', 'caocao', 'zhugeliang', 'simayi', 'machao', 'huangyueying', 'caiwenji', 'zhouyu', 'sunquan', 'guanyu'].map(i => `wechat_zhiyin_${i}`),
-                wechat_zhi: ['caozhi', 'xushi', 'old_yuanshu', 'caopi', 'sunquan', 'liubei', 'yuanshu', 'fuhuanghou', 'caojie', 'caocao', 'zhangjiao'].map(i => `wechat_zhi_${i}`),
+                wechat_zhi: ['liubiao', 'caozhi', 'xushi', 'old_yuanshu', 'caopi', 'sunquan', 'liubei', 'yuanshu', 'fuhuanghou', 'caojie', 'caocao', 'zhangjiao'].map(i => `wechat_zhi_${i}`),
                 wechat_shengzhiyifa: ['nailong'].map(i => `wechat_${i}`),//任何答辩，终将绳之以法！！！！！
             },
         },
@@ -274,6 +274,7 @@ const packs = function () {
             wechat_zhi_sunquan: ['male', 'wu', 4, ['wechatchengfan', 'wechatzhenxian', 'wechatlihai']],
             wechat_zhi_xushi: ['female', 'wu', 3, ['wechatluchou', 'wechatshizhu'], ['name:徐|null']],
             wechat_zhi_caozhi: ['male', 'wei', 3, ['wechatgaoshi', 'wechatshimin']],
+            wechat_zhi_liubiao: ['male', 'qun', 3, ['wechatguanji', 'wechatxiyang']],
             //限时地主
             wechat_nailong: ['male', 'qun', 4, ['wechatdunshi', 'wechattanchi']],
         },
@@ -19429,6 +19430,197 @@ const packs = function () {
                     }
                 }
             },
+            //志刘表
+            wechatguanji: {
+                yizhiSkill: true,
+                init(player, skill) {
+                    player.addTip(skill, `${get.translation(skill)} ${(player.countMark(skill) % 2) ? '今' : '昔'}`);
+                },
+                zhuanhuanji(player, skill) {
+                    player.addMark(skill, 1, false);
+                    get.info(skill).init(player, skill);
+                },
+                zhuanhuanji2: false,
+                mark: true,
+                marktext: '器',
+                intro: {
+                    content(storage, player) {
+                        return `<li>当前志向：${(storage || 0) % 2 ? '今' : '昔'}<br><li>当你需要使用基本牌或伤害类锦囊牌时，你可以观看牌堆${(storage || 0) % 2 ? '底' : '顶'}三张牌并使用其中一张。若你未使用牌，则本轮下次发动此技能观看牌数-1`;
+                    },
+                    markcount: (storage, player) => (storage || 0) % 2 ? '今' : '昔',
+                },
+                audio: 'ext:活动武将/audio/skill:2',
+                enable: 'chooseToUse',
+                onChooseToUse(event) {
+                    if (game.online || !ui.cardPile.childElementCount) return;
+                    const cards = Array.from(ui.cardPile.childNodes), player = event.player;
+                    let history = _status.globalHistory, num = 3;
+                    for (let i = history.length - 1; i >= 0; i--) {
+                        const history2 = history[i].everything.filter(evt => {
+                            if (evt.player !== player) return false;
+                            return evt.name === 'chooseToUse' && evt.wechatguanji;
+                        });
+                        if (history2.length) {
+                            const history3 = history2.at(-1);
+                            if (!player.actionHistory[i].useCard.some(evt => {
+                                return evt.getParent() === history2.at(-1) && evt.skill === 'wechatguanji_backup';
+                            })) num--;
+                            break;
+                        }
+                    }
+                    event.set('wechatguanji_cards', [cards.slice(0, num), cards.slice(-num).reverse()]);
+                },
+                hiddenCard(player, name) {
+                    return lib.inpile.includes(name) && (get.type(name) === 'basic' || (get.type(name) === 'trick' && get.tag({ name }, 'damage')));
+                },
+                filter(event, player) {
+                    if (!Array.isArray(event.wechatguanji_cards) || event.responded || event.wechatguanji) return false;
+                    return get.inpileVCardList(info => {
+                        return info[0] === 'basic' || (info[0] === 'trick' && get.tag({ name: info[2] }, 'damage'));
+                    }).some(info => event.filterCard(get.autoViewAs({ name: info[2], nature: info[3] }, 'unsure'), player, event));
+                },
+                chooseButton: {
+                    dialog(event, player) {
+                        event.set('wechatguanji', true);
+                        return ui.create.dialog(lib.translate.wechatguanji, event.wechatguanji_cards[Number(Boolean(player.storage.wechatguanji))], 'hidden');
+                    },
+                    filter(button, player) {
+                        const card = button.link;
+                        if (get.type(card) !== 'basic' && (get.type(card) !== 'trick' || !get.tag(card, 'damage'))) return false;
+                        const evt = get.event().getParent();
+                        return evt.filterCard(card, player, evt);
+                    },
+                    check(button) {
+                        const evt = get.event().getParent();
+                        if (get.event().getParent().type !== 'phase') return 1 + Math.random();
+                        return get.player().getUseValue(button.link);
+                    },
+                    prompt(links) {
+                        return `###${lib.translate.wechatguanji}###<div class="text center">是否使用${get.translation(links[0])}？</div>`;
+                    },
+                    backup(links, player) {
+                        return {
+                            audio: 'wechatguanji',
+                            filterCard: () => false,
+                            selectCard: -1,
+                            viewAs: links[0],
+                            card: links[0],
+                            async precontent(event, trigger, player) {
+                                const card = lib.skill[event.result.skill].card;
+                                event.result.cards = [card];
+                                event.result.card = get.autoViewAs(card, [card]);
+                            },
+                        };
+                    },
+                },
+                ai: {
+                    order: 12,
+                    save: true,
+                    respondShan: true,
+                    respondSha: true,
+                    skillTagFilter(player, tag, arg) {
+                        if (arg === 'respond' || !ui.cardPile.childElementCount) return false;
+                    },
+                    result: {
+                        player(player) {
+                            if (_status.event.dying) return get.attitude(player, _status.event.dying);
+                            return 1;
+                        },
+                    },
+                    effect: {
+                        target(card, player, target, effect) {
+                            if (get.tag(card, 'respondSha') || get.tag(card, 'respondShan')) return 0.7;
+                        },
+                    },
+                },
+                group: 'wechatguanji_yizhi',
+                subSkill: {
+                    backup: {},
+                    yizhi: {
+                        audio: 'wechatguanji',
+                        trigger: { player: 'phaseJieshuBegin' },
+                        filter(event, player) {
+                            return player.countCards('h') < 2;
+                        },
+                        forced: true,
+                        locked: false,
+                        async content(event, trigger, player) {
+                            const cards = get.bottomCards(3, true);
+                            await game.cardsGotoOrdering(cards);
+                            const put = player.getCards('h');
+                            if (put.length > 0) await player.lose(put, ui.cardPile);
+                            if (cards.length > 0) await player.gain(cards, 'draw');
+                            if (!game.getAllGlobalHistory('everything', evt => {
+                                return evt.name === 'changeZhuanhuanji' && evt.skill === 'wechatguanji' && evt.player === player;
+                            }).length) player.changeZhuanhuanji('wechatguanji');
+                        },
+                    },
+                },
+            },
+            wechatxiyang: {
+                audio: 'ext:活动武将/audio/skill:2',
+                enable: 'phaseUse',
+                usable: 1,
+                chooseButton: {
+                    dialog(event, player) {
+                        return ui.create.dialog(`###${lib.translate.wechatxiyang}###<div class="text center">${lib.translate.wechatxiyang_info}</div>`);
+                    },
+                    chooseControl: () => ['摸一张', '摸两张', 'cancel2'],
+                    check: () => '摸两张',
+                    prompt(result) {
+                        return `###${lib.translate.wechatxiyang}###<div class="text center">${result.control}牌，于本阶段结束时将等量牌置于牌堆底</div>`;
+                    },
+                    backup(result, player) {
+                        return {
+                            audio: 'wechatxiyang',
+                            num: ['摸一张', '摸两张'].indexOf(result.control) + 1,
+                            async content(event, trigger, player) {
+                                await player.draw(lib.skill[event.name].num);
+                                player.addTempSkill('wechatxiyang_put', 'phaseUseAfter');
+                                player.addMark('wechatxiyang_put', lib.skill[event.name].num, false);
+                            },
+                        }
+                    },
+                },
+                ai: {
+                    order: 10,
+                    result: { player: 1 },
+                },
+                subSkill: {
+                    backup: {},
+                    put: {
+                        charlotte: true,
+                        onremove: true,
+                        trigger: { player: 'phaseUseEnd' },
+                        forced: true,
+                        popup: false,
+                        async content(event, trigger, player) {
+                            const num = player.countMark(event.name);
+                            player.removeSkill(event.name);
+                            if (player.countCards('he')) {
+                                const hes = player.getCards('he');
+                                const result = hes.length > num ? await player.chooseCard(`${get.translation(event.name)}：将${get.cnNumber(num)}张牌置于牌堆底部`, num, 'he', true).forResult() : { bool: true, cards: hes };
+                                if (result?.bool && result.cards?.length) {
+                                    const hs = result.cards.filter(card => get.position(card) === 'h');
+                                    const es = result.cards.filter(card => get.position(card) === 'e');
+                                    const next = player.loseToDiscardpile(result.cards, ui.cardPile);
+                                    next.log = false;
+                                    if (es.length > 0) {
+                                        player.$throw(es.length, 1000);
+                                        game.log(player, '将', es, '置于了牌堆底');
+                                    }
+                                    if (hs.length > 0) {
+                                        next.blank = true;
+                                        player.$throw(hs.length, 1000);
+                                        game.log(player, `将${get.cnNumber(hs.length)}张牌置于了牌堆底`);
+                                    }
+                                    await next;
+                                }
+                            }
+                        },
+                    },
+                },
+            },
         },
         dynamicTranslate: {
             wechatxiangzhi(player) {
@@ -20588,6 +20780,11 @@ const packs = function () {
             wechatfangming_info: '出牌阶段，你可以令一名角色选择一项：1.将一张本回合未因此技能放置过的颜色的牌置于牌堆顶，然后你从牌堆底摸一张牌；2.你对其造成1点伤害，然后此技能失效直到本回合结束。',
             wechatpizu: '圮族',
             wechatpizu_info: `锁定技，每名角色限一次，当你对一名角色造成伤害后，你亮出牌堆顶X张牌并可使用其中任意张牌，然后你弃置本次未以此法使用牌数张手牌（X为场上受到过你造成伤害的角色且至多为4）。然后若你已受伤且你对场上所有其他角色均造成过伤害，你增加1点体力上限，回复1点体力并修改${get.poptip('wechatfangming')}。`,
+            wechat_zhi_liubiao: '志刘表',
+            wechatguanji: '观机',
+            wechatguanji_info: `${get.poptip('rule_yizhiSkill')}。当你需要使用基本牌或伤害类锦囊牌时，你可以：昔：观看牌堆顶三张牌并使用其中一张；今：观看牌堆底三张牌并使用其中一张。若你未使用牌，则本轮下次发动此技能观看牌数-1。结束阶段，若你的手牌数小于两张，则你用所有手牌交换牌堆底三张牌并${get.poptip('rule_yizhi')}。`,
+            wechatxiyang: '息养',
+            wechatxiyang_info: '出牌阶段限一次，你可以摸至多两张牌。本阶段结束时，你将等量牌置入牌堆底。',
 
             // ----------------------- 台词部分 ----------------------- //
             '#ext:活动武将/audio/skill/wechatzhongxin1': '苍生之愿，即贫道所愿也。',
