@@ -31927,7 +31927,6 @@ const packs = function () {
                 },
             },
             minishenwei: {
-                global: 'minishenwei_damage',
                 audio: 'ext:活动武将/audio/skill:2',
                 trigger: { player: 'phaseZhunbeiBegin' },
                 filter(event, player) {
@@ -31952,16 +31951,15 @@ const packs = function () {
                     expose: 0.25,
                     threaten: 4.8,
                 },
+                global: 'minishenwei_damage',
                 subSkill: {
                     damage: {
                         trigger: { player: 'damageBegin4' },
                         filter(event, player) {
-                            return player.hasMark('minishenwei') && game.hasPlayer(function (current) {
-                                return current.hasSkill('minishenwei');
-                            });
+                            return player.hasMark('minishenwei') && game.hasPlayer(target => target.hasSkill('minishenwei'));
                         },
                         async cost(event, trigger, player) {
-                            const result = await player.chooseTarget(get.prompt('minishenwei'), '将伤害转移给一名拥有〖神卫〗的角色', function (card, player, target) {
+                            event.result = await player.chooseTarget(get.prompt('minishenwei'), '将伤害转移给一名拥有〖神卫〗的角色', function (card, player, target) {
                                 return target.hasSkill('minishenwei');
                             }).set('ai', function (target) {
                                 var player = _status.event.player, att = get.attitude(player, target);
@@ -31972,7 +31970,7 @@ const packs = function () {
                         content() {
                             player.clearMark('minishenwei');
                             trigger.cancel();
-                            targets[0].damage(trigger.source ? trigger.source : 'nosource', trigger.nature, trigger.num).set('card', trigger.card).set('cards', trigger.cards)
+                            targets[0].damage(trigger.source ? trigger.source : 'nosource', trigger.nature, trigger.num).set('card', trigger.card).set('cards', trigger.cards);
                         },
                     },
                 },
