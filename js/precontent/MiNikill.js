@@ -30752,7 +30752,7 @@ const packs = function () {
                 },
                 filter(event, player, name) {
                     if (!player.countCards('h')) return false;
-                    return name !== 'phase' || game.phaseNumber === 0;
+                    return name !== 'phaseBefore' || game.phaseNumber === 0;
                 },
                 async cost(event, trigger, player) {
                     event.result = await player.chooseCard(get.prompt(event.skill), [1, Infinity], '选择任意张手牌，令这些牌增加或清除“檀板”标记').set('ai', card => {
