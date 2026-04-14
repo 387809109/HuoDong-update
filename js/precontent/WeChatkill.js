@@ -19368,9 +19368,7 @@ const packs = function () {
                         player: 1,
                         target(player, target) {
                             const colors = game.getGlobalHistory('everything', evt => evt.name == 'chooseCard' && evt.getParent().name == 'wechatfangming' && evt.result.cards?.length).flatMap(evt => get.color(evt.result.cards[0])).toUniqued();
-                            if (!target.hasCard(card => !colors.includes(get.color(card)), 'he')) {
-                                return -1;
-                            }
+                            if (!target.hasCard(card => !colors.includes(get.color(card)), 'he')) return -1;
                             return get.sgnAttitude(player, target) * 1.1;
                         },
                     }
@@ -19460,7 +19458,7 @@ const packs = function () {
                             if (evt.player !== player) return false;
                             return evt.name === 'chooseToUse' && evt.wechatguanji;
                         });
-                        if (history2.length) {
+                        if (history2.length > 0) {
                             if (!player.actionHistory[i].useCard.some(evt => {
                                 return evt.getParent() === history2.at(-1) && evt.skill === 'wechatguanji_backup';
                             })) num--;
@@ -19516,8 +19514,8 @@ const packs = function () {
                 ai: {
                     order: 12,
                     save: true,
-                    respondShan: true,
                     respondSha: true,
+                    respondShan: true,
                     skillTagFilter(player, tag, arg) {
                         if (arg === 'respond' || !ui.cardPile.childElementCount) return false;
                     },

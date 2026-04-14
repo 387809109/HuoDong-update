@@ -39,7 +39,7 @@ const packs = function () {
             bilibili_jinglingqiu: ['male', 'key', '3/4', ['bilibili_tiyi', 'bilibili_zili'], ['clan:活动群', 'name:精灵|球']],
             bilibili_suixingsifeng: ['female', 'key', 4, ['bilibili_waifa_rewrite', 'bilibili_liaoxing', 'bilibili_duoyang'], ['clan:肘家军|宿舍群|肘击群|活动群', 'name:萌新|转型中']],
             bilibili_Emptycity: ['male', 'key', 4, ['bilibili_zhiyou', 'bilibili_guanli'], ['clan:活动群|Thunder群', 'name:空|城']],
-            bilibili_thunderlei: ['male', 'key', '4/4/5', ['bilibili_Thunder', 'bilibili_qianzhi'], ['clan:活动群|Thunder群', 'name:雷|null']],
+            bilibili_thunderlei: ['male', 'key', '4/4/5', ['bilibili_Thunder'], ['clan:活动群|Thunder群', 'name:雷|null']],
             bilibili_zhengxuan: ['male', 'qun', 3, ['bilibili_zhengjing'], ['character:zhengxuan', 'die:zhengxuan', 'name:郑|玄']],
             bilibili_sunhanhua: ['female', 'wu', 3, ['bilibili_chongxu', 'miaojian', 'shhlianhua'], ['character:sunhanhua', 'die:sunhanhua', 'name:孙|寒华']],
             bilibili_lonelypatients: ['male', 'key', 4, ['bilibili_meihua'], ['clan:活动群', 'name:独孤|null']],
@@ -1500,66 +1500,6 @@ const packs = function () {
                             return Math.sign(att) * get.effect(target, { name: 'shunshou_copy2' }, player, player);
                         },
                     },
-                },
-            },
-            goldenexperience: {
-                charlotte: true,
-                trigger: { source: 'damageEnd' },
-                filter(event, player) {
-                    if (!player.hasEmptySlot()) return false;
-                    if (player == event.player) return false;
-                    if (player.getEquips(event.player.name).length) return false;
-                    return true;
-                },
-                direct: true,
-                content() {
-                    var list = [];
-                    for (var i = 1; i < 6; i++) {
-                        if (player.hasEmptySlot(i)) list.push('equip' + i);
-                    }
-                    var suitList = lib.suit.randomGet();
-                    var typeList = list.randomGet();
-                    var numberList = Array.from({ length: 13 }).map((_, i) => i + 1).randomGet();
-                    var skills = lib.character[trigger.player.name]?.skills ?? [];
-                    var card = {
-                        type: 'equip',
-                        subtype: typeList,
-                        image: 'character/' + trigger.player.name,
-                        skills: skills,
-                        distance: {},
-                        filterTarget(card, player, target) {
-                            return target == player;
-                        },
-                        content: lib.element.content.equipCard,
-                        onEquip: [],
-                        destroy: true,
-                        forceDie: true,
-                        equipDelay: false,
-                        loseDelay: false,
-                        ai: {},
-                    };
-                    var List = [];
-                    if (typeList == 'equip1') {
-                        disList = Array.from({ length: 5 }).map((_, i) => i + 1).randomGet();
-                        card.distance.attackFrom = -disList
-                        List.push('<li>攻击范围：' + disList)
-                    }
-                    if (typeList == 'equip3') {
-                        card.distance.globalTo = 1
-                        List.push('<li>防御距离+1');
-                    }
-                    if (typeList == 'equip4') {
-                        card.distance.globalFrom = -1
-                        List.push('<li>攻击距离+1');
-                    }
-                    lib.card[trigger.player.name] = card;
-                    if (skills.length) {
-                        for (var i = 0; i < skills.length; i++) {
-                            List.push('<li>' + lib.translate[skills[i]] + '<br>' + lib.translate[skills[i] + '_info']);
-                        }
-                    }
-                    lib.translate[trigger.player.name + '_info'] = List
-                    player.equip(game.createCard(trigger.player.name, suitList, numberList));
                 },
             },
             bilibili_jinfan: {
@@ -6140,7 +6080,7 @@ const packs = function () {
                                 }
                             }
                             else {
-                                const evt = trigger.getParent();
+                                const evt = trigger.log_event || trigger.relatedEvent || trigger.getParent();
                                 if (!evt._finished) {
                                     evt.finish();
                                     evt._triggered = 5;
@@ -7111,19 +7051,20 @@ const packs = function () {
                                 const skill = lib.card[event.card.name].bilibili_ThunderSkill;
                                 if (!player.hasSkill(skill, null, false, false)) await player.addSkills(skill);
                                 else await player.changeHujia(2);
-                                const evt = event.getParent();
-                                if (evt?.name == 'useCard' && evt.cards?.length == 1 && evt.cards[0].name == event.card.name) {
-                                    const cards = evt.cards.filterInD();
-                                    if (cards.length) {
-                                        if (!cards[0].decadeSkill) {
-                                            cards[0].decadeSkill = true;
-                                            game.log(cards, '已被洗入牌堆');
-                                            ui.cardPile.insertBefore(cards[0], ui.cardPile.childNodes[get.rand(0, ui.cardPile.childNodes.length)]);
-                                            game.updateRoundNumber();
-                                        }
-                                        else {
-                                            game.log(cards, '已被移出游戏');
-                                            await game.cardsGotoSpecial(cards);
+                                if (event.type === 'card') {
+                                    const evt = event.getParent();
+                                    if (evt.cards?.length == 1 && evt.cards[0].name == event.card.name) {
+                                        const cards = evt.cards.filterInD();
+                                        if (cards.length) {
+                                            if (!cards[0].decadeSkill) {
+                                                cards[0].decadeSkill = true;
+                                                game.log(cards, '已被洗入牌堆');
+                                                await game.cardsGotoPile(cards, () => ui.cardPile.childNodes[get.rand(0, ui.cardPile.childNodes.length - 1)]);
+                                            }
+                                            else {
+                                                game.log(cards, '已被移出游戏');
+                                                await game.cardsGotoSpecial(cards);
+                                            }
                                         }
                                     }
                                 }
@@ -7141,50 +7082,6 @@ const packs = function () {
                         lib.translate[card + '_info'] = '<li>使用此牌，获得【' + lib.translate[skill] + '】' + '<br><li>' + lib.translate[skill + '_info'];
                     }, skill, card);
                     await player.gain(game.createCard2(card, lib.suit.randomGet(), get.rand(1, 13)), 'gain2');
-                },
-            },
-            bilibili_qianzhi: {
-                trigger: { global: ['useSkillBegin', 'chooseTargetEnd', 'chooseCardTargetEnd', 'chooseToUseEnd', 'chooseToCompareEnd', 'choosePlayerCardEnd', 'discardPlayerCardEnd', 'gainPlayerCardEnd'] },
-                filter(event, player) {
-                    if (event.bilibili_qianzhi || player === event.player || !player.hujia) return false;
-                    let targets, skill;
-                    if (['chooseTarget', 'chooseCardTarget', 'chooseToUseEnd', 'chooseToCompareEnd', 'choosePlayerCardEnd', 'discardPlayerCardEnd', 'gainPlayerCardEnd'].includes(event.name)) {
-                        targets = event.result.targets;
-                        skill = event.getParent().name;
-                    }
-                    else {
-                        targets = event.targets;
-                        skill = event.skill;
-                    }
-                    if (!skill || skill == 'bilibili_qianzhi') return false;
-                    const info = get.info(skill);
-                    if (!info || info.charlotte || info.ruleSkill) return false;
-                    return targets?.includes(player);
-                },
-                prompt2(event, player) {
-                    const skill = ['chooseTarget', 'chooseCardTarget', 'chooseToUseEnd', 'chooseToCompareEnd', 'choosePlayerCardEnd', 'discardPlayerCardEnd', 'gainPlayerCardEnd'].includes(event.name) ? event.getParent().name : event.skill;
-                    return get.translation(event.player) + '对你发动了' + '【' + get.translation(skill) + '】，是否令【' + get.translation(skill) + '】对你无效？';
-                },
-                check(event, player) {
-                    const att = Math.sign(get.attitude(player, event.player));
-                    if (att < 0) return true;
-                    if (att === 0) return get.attitude(event.player, player) <= 0;
-                    return false;
-                },
-                logTarget: 'player',
-                async content(event, trigger, player) {
-                    trigger.bilibili_qianzhi = true;
-                    await player.changeHujia(-1);
-                    let skill;
-                    if (['chooseTarget', 'chooseCardTarget', 'chooseToUseEnd', 'chooseToCompareEnd', 'choosePlayerCardEnd', 'discardPlayerCardEnd', 'gainPlayerCardEnd'].includes(trigger.name)) {
-                        trigger.result.targets.remove(player);
-                        skill = trigger.getParent().name;
-                    }
-                    else {
-                        trigger.targets.remove(player);
-                        skill = trigger.skill;
-                    }
-                    game.log(trigger.player, '的', '#g【' + get.translation(skill) + '】', '被', player, '无效了');
                 },
             },
             //群主
@@ -13619,9 +13516,7 @@ const packs = function () {
             bilibili_thunderlei: '雷',
             bilibili_Thunder: '雷扩',
             bilibili_Thunder_info: '锁定技。其他角色发动无标签技能后，若本局游戏未因〖雷扩〗制作过此技能的卡牌，则你制作一张此技能的卡牌并获得之。使用此牌可获得此牌对应的技能（若已拥有此技能则改为获得2点护甲）。然后若此牌为首次被使用，则将此牌洗入牌堆，否则将此牌移出游戏。',
-            bilibili_qianzhi: '潜智',
-            bilibili_qianzhi_info: '其他角色对你使用技能时，你可以失去1点护甲，令此技能对你无效。',
-            bilibili_qianzhi_append: '<span style="font-family:yuanli">千幻雷音的密码是thunder，不是什么“Thunder”、“thunder，憋问了。”不带符号，不带空格。小雷音寺已解散，Thunder小游戏扩展的密码是thunderXYX，求求你们不要私信问我密码为什么不对了，憋问了。</span>',
+            bilibili_Thunder_append: '<span style="font-family:yuanli">千幻雷音的密码是thunder，不是什么“Thunder”、“thunder，憋问了。”不带符号，不带空格。小雷音寺已解散，Thunder小游戏扩展的密码是thunderXYX，求求你们不要私信问我密码为什么不对了，憋问了。</span>',
             bilibili_lonelypatients: 'lonely patients',
             bilibili_meihua: '美化',
             bilibili_meihua_info: '锁定技。①分发起始手牌前，你将牌堆中的所有装备牌置于武将牌上（这些牌可如手牌般使用，且每回合每种副类别的牌限使用一次）。②你的装备栏不会被废除且你的装备栏数量翻倍。③其他角色的出牌阶段限一次，其可以交给你一张牌并将一张手牌当作本局游戏牌堆组成的一张装备牌装备之。',
