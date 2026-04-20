@@ -631,7 +631,8 @@ export async function precontent(bilibilicharacter) {
                 data: (() => {
                     _status.HDWJ_ChangeLog_character = {
                         '牢武将': ['old_sb_zhanghe'],
-                        'MiNikill': ['Mbaby_star_zhangchunhua', 'Mbaby_yue_diaochan'],
+                        '杂谈': ['bilibili_caocao'],
+                        'MiNikill': ['Mbaby_star_zhangchunhua', 'Mbaby_yue_diaochan', 'Mbaby_star_simayi', 'Mbaby_hanlong'],
                         'WeChatkill': ['wechat_zhi_liubiao'],
                     };
                     return Object.values(_status.HDWJ_ChangeLog_character).flat();

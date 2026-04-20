@@ -10,7 +10,7 @@ const packs = function () {
                 CLongZhou: ['lz_sufei', 'lz_tangzi', 'lz_liuqi', 'lz_huangquan'],
                 Chuodong: ['bilibili_shengxunyu', 'bilibili_Firewin', 'bilibili_jinglingqiu', 'bilibili_suixingsifeng', 'bilibili_Emptycity', 'bilibili_thunderlei', 'bilibili_lonelypatients', 'bilibili_ningjingzhiyuan', 'bilibili_xizhicaikobe'],
                 CDormitory: ['bilibili_yirenyixiaojian', 'bilibili_longjiuzhen', 'bilibili_diandian', 'bilibili_murufengchen', 'bilibili_wuzhuwanshui', 'bilibili_kuangshen', 'bilibili_yanjing', ...Array.from({ length: 3 }).map((_, index) => `bilibili_yanjing_friend${index + 1}`), 'bilibili_xiaoyaoruyun', 'bilibili_shuijiaobuboli'],
-                Cothers: ['bilibili_xiahoudun', 'bilibili_liuguanzhang', 'bilibili_gaowang', 'bilibili_simayi', 'old_dongxie', 'bilibili_sunhanhua', 'bilibili_zhoutaigong', 'bilibili_zhouxiaomei', 'bilibili_caifuren', 'bilibili_zhengxuan', 'bilibili_sp_xuyou', 'old_zuoci', 'bilibili_kuailiangkuaiyue', 'bilibili_wuqiao', 'bilibili_daxiao', 'bilibili_xushao', 'bilibili_shen_guojia', 'bilibili_re_xusheng', 'bilibili_zhangrang', 'bilibili_litiansuo', 'decade_huangwudie', 'bilibili_huanggai', 'bilibili_ekeshaoge', 'bilibili_guanning', 'bilibili_wangwang', 'diy_lvmeng'],
+                Cothers: ['bilibili_caocao', 'bilibili_xiahoudun', 'bilibili_liuguanzhang', 'bilibili_gaowang', 'bilibili_simayi', 'old_dongxie', 'bilibili_sunhanhua', 'bilibili_zhoutaigong', 'bilibili_zhouxiaomei', 'bilibili_caifuren', 'bilibili_zhengxuan', 'bilibili_sp_xuyou', 'old_zuoci', 'bilibili_kuailiangkuaiyue', 'bilibili_wuqiao', 'bilibili_daxiao', 'bilibili_xushao', 'bilibili_shen_guojia', 'bilibili_re_xusheng', 'bilibili_zhangrang', 'bilibili_litiansuo', 'decade_huangwudie', 'bilibili_huanggai', 'bilibili_ekeshaoge', 'bilibili_guanning', 'bilibili_wangwang', 'diy_lvmeng'],
                 Cothers_dualside: ['bilibili_wangtao', 'bilibili_wangyue', 'bilibili_x_wangtao', 'bilibili_x_wangyue', 'bilibili_daqiao', 'bilibili_xiaoqiao', 'bilibili_x_daqiao', 'bilibili_x_xiaoqiao', 'bilibili_ahuinan', 'bilibili_dongtuna', 'bilibili_x_ahuinan', 'bilibili_x_dongtuna'],
                 CXuanDie: ['bfake_zhanghua', 'bfake_hanshao', 'bfake_hanrong', 'bilibili_adong', 'bfake_jiananfeng', 'bfake_shen_zhangjiao', 'bfake_shen_zhangfei', 'bfake_shen_jiaxu', 'bfake_huanwen', 'bfake_miheng'],
             },
@@ -68,6 +68,7 @@ const packs = function () {
             bilibili_liuguanzhang: ['male', 'qun', 4, ['bilibili_waifa'], ['border:shen', 'name:戏|志才-陈|友谅-左|宗棠']],
             bilibili_xiahoudun: ['male', 'wei', 4, ['bilibili_ganglie', 'new_qingjian'], ['name:夏侯|惇', ...['character', 'tempname', 'die'].map(i => `${i}:re_xiahoudun`)]],
             bilibili_yirenyixiaojian: ['male', 'key', '1/Infinity', ['bilibili_ranzhi', 'bilibili_wuying', 'bilibili_jiabin'], ['clan:宿舍群|肘击群|活动群', 'name:吴|新建']],
+            bilibili_caocao: ['male', 'qun', 4, ['bilibili_hanhuang'], ['border:wei']],
             //双面武将--正面
             bilibili_wangtao: ['female', 'shu', 3, ['huguan', 'yaopei', 'dualside'], ['dualside:bilibili_x_wangyue', 'character:wangtao', 'die:wangtao']],
             bilibili_wangyue: ['female', 'shu', 3, ['huguan', 'mingluan', 'dualside'], ['dualside:bilibili_x_wangtao', 'character:wangyue', 'tempname:wangyue', 'die:wangyue']],
@@ -13120,6 +13121,246 @@ const packs = function () {
                     },
                 },
             },
+            //曹操
+            bilibili_hanhuang: {
+                trigger: {
+                    player: 'bilibili_hanhuang_initAfter',
+                    global: ['damageSource', 'loseAfter', 'loseAsyncAfter', 'equipAfter', 'addJudgeAfter', 'gainAfter', 'addToExpansionAfter'],
+                },
+                filter(event, player) {
+                    if (!player.getStorage('bilibili_hanhuang_init').length) return false;
+                    if (event.name === 'damage') {
+                        return event.source?.isIn() && (event.source === player || player.getStorage('bilibili_hanhuang_init').includes(event.source));
+                    }
+                    return game.hasPlayer2(target => {
+                        if (target !== player && !player.getStorage('bilibili_hanhuang_init').includes(target)) return false;
+                        if (event.name === 'bilibili_hanhuang_init') return true;
+                        if (event.name === 'equip' && event.player === target && get.subtypes(event.card).includes('equip1')) return true;
+                        const evt = event.getl(target);
+                        return evt?.hs.length > 0 || evt?.es.some(card => {
+                            const vcard = card[card.cardSymbol];
+                            return vcard && get.subtypes(vcard).includes('equip1');
+                        }) || event.getg(target).length > 0;
+                    });
+                },
+                forced: true,
+                popup: false,
+                forceDie: true,
+                async content(event, trigger, player) {
+                    const targets = game.filterPlayer2(target => {
+                        if (target !== player && !player.getStorage('bilibili_hanhuang_init').includes(target)) return false;
+                        if (trigger.name === 'damage') return trigger.source !== target;
+                        if (trigger.name === 'bilibili_hanhuang_init') return true;
+                        if (trigger.name === 'equip' && trigger.player === target && get.subtypes(trigger.card).includes('equip1')) return true;
+                        const evt = trigger.getl?.(target);
+                        return evt?.hs.length > 0 || evt?.es.some(card => {
+                            const vcard = card[card.cardSymbol];
+                            return vcard && get.subtypes(vcard).includes('equip1');
+                        }) || trigger.getg(target).some(card => get.owner(card) === target && get.position(card) === 'h');
+                    }).sortBySeat();
+                    if (trigger.name === 'damage') {
+                        player.logSkill('bilibili_hanhuang', targets);
+                        await game.asyncDraw(targets);
+                        await game.delayx();
+                        return;
+                    }
+                    for (const target of targets) {
+                        let currents = [player];
+                        if (target === player) currents = player.getStorage('bilibili_hanhuang_init');
+                        const evt = trigger.getl?.(target), id = target.playerid, skill = `bilibili_hanhuang_${id}`;
+                        if (!lib.translate[skill]) {
+                            game.broadcastAll((player, skill) => {
+                                lib.translate[skill] = get.translation(player);
+                            }, target, skill);
+                        }
+                        for (const current of currents) {
+                            if (trigger.name === 'bilibili_hanhuang_init') {
+                                const cardsx = target.getCards('h').map(card => {
+                                    const cardx = ui.create.card();
+                                    cardx.init(get.cardInfo(card));
+                                    cardx._cardid = card;
+                                    return cardx;
+                                });
+                                if (cardsx.length > 0) current.directgains(cardsx, null, skill);
+                                const equipsx = target.getVEquips(1);
+                                if (equipsx.length > 0) {
+                                    for (const vcard of equipsx) {
+                                        current.markAuto('bilibili_hanhuang', vcard);
+                                        const name = vcard.name;
+                                        current.addExtraEquip('bilibili_hanhuang', [name], true);
+                                        const skills = lib.card[name].skills ?? [];
+                                        if (skills.length) current.addAdditionalSkill('bilibili_hanhuang', skills, true);
+                                    }
+                                }
+                                continue;
+                            }
+                            if (evt) {
+                                if (evt.hs.length) {
+                                    const cards = current.getCards('s', card => card.hasGaintag(skill) && evt.hs.includes(card._cardid));
+                                    if (cards.length) {
+                                        game.broadcastAll((player, cards) => {
+                                            cards.forEach(i => i.delete());
+                                            if (player === game.me) ui.updatehl();
+                                        }, current, cards);
+                                    }
+                                }
+                                if (evt.es.some(card => {
+                                    const vcard = card[card.cardSymbol];
+                                    return vcard && get.subtypes(vcard).includes('equip1');
+                                })) {
+                                    const list = evt.es.filter(card => {
+                                        const vcard = card[card.cardSymbol];
+                                        return vcard && get.subtypes(vcard).includes('equip1');
+                                    }).map(card => card[card.cardSymbol]);
+                                    current.unmarkAuto('bilibili_hanhuang', list);
+                                    list.forEach(({ name }) => {
+                                        current.removeExtraEquip('bilibili_hanhuang', name);
+                                        const skills = lib.card[name].skills ?? [];
+                                        if (skills.length) skills.forEach(skill => current.removeAdditionalSkill('bilibili_hanhuang', skill));
+                                    });
+                                }
+                            }
+                            if (trigger.name === 'equip' && trigger.player === target && get.subtypes(trigger.card).includes('equip1')) {
+                                current.markAuto('bilibili_hanhuang', [trigger.card]);
+                                const name = trigger.card.name;
+                                current.addExtraEquip('bilibili_hanhuang', [name], true);
+                                const skills = lib.card[name].skills ?? [];
+                                if (skills.length) current.addAdditionalSkill('bilibili_hanhuang', skills, true);
+                            }
+                            if (trigger.getg(target).some(card => get.owner(card) === target && get.position(card) === 'h')) {
+                                const cardsx = trigger.getg(target).filter(card => {
+                                    return get.owner(card) === target && get.position(card) === 'h';
+                                }).map(card => {
+                                    const cardx = ui.create.card();
+                                    cardx.init(get.cardInfo(card));
+                                    cardx._cardid = card;
+                                    return cardx;
+                                });
+                                current.directgains(cardsx, null, skill);
+                            }
+                        }
+                    }
+                },
+                onremove(player, skill) {
+                    const targets = player.getStorage('bilibili_hanhuang_init').slice();
+                    if (player.storage['bilibili_hanhuang_init']) {
+                        player.unmarkSkill('bilibili_hanhuang_init');
+                        delete player.storage['bilibili_hanhuang_init'];
+                    }
+                    for (const current of [player, ...targets].sortBySeat()) {
+                        const cards = current.getCards('s', card => {
+                            if (!card._cardid) return false;
+                            return card.gaintag?.some(gaintag => gaintag.startsWith('bilibili_hanhuang_'));
+                        });
+                        if (cards.length) {
+                            game.broadcastAll((player, cards) => {
+                                cards.forEach(i => i.delete());
+                                if (player === game.me) ui.updatehl();
+                            }, current, cards);
+                        }
+                        if (current.storage[skill]) {
+                            delete current.storage[skill];
+                            current.removeExtraEquip(skill);
+                            current.removeAdditionalSkill(skill);
+                        }
+                    }
+                },
+                group: 'bilibili_hanhuang_init',
+                global: 'bilibili_hanhuang_use',
+                subSkill: {
+                    use: {
+                        mod: {
+                            cardUsable(card, player) {
+                                let card2 = card;
+                                if (card.cards) {
+                                    if (card.cards.length !== 1) return;
+                                    card2 = card.cards[0];
+                                }
+                                if (get.itemtype(card2) !== 'card' || !card2._cardid) return;
+                                if (player.hasSkill('bilibili_hanhuang') || card2.gaintag?.some(gaintag => {
+                                    if (!gaintag.startsWith('bilibili_hanhuang_')) return false;
+                                    const target = ((_status.connectMode ? lib.playerOL : game.playerMap)[gaintag.slice('bilibili_hanhuang_'.length)]);
+                                    return get.itemtype(target) === 'player' || target.hasSkill('bilibili_hanhuang');
+                                })) return Infinity;
+                            },
+                            targetInRange(card, player) {
+                                let card2 = card;
+                                if (card.cards) {
+                                    if (card.cards.length !== 1) return;
+                                    card2 = card.cards[0];
+                                }
+                                if (get.itemtype(card2) !== 'card' || !card2._cardid) return;
+                                if (player.hasSkill('bilibili_hanhuang') || card2.gaintag?.some(gaintag => {
+                                    if (!gaintag.startsWith('bilibili_hanhuang_')) return false;
+                                    const target = ((_status.connectMode ? lib.playerOL : game.playerMap)[gaintag.slice('bilibili_hanhuang_'.length)]);
+                                    return get.itemtype(target) === 'player' || target.hasSkill('bilibili_hanhuang');
+                                })) return true;
+                            },
+                            attackRange(player, num) {
+                                return num + player.getEquipRange(player.getStorage('bilibili_hanhuang'));
+                            },
+                        },
+                        trigger: { player: ['useCardBefore', 'respondBefore', 'useCard1'] },
+                        filter(event, player, name) {
+                            if (name === 'useCard1') {
+                                if (event.addCount === false || !event.cards || event.cards.length !== 1) return false;
+                                return event._bilibili_hanhuang;
+                            }
+                            return event.cards?.some(card => {
+                                if (!card._cardid) return false;
+                                return card.gaintag?.some(gaintag => gaintag.startsWith('bilibili_hanhuang_'));
+                            });
+                        },
+                        forced: true,
+                        popup: false,
+                        forceDie: true,
+                        async content(event, trigger, player) {
+                            if (event.triggername === 'useCard1') {
+                                trigger.addCount = false;
+                                const stat = player.getStat().card, name = trigger.card.name;
+                                if (typeof stat[name] === 'number') stat[name]--;
+                                return;
+                            }
+                            if (trigger.name === 'useCard') trigger._bilibili_hanhuang = true;
+                            trigger.cards = trigger.card.cards = trigger.cards.map(card => {
+                                if (card._cardid && card.gaintag?.some(gaintag => gaintag.startsWith('bilibili_hanhuang_'))) return card._cardid;
+                                return card;
+                            });
+                        },
+                    },
+                    init: {
+                        trigger: {
+                            global: 'phaseBefore',
+                            player: 'enterGame',
+                        },
+                        filter(event, player) {
+                            if (!game.hasPlayer(target => {
+                                if (target === player) return false;
+                                const mode = get.mode();
+                                return mode === 'identity' || mode === 'guozhan' || player.getFriends().includes(target);
+                            }));
+                            return event.name !== 'phase' || game.phaseNumber === 0;
+                        },
+                        forced: true,
+                        async content(event, trigger, player) {
+                            const result = await player.chooseTarget(`${get.translation(event.name)}：请选择一名角色`, (card, player, target) => {
+                                if (target === player) return false;
+                                const mode = get.mode();
+                                return mode === 'identity' || mode === 'guozhan' || player.getFriends().includes(target);
+                            }, true).set('ai', target => {
+                                const player = get.player();
+                                return get.attitude(player, target);
+                            }).forResult();
+                            if (result?.bool && result.targets?.length) {
+                                const target = result.targets[0];
+                                player.line(target);
+                                player.markAuto('bilibili_hanhuang_init', [target]);
+                            }
+                        },
+                        intro: { content: 'players' },
+                    },
+                },
+            },
         },
         dynamicTranslate: {
             bilibili_xueji(player) {
@@ -13819,6 +14060,11 @@ const packs = function () {
             bilibili_jiabin_append: '<span style="font-family:yuanli">王昌龄吗？</span>',
             bilibili_jiabinzheng: '嘉宾证',
             bilibili_jiabinzheng_info: '进入年终盛典嘉宾组的必备物品......<br>（至于效果嘛，没有）',
+            bilibili_caocao: '曹操',
+            bilibili_hanhuang: '汉煌',
+            bilibili_hanhuang_info: '锁定技，游戏开始时，你选择一名友方角色，你与其共享手牌区和武器栏，你或其造成伤害后对方摸一张牌，你与其使用对方的牌无距离次数限制。',
+            bilibili_hanhuang_info_identity: '锁定技，游戏开始时，你选择一名其他角色，你与其共享手牌区和武器栏，你或其造成伤害后对方摸一张牌，你与其使用对方的牌无距离次数限制。',
+            bilibili_hanhuang_info_guozhan: '锁定技，游戏开始时，你选择一名其他角色，你与其共享手牌区和武器栏，你或其造成伤害后对方摸一张牌，你与其使用对方的牌无距离次数限制。',
         },
     };
     for (const i in huodongcharacter.character) {
@@ -13857,9 +14103,33 @@ const packs = function () {
         showName: '蝶',
     });
     //添加群聊势力
-    game.addGroup('bilibili_sushe', '寝室', '宿舍群', { color: '#6F00FF', image: 'ext:活动武将/image/default/bilibili_sushe.png' });
-    game.addGroup('bilibili_zhouji', '肘击', '肘帝群', { color: '#00d9FF', image: 'ext:活动武将/image/default/bilibili_zhouji.png' });
-    game.addGroup('bilibili_huodong', '活动', '活动群', { color: '#FFee00', image: 'ext:活动武将/image/default/bilibili_huodong.png' });
+    game.addGroup('bilibili_sushe', '寝室', '宿舍群', {
+        color: [
+            [58, 0, 102, 1],
+            [111, 0, 255, 1],
+            [163, 102, 255, 1],
+            [209, 179, 255, 1],
+        ],
+        image: 'ext:活动武将/image/default/bilibili_sushe.png'
+    });
+    game.addGroup('bilibili_zhouji', '肘击', '肘帝群', {
+        color: [
+            [0, 106, 128, 1],
+            [0, 217, 255, 1],
+            [102, 236, 255, 1],
+            [179, 247, 255, 1],
+        ],
+        image: 'ext:活动武将/image/default/bilibili_zhouji.png'
+    });
+    game.addGroup('bilibili_huodong', '活动', '活动群', {
+        color: [
+            [153, 136, 0, 1],
+            [255, 238, 0, 1],
+            [255, 245, 102, 1],
+            [255, 251, 179, 1],
+        ],
+        image: 'ext:活动武将/image/default/bilibili_huodong.png'
+    });
     lib.group.removeArray(['bilibili_sushe', 'bilibili_zhouji', 'bilibili_huodong']);
     lib.arenaReady.push(function () {
         lib.element.player.changeGroup = function (group, log, broadcast) {
