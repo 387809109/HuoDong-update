@@ -13124,8 +13124,8 @@ const packs = function () {
             //曹操
             bilibili_hanhuang: {
                 trigger: {
-                    player: 'bilibili_hanhuang_initAfter',
-                    global: ['damageSource', 'loseAfter', 'loseAsyncAfter', 'equipAfter', 'addJudgeAfter', 'gainAfter', 'addToExpansionAfter'],
+                    player: 'bilibili_hanhuang_initEnd',
+                    global: ['damageSource', 'loseEnd', 'loseAsyncEnd', 'equipEnd', 'addJudgeEnd', 'gainEnd', 'addToExpansionEnd'],
                 },
                 filter(event, player) {
                     if (!player.getStorage('bilibili_hanhuang_init').length) return false;
