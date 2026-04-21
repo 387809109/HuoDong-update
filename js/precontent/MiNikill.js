@@ -37554,7 +37554,7 @@ const packs = function () {
                     const zhouyu_MusicPlay = function (player) {
                         const event = _status.event, { promise, resolve } = Promise.withResolvers();
                         //可以即兴/更换音符的最大次数
-                        event.restNum = 5 + player.countMark('mininianchongzou_effect');
+                        event.restNum = 3 + player.countMark('mininianchongzou_effect');
                         //定义初始五音和是否上锁的列表
                         //const musicList = ['宫', '商', '角', '徵', '羽'].map(i => 'zhouyu_' + i);
                         const musicList = ['Tomori', 'Anon', 'Taki', 'Soyo', 'Rana'].map(i => "BanG_Dream!_It's_MyGO!!!!!_" + i);
@@ -37659,7 +37659,6 @@ const packs = function () {
                         if (index) {
                             target.chat('洗具', 'wood');
                             trigger.num = list.indexOf(index);
-                            trigger._phaseEndTriggered = false;
                             game.log(target, '回溯至', '#g' + get.translation(level));
                         }
                         else {
@@ -37733,7 +37732,7 @@ const packs = function () {
             },
             mininianying_Mnian_zhouyu: {
                 audio: 'ext:活动武将/audio/skill:2',
-                trigger: { global: 'phaseEnd' },
+                trigger: { global: 'phaseAfter' },
                 filter(event, player, name) {
                     if (!Object.keys(lib.skill).some(i => !player.getStorage('mininianying_Mnian_zhouyu').includes(i) && get.info(i)?.nianyingSkill && get.info(i).nianyingFilter(event, player, name))) return false;
                     const history = game.getGlobalHistory('everything', evt => evt.player === event.player && ['useCard', 'respond'].includes(evt.name));
@@ -43215,11 +43214,11 @@ const packs = function () {
             mininiansuhui: '溯洄',
             mininiansuhui_info: '每轮限一次，一名角色的回合结束时，你可以进行一次“奏乐”，根据其中最多的同名音符数执行对应效果：3个，令其回溯至弃牌阶段；4个，令其回溯至出牌阶段；5个，令其回溯至准备阶段。然后令其获得本回合进入弃牌堆的所有牌且其本回合手牌上限+X（X为本次“奏乐”后的同名音符数）。',
             mininiansuhui_faq: '关于“奏乐”',
-            mininiansuhui_faq_info: '<br>系统分配五个随机音符，且初始拥有五次即兴次数，可通过点击音符的方式对音符进行保留，点击即兴可将所有未选择保留的音符进行重置，玩家可随时点击“演奏”按钮结束“奏乐”，以当前的五个音符作为本次“奏乐”结果。',
+            mininiansuhui_faq_info: '<br>系统分配5个随机音符，且初始拥有3次即兴次数，可通过点击音符的方式对音符进行保留，点击即兴可将所有未选择保留的音符进行重置，玩家可随时点击“演奏”按钮结束“奏乐”，以当前音符作为本次“奏乐”结果。',
             mininianchongzou: '重奏',
             mininianchongzou_info: '锁定技，每种类别每回合限一次，当你使用或打出牌时，若你本回合已使用或打出过此牌名的其他牌，则你获得一张与此牌类别不同的牌，并令下一轮〖溯洄〗的可即兴次数+1。',
             mininianying_Mnian_zhouyu: '念影',
-            mininianying_Mnian_zhouyu_info: '一名角色的回合结束时，若其本回合至少使用了两组同名牌，则你可以选择一个存在“念影”效果的技能的“念影”效果执行。',
+            mininianying_Mnian_zhouyu_info: '一名角色的回合结束后，若其本回合至少使用了两组同名牌，则你可以选择一个存在“念影”效果的技能的“念影”效果执行。',
             zhouyu_宫: '宫',
             zhouyu_商: '商',
             zhouyu_角: '角',
