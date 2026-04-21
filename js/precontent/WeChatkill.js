@@ -2695,7 +2695,7 @@ const packs = function () {
             wechatmiaoji: {
                 audio: 'ext:活动武将/audio/skill:2',
                 audioname2: {
-                    wechat_zhiyin_guojia: 'wechatmiaoji_wechat_zhiyin_guojia',
+                    wechat_zhiyin_guojia: 'wechatdingce',
                     wechat_zhiyin_zhugeliang: 'wechatsangu',
                     wechat_zhiyin_zhouyu: 'wechatyingrui',
                     wechat_zhiyin_jiangwei: 'wechatgujin',
@@ -2719,23 +2719,17 @@ const packs = function () {
                         return Math.max(0, num);
                     },
                 },
-                subSkill: {
-                    used: { charlotte: true },
-                    wechat_zhiyin_guojia: { audio: 'ext:活动武将/audio/skill:2' },
-                    wechat_zhiyin_zhugeliang: { audio: 'ext:活动武将/audio/skill:2' },
-                },
                 enable: 'chooseToUse',
                 hiddenCard(player, name) {
-                    if (player.hasSkill('wechatmiaoji_used')) return false;
+                    if (player.getStat().skill.wechatmiaoji) return false;
                     const list = lib.skill.wechatmiaoji.list;
                     return list[name] && player.countMark('wechatmoulvenum') >= list[name](player);
                 },
                 filter(event, player) {
-                    if (player.hasSkill('wechatmiaoji_used')) return false;
-                    const num = player.countMark('wechatmoulvenum');
-                    const list = lib.skill.wechatmiaoji.list;
+                    const num = player.countMark('wechatmoulvenum'), list = lib.skill.wechatmiaoji.list;
                     return Object.keys(list).some(name => num >= list[name](player) && event.filterCard({ name: name, isCard: true }, player, event));
                 },
+                usable: 1,
                 chooseButton: {
                     dialog(event, player) {
                         const list = [], num = player.countMark('wechatmoulvenum');
@@ -2762,15 +2756,13 @@ const packs = function () {
                             log: false,
                             precontent() {
                                 player.logSkill('wechatmiaoji');
-                                player.addTempSkill('wechatmiaoji_used');
                                 const num = lib.skill.wechatmiaoji.list[event.result.card.name](player);
                                 lib.skill.wechatmoulvenum.changeNum(-num, player);
                             },
                         }
                     },
                     prompt(links, player) {
-                        const name = links[0][2];
-                        const num = lib.skill.wechatmiaoji.list[name](player);
+                        const name = links[0][2], num = lib.skill.wechatmiaoji.list[name](player);
                         return `失去${num}点${get.poptip('rule_moulvenum')}，视为使用${get.translation(name)}`;
                     },
                 },
