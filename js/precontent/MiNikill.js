@@ -7381,14 +7381,17 @@ const packs = function () {
                         if (other.length) await game.cardsGotoPile(other);
                         await game.delayx();
                         delete event.forceDie;
-                        const result2 = await player.chooseBool(`${get.translation(event.name)}：是否展示牌堆底${get.cnNumber(event.cost_data)}张牌？`).forResult();
-                        if (result2?.bool) {
-                            const cards = get.bottomCards(event.cost_data, true);
-                            await player.showCards(cards, `${get.translation(player)}发动【${get.translation(event.name)}】展示`);
-                            const suit = get.suit(cards[0], false);
-                            if (cards.every(card => get.suit(card, false) === suit)) await player.gain(cards, 'gain2');
-                            else if (player.canMoveCard()) await player.moveCard();
+                        let list = [], count = 0;
+                        while (ui.cardPile.childElementCount > 0) {
+                            const next3 = player.gain(get.bottomCards(), 'gain2');
+                            await next3;
+                            if (Array.isArray(next3.cards)) {
+                                count += next3.cards.length;
+                                list.addArray(next3.cards.map(card => get.suit(card)));
+                                if (list.length > 1 || count >= 5) break;
+                            }
                         }
+                        if (count < 5 && player.canMoveCard()) await player.moveCard();
                     }
                 },
             },
@@ -30950,26 +30953,34 @@ const packs = function () {
             ministarzongshi: {
                 audio: 'starzongshi',
                 inherit: 'starzongshi',
+                filterTarget(三界通天下第一, player, target) {
+                    const card = ui.selected.cards[0], cards = player.getCards('h', cardx => card !== cardx && get.suit(card) === get.suit(cardx));
+                    if (!card || !cards.length) return false;
+                    return lib.filter.targetEnabled2(get.autoViewAs({ name: get.name(card), nature: get.nature(card), cards: cards }, cards), player, target);
+                },
+                selectTarget() {
+                    const player = get.player(), card = ui.selected.cards[0];
+                    const cards = player.getCards('h', cardx => card !== cardx && get.suit(card) === get.suit(cardx));
+                    if (!card || !cards.length) return -1;
+                    return [1, cards.length];
+                },
+                multiline: true,
+                multitarget: true,
                 async content(event, trigger, player) {
-                    const card = event.cards[0], cards = player.getCards('h', cardx => card != cardx && get.suit(card, player) == get.suit(cardx, player));
-                    await player.showCards([card], get.translation(player) + '发动了【纵势】');
-                    if (!cards.length) return;
-                    const cardx = new lib.element.VCard({
-                        name: get.name(card, player),
-                        nature: get.nature(card, player),
-                        cards: cards,
-                    });
-                    const result = await player.chooseTarget((card, player, target) => {
-                        return lib.filter.targetEnabled2(get.event().cardx, player, target);
-                    }, true).set('cardx', cardx).set('selectTarget', [1, cards.length]).set('prompt', '请选择' + (game.hasNature(cardx) ? get.translation(get.nature(cardx)) : '') + '【' + get.translation(cardx) + '】（' + get.translation(cards) + '）的目标').set('ai', target => {
-                        const player = get.event().player, card = get.event().cardx;
-                        return get.effect(target, card, player, player);
-                    }).forResult();
-                    if (result?.bool) {
-                        await player.useCard(cardx, cards, result.targets.sortBySeat());
-                        const num = cards.length - result.targets.length;
-                        if (num > 0) await player.draw(num);
-                    }
+                    const { cards: [card], targets } = event;
+                    const cards = player.getCards('h', cardx => card !== cardx && get.suit(card) === get.suit(cardx));
+                    await player.useCard(get.autoViewAs({ name: get.name(card), nature: get.nature(card), cards: cards }, cards), cards, targets.sortBySeat());
+                    const num = cards.length - targets.length;
+                    if (num > 0) await player.draw(num);
+                },
+                ai: {
+                    order: 9,
+                    result: {
+                        player(player, target) {
+                            const card = ui.selected.cards[0], cards = player.getCards('h', cardx => card !== cardx && get.suit(card) === get.suit(cardx));
+                            return get.effect(target, get.autoViewAs({ name: get.name(card), nature: get.nature(card), cards: cards }, cards), player, player);
+                        },
+                    },
                 },
             },
             ministarjiaowang: {
@@ -41503,7 +41514,7 @@ const packs = function () {
             miniliangyan_info: '出牌阶段限一次，你可以选择一名其他角色，你摸/弃置至多两张牌，令其弃置/摸等量的牌。以此法摸牌的角色跳过其下一个弃牌阶段。',
             minilanggu: '狼顾',
             minilanggu_bottom: '牌堆',
-            minilanggu_info: '出牌阶段开始时或当你受到伤害时，你可以观看牌堆底至多五张牌，将其中任意张牌与当前回合角色的等量手牌进行交换。然后你可以展示牌堆底等量张牌，若这些牌花色相同，则你获得这些牌，否则你可以移动场上的一张牌。',
+            minilanggu_info: '出牌阶段开始时或当你受到伤害时，你可以观看牌堆底至多五张牌，将其中任意张牌与当前回合角色的等量手牌进行交换。然后你重复获得牌堆底的牌直到本次获得五张牌或获得不同花色的牌，若你本次获得的牌数不足五张，则你可以移动场上的一张牌。',
             minijibian: '机变',
             minijibian_info: '每回合结束时，若你本回合发动过〖狼顾〗，你可以观看牌堆底五张牌并可任意调整这些牌的顺序；若你本回合未发动过〖狼顾〗，你可以对你或当前回合角色造成1点伤害。',
             miniduwang: '独往',
@@ -42871,7 +42882,7 @@ const packs = function () {
             ministarxiaoyan: '硝焰',
             ministarxiaoyan_info: '锁定技，游戏开始时，你对所有其他角色各造成1点火属性伤害，然后这些角色可依次选择一项：1.可以交给你一张牌并回复1点体力；2.令你摸一张牌。',
             ministarzongshi: '纵势',
-            ministarzongshi_info: '出牌阶段，你可以展示一张可展示目标的基本牌或普通锦囊牌，然后你将手牌中所有与此牌花色相同的其他牌当作此牌使用（无距离限制），且此牌至多指定转化牌数的目标。然后你摸X张牌（X为你本次以此法使用牌时少指定的目标数）。',
+            ministarzongshi_info: '出牌阶段，你可以选择一张可指定目标的基本牌或普通锦囊牌，然后你将手牌中所有与此牌花色相同的其他牌当作此牌使用（无距离限制），且此牌至多指定转化牌数的目标。然后你摸X张牌（X为你本次以此法使用牌时少指定的目标数）。',
             ministarjiaowang: '骄妄',
             ministarjiaowang_info: `每轮结束时，若本轮没有角色死亡，则你可以失去1点体力并发动${get.poptip('ministarxiaoyan')}。`,
             ministaraoshi: '傲势',
