@@ -804,6 +804,12 @@ export async function content(config, pack) {
 	game.HDsetAudioname2(['wushuang', 'wushuang1', 'wushuang2'], {
 		wechat_zhiyin_lvbu: 'wushuang_wechat_zhiyin_lvbu',
 	});
+	game.HDsetAudioname2('reqiaoshui', {
+		wechat_jianyong: 'qiaoshui',
+	});
+	game.HDsetAudioname2('decadexuanfeng', {
+		wechat_lingtong: 'xuanfeng',
+	});
 
 	//precCI
 	//武将信息

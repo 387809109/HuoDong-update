@@ -633,7 +633,7 @@ export async function precontent(bilibilicharacter) {
                         '牢武将': ['old_sb_zhanghe'],
                         '杂谈': ['bilibili_caocao'],
                         'MiNikill': ['Mbaby_star_zhangchunhua', 'Mbaby_yue_diaochan', 'Mbaby_star_simayi', 'Mbaby_hanlong'],
-                        'WeChatkill': ['wechat_zhi_liubiao'],
+                        'WeChatkill': ['wechat_zhi_liubiao', 'wechat_caifuren', 'wechat_lingtong', 'wechat_liubiao', 'wechat_caozhang'],
                     };
                     return Object.values(_status.HDWJ_ChangeLog_character).flat();
                 })(),
@@ -651,6 +651,7 @@ export async function precontent(bilibilicharacter) {
                                 return `${str}：${map[ext].map(name => lib.translate[name]).join('、')}`;
                             });
                         })(),
+                        '跟进三国杀小程序赵襄、星甘宁、甘夫人、高顺未跟进的技能；删除徐荣和李昭焦伯',
                         'To be continued...',
                     ];
                 },
