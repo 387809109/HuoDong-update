@@ -43816,6 +43816,7 @@ const packs = function () {
             if (typeof this.hp2 === 'number') num += this.maxHp;
             return num;
         };
+        //濒死全家桶（恼）
         lib.element.content.changeHp = async function (event, trigger, player) {
             game.getGlobalHistory().changeHp.push(event);
             if (event.num < 0 && player.hujia > 0 && event.getParent().name === 'damage' && !player.hasSkillTag('nohujia') && !event.getParent().nohujia) {
@@ -43859,6 +43860,207 @@ const packs = function () {
                 if (evt?.finish) evt.finish();
             }
             await event.trigger('changeHp');
+        };
+        lib.element.player.dying = function (reason) {
+            if (this.nodying || (this.hp > 0 && (typeof this.hp2 !== 'number' || this.hp2 > 0)) || this.isDying()) return;
+            const next = game.createEvent('dying');
+            next.player = this;
+            next.reason = reason;
+            if (reason?.source) next.source = reason.source;
+            next.setContent('dying');
+            next.filterStop = function () {
+                if ((this.player.hp > 0 && (typeof this.player.hp2 !== 'number' || this.player.hp2 > 0)) || this.nodying) {
+                    delete this.filterStop;
+                    return true;
+                }
+            };
+            return next;
+        };
+        lib.element.content.damage[lib.element.content.damage.length - 2] = async function (event, trigger, player) {
+            const { source } = event;
+            let next;
+            if ((player.hp <= 0 || (typeof player.hp2 === 'number' && player.hp2 <= 0)) && player.isAlive() && !event.nodying) {
+                await game.delayx();
+                event._dyinged = true;
+                next = player.dying(event);
+            }
+            if (source && lib.config.border_style == 'auto') {
+                var dnum = 0;
+                for (var j = 0; j < source.stat.length; j++) {
+                    if (source.stat[j].damage != undefined) dnum += source.stat[j].damage;
+                }
+                if (dnum >= 2) {
+                    if (lib.config.autoborder_start == 'silver') dnum += 4;
+                    else if (lib.config.autoborder_start == 'gold') dnum += 8;
+                }
+                if (lib.config.autoborder_count == 'damage') {
+                    source.node.framebg.dataset.decoration = '';
+                    if (dnum >= 10) {
+                        source.node.framebg.dataset.auto = 'gold';
+                        if (dnum >= 12) source.node.framebg.dataset.decoration = 'gold';
+                    }
+                    else if (dnum >= 6) {
+                        source.node.framebg.dataset.auto = 'silver';
+                        if (dnum >= 8) source.node.framebg.dataset.decoration = 'silver';
+                    }
+                    else if (dnum >= 2) {
+                        source.node.framebg.dataset.auto = 'bronze';
+                        if (dnum >= 4) source.node.framebg.dataset.decoration = 'bronze';
+                    }
+                    if (dnum >= 2) source.classList.add('topcount');
+                }
+                else if (lib.config.autoborder_count == 'mix') {
+                    source.node.framebg.dataset.decoration = '';
+                    switch (source.node.framebg.dataset.auto) {
+                        case 'bronze':
+                            if (dnum >= 4) source.node.framebg.dataset.decoration = 'bronze';
+                            break;
+                        case 'silver':
+                            if (dnum >= 8) source.node.framebg.dataset.decoration = 'silver';
+                            break;
+                        case 'gold':
+                            if (dnum >= 12) source.node.framebg.dataset.decoration = 'gold';
+                            break;
+                    }
+                }
+            }
+            if (next) return next.forResult();
+        };
+        lib.element.content.loseHp = async function (event, trigger, player) {
+            const { num } = event;
+            if (event.num <= 0) {
+                event._triggered = null;
+                return;
+            }
+            if (lib.config.background_audio) game.playAudio('effect', 'loseHp');
+            game.broadcast(() => {
+                if (lib.config.background_audio) game.playAudio('effect', 'loseHp');
+            });
+            game.log(player, '失去了' + get.cnNumber(num) + '点体力');
+            await player.changeHp(-num);
+            if ((player.hp <= 0 || (typeof player.hp2 === 'number' && player.hp2 <= 0)) && !event.nodying) {
+                await game.delayx();
+                event._dyinged = true;
+                await player.dying(event);
+            }
+        };
+        lib.element.content.dying = [
+            async (event, trigger, player) => {
+                event.forceDie = true;
+                if (player.isDying() || (player.hp > 0 && (typeof player.hp2 !== 'number' || player.hp2 > 0))) {
+                    event.finish();
+                    return;
+                }
+                _status.dying.unshift(player);
+                game.broadcast(list => _status.dying = list, _status.dying);
+                await event.trigger('dying');
+                game.log(player, '濒死');
+            },
+            async (event, trigger, player) => {
+                delete event.filterStop;
+                if ((player.hp > 0 && (typeof player.hp2 !== 'number' || player.hp2 > 0)) || event.nodying) {
+                    _status.dying.remove(player);
+                    game.broadcast(list => _status.dying = list, _status.dying);
+                    event.finish();
+                }
+                else if (!event.skipTao) {
+                    let start = false;
+                    const starts = [_status.currentPhase, event.source, event.player, game.me, game.players[0]];
+                    for (var i = 0; i < starts.length; i++) {
+                        if (get.itemtype(starts[i]) == 'player' && game.players.concat(game.dead).includes(starts[i])) {
+                            start = [...game.players].sortBySeat(starts[i]).find(i => !i.isOut());
+                            if (start) break;
+                        }
+                    }
+                    if (start) {
+                        const next = game.createEvent('_save');
+                        next.player = start;
+                        next._trigger = event;
+                        next.triggername = '_save';
+                        next.forceDie = true;
+                        next.setContent('_save');
+                        await next;
+                    }
+                }
+            },
+            async (event, trigger, player) => {
+                _status.dying.remove(player);
+                game.broadcast(list => _status.dying = list, _status.dying);
+                if ((player.hp <= 0 || (typeof player.hp2 === 'number' && player.hp2 <= 0)) && !event.nodying && !player.nodying) await player.die(event.reason);
+            },
+        ];
+        lib.element.content['_save'] = async function (event, trigger, player) {
+            event.dying = trigger.player;
+            const dying = trigger.player, acted = new Set();
+            outer: while (!trigger.player.isDead()) {
+                const player = event.player;
+                acted.add(player);
+                const taoEnemyConfig = lib.config.tao_enemy && dying.side !== player.side && lib.config.mode != 'identity' && lib.config.mode != 'guozhan' && !dying.hasSkillTag('revertsave');
+                let result = { bool: false };
+                if (!taoEnemyConfig && player.canSave(dying) && player.isIn()) {
+                    result = await player.chooseToUse({
+                        filterCard(card, player, event) {
+                            event = event || _status.event;
+                            return lib.filter.cardSavable(card, player, event.dying);
+                        },
+                        filterTarget(card, player, target) {
+                            if (!card || target !== _status.event.dying) return false;
+                            const info = get.info(card);
+                            if (!info.singleCard || ui.selected.targets.length == 0) {
+                                const mod = game.checkMod(card, player, target, 'unchanged', 'playerEnabled', player);
+                                if (mod == false) return false;
+                                const mod2 = game.checkMod(card, player, target, 'unchanged', 'targetEnabled', target);
+                                if (mod2 !== 'unchanged') return mod2;
+                            }
+                            return true;
+                        },
+                        prompt: `${get.translation(trigger.player)}濒死，是否帮助？`,
+                        prompt2: `当前体力：${(() => {
+                            let num = dying.hp;
+                            if (typeof dying.hp2 === 'number') num = Math.min(dying.hp, dying.hp2);
+                            return num;
+                        })()}`,
+                        ai1(card) {
+                            if (typeof card === 'string') {
+                                const info = get.info(card);
+                                if (info?.ai?.order) {
+                                    if (typeof info.ai.order === 'number') return info.ai.order;
+                                    else if (typeof info.ai.order === 'function') return info.ai.order();
+                                }
+                            }
+                            return 1;
+                        },
+                        ai2(target) {
+                            let effect_use = get.effect_use(target);
+                            if (effect_use <= 0) return effect_use;
+                            return get.effect(target);
+                        },
+                        type: 'dying',
+                        targetRequired: true,
+                        dying,
+                    }).forResult();
+                }
+                if (event.finished) break;
+                if (result.bool) {
+                    if ((dying.hp > 0 && (typeof dying.hp2 !== 'number' || dying.hp2 > 0)) || trigger.nodying || dying.nodying || !dying.isAlive() || dying.isOut() || dying.removed) {
+                        trigger.untrigger();
+                        break;
+                    }
+                }
+                else {
+                    let next = player.next;
+                    const cacheNext = new Set();
+                    while (true) {
+                        if (acted.has(next) || cacheNext.has(next)) break outer;
+                        if (!next.isOut()) {
+                            event.player = next;
+                            break;
+                        }
+                        cacheNext.add(next);
+                        next = next.next;
+                    }
+                }
+            }
         };
         const ori6 = ui.create.buttonPresets.character;
         ui.create.buttonPresets.character = function (item) {
