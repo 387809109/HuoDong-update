@@ -14591,7 +14591,8 @@ const packs = function () {
                     player.when({ player: 'loseAfter' }).filter(evt => evt.getParent() == next).step(async (event, trigger, player) => {
                         if (!player.countCards('h') && trigger.getl(player)?.hs?.length) trigger.getParent(2).num++;
                     });
-                    const { cards } = await next;
+                    await next;
+                    const { cards } = next;
                     event.num += cards.length;
                     await player.draw(event.num + player.countMark('wechatsbtongye'));
                 },
