@@ -32083,7 +32083,7 @@ const packs = function () {
                     order: 9,
                     result: {
                         target(player, target) {
-                            return get.damageEffect(target, player, player, 'thunder');
+                            return get.damageEffect(target, player, target, 'thunder');
                         },
                     },
                 },
