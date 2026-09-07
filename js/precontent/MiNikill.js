@@ -27469,7 +27469,7 @@ const packs = function () {
             },
             //南华老仙
             minijinghe_leiji: {
-                audio: 'ext:活动武将/audio/skill:2',
+                audio: 'xinleiji',
                 trigger: { player: ['useCard', 'respond'] },
                 filter(event, player) {
                     return event.card.name == 'shan';
