@@ -15924,8 +15924,13 @@ const packs = function () {
                 },
                 group: 'minibenxi_summer',
                 subSkill: {
+                    // 扩展子技能可能先于本体子技能注册，不能继承尚未展开的子技能。
                     summer: {
-                        inherit: 'xinbenxi_summer',
+                        trigger: { player: ['phaseAfter', 'useCardAfter', 'useCard'] },
+                        silent: true,
+                        filter(event, player) {
+                            return player === _status.currentPhase;
+                        },
                         async content(event, trigger, player) {
                             if (trigger.name === 'phase') {
                                 player.storage.xinbenxi = 0;
@@ -15943,12 +15948,16 @@ const packs = function () {
                         },
                     },
                     damage: {
-                        inherit: 'xinbenxi_damage',
                         audio: 'minibenxi',
                         charlotte: true,
+                        trigger: { global: 'damageBegin1' },
+                        forced: true,
                         filter(event, player) {
                             const use = event.getParent('useCard');
                             return use?.player === player && use.card === event.card && use.minibenxi?.includes('draw');
+                        },
+                        async content(event, trigger, player) {
+                            await player.draw();
                         },
                     },
                 },
