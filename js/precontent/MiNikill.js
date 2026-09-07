@@ -27468,56 +27468,6 @@ const packs = function () {
                 },
             },
             //南华老仙
-            minijinghe_leiji: {
-                audio: 'xinleiji',
-                trigger: { player: ['useCard', 'respond'] },
-                filter(event, player) {
-                    return event.card.name == 'shan';
-                },
-                async cost(event, trigger, player) {
-                    event.result = await player.chooseTarget(get.prompt('minijinghe_leiji'), '令一名其他角色进行判定', lib.filter.notMe).set('ai', function (target) {
-                        if (target.hasSkill('hongyan')) return 0;
-                        return get.damageEffect(target, _status.event.player, _status.event.player, 'thunder');
-                    }).forResult();
-                },
-                content() {
-                    'step 0'
-                    event.target = targets[0];
-                    event.target.judge(function (card) {
-                        var suit = get.suit(card);
-                        if (suit == 'spade') return -4;
-                        if (suit == 'club') return -2;
-                        return 0;
-                    }).judge2 = function (result) {
-                        return result.bool == false ? true : false;
-                    };
-                    'step 1'
-                    if (result.suit == 'club') {
-                        player.recover();
-                        event.target.damage('thunder');
-                    }
-                    else if (result.suit == 'spade') event.target.damage(2, 'thunder');
-                },
-                ai: {
-                    useShan: true,
-                    effect: {
-                        target(card, player, target, current) {
-                            if (get.tag(card, 'respondShan') && !player.hasSkillTag('directHit_ai', true, {
-                                target: target,
-                                card: card,
-                            }, true)) {
-                                var hastarget = game.hasPlayer(function (current) {
-                                    return get.attitude(target, current) < 0;
-                                });
-                                if (!target.countCards('h', 'shan')) return;
-                                if (target.countCards('h') > 2) return [0, 0];
-                                if (target.countCards('h') == 1) return [1.2, hastarget ? 0.1 : 0];
-                                return [1, hastarget ? 0.2 : 0];
-                            }
-                        },
-                    },
-                },
-            },
             minijinghe_lundao: {
                 audio: 'nhlundao',
                 inherit: 'nhlundao',
@@ -27583,7 +27533,7 @@ const packs = function () {
                     order: 10,
                     result: { target: 1 },
                 },
-                derivation: ['minijinghe_leiji', 'biyue', 'new_retuxi', 'minimingce', 'nhyinbing', 'nhhuoqi', 'nhguizhu', 'nhxianshou', 'minijinghe_lundao', 'nhguanyue', 'nhyanzheng', 'minizhiyan'],
+                derivation: ['minileiji', 'minipianyi', 'new_retuxi', 'minimingce', 'minizhiyan', 'nhyinbing', 'nhhuoqi', 'nhguizhu', 'nhxianshou', 'minijinghe_lundao', 'nhguanyue', 'nhyanzheng'],
             },
             minigongxiu: {
                 audio: 'ext:活动武将/audio/skill:2',
@@ -47546,9 +47496,7 @@ const packs = function () {
             minigongxiu: '共修',
             minigongxiu_info: '结束阶段，若你本回合已发动过〖经合〗，你可以选择一项：①所有本回合通过〖经合〗获得过技能的角色各摸一张牌；②所有本回合未通过〖经合〗获得过技能的其他角色各弃置一张手牌。',
             minijinghe: '经合',
-            minijinghe_info: '每回合限一次，出牌阶段，你可以展示至多四张牌名各不相同的手牌并选择等量的角色，这些角色可以从“天书”中选择并获得一个其未拥有的技能直到你的下回合开始。“天书”中的技能为：雷击、闭月、突袭、明策、阴兵、活气、鬼助、仙授、论道、观月、言政、直言。',
-            minijinghe_leiji: '雷击',
-            minijinghe_leiji_info: '每当你使用或打出【闪】时，你可以令一名其他角色进行判定，若结果为：黑桃，你对该角色造成2点雷电伤害；梅花，你回复1点体力，然后对该角色造成1点雷电伤害。',
+            minijinghe_info: '每回合限一次，出牌阶段，你可以展示至多四张牌名各不相同的手牌并选择等量的角色，这些角色可以从“天书”中选择并获得一个其未拥有的技能直到你的下回合开始。“天书”中的技能为：雷击、翩仪、突袭、明策、直言、阴兵、活气、鬼助、仙授、论道、观月、言政。',
             minijinghe_lundao: '论道',
             minijinghe_lundao_info: '当你受到伤害后，若伤害来源比你手牌多，你可以弃置其一张牌；若伤害来源比你手牌少，你摸一张牌。',
             minichanni: '谗逆',
