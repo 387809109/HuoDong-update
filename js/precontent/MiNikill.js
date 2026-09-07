@@ -27728,7 +27728,7 @@ const packs = function () {
                         }
                         var max = Math.min(num, colors[get.color(card, player)]);
                         if (ui.selected.cards.length >= max) return 0;
-                        return (max + 1) / (get.value(card) || 0.5);
+                        return (max + 1) / Math.max(0.5, get.value(card));
                     });
                     'step 2'
                     if (!result.bool) { event.finish(); return; }
