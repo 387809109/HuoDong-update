@@ -15851,6 +15851,20 @@ const packs = function () {
                 audio: 'ext:活动武将/audio/skill:2',
                 forced: false,
                 locked: true,
+                // 独立存储状态，避免同时获得本体奔袭时互相覆盖。
+                init(player) {
+                    player.storage.minibenxi = 0;
+                    player.storage.minibenxi_unequip = [];
+                    player.storage.minibenxi_directHit = [];
+                },
+                mod: {
+                    globalFrom(from, to, distance) {
+                        if (_status.currentPhase === from) return distance - from.storage.minibenxi;
+                    },
+                    wuxieRespondable(card, player, target, current) {
+                        if (player !== current && player.storage.minibenxi_directHit.includes(card)) return false;
+                    },
+                },
                 extraTargets(event, player) {
                     if (!lib.skill.minibenxi.filterx(event, player)) return [];
                     return game.filterPlayer(target => !event.targets.includes(target) &&
@@ -15870,7 +15884,6 @@ const packs = function () {
                     ], [1, 2]).set('extraTargets', lib.skill.minibenxi.extraTargets(trigger, player))
                         .set('benxiCard', trigger.card).set('benxiTargets', trigger.targets)
                         .set('benxiDirectHit', trigger.directHit)
-                        .set('filterButton', button => button.link !== 'extra' || get.event().extraTargets.length > 0)
                         .set('ai', button => {
                             const event = get.event(), player = get.player(), card = event.benxiCard;
                             const targets = event.benxiTargets;
@@ -15907,13 +15920,13 @@ const packs = function () {
                             }
                         }
                         else if (choice === 'directHit') {
-                            player.storage.xinbenxi_directHit.add(trigger.card);
+                            player.storage.minibenxi_directHit.add(trigger.card);
                             trigger.nowuxie = true;
                             trigger.customArgs.default.directHit2 = true;
                             game.log(trigger.card, '不能被抵消');
                         }
                         else if (choice === 'unequip') {
-                            player.storage.xinbenxi_unequip.add(trigger.card);
+                            player.storage.minibenxi_unequip.add(trigger.card);
                             game.log(trigger.card, '无视防具');
                         }
                         else {
@@ -15921,6 +15934,15 @@ const packs = function () {
                             game.log(trigger.card, '造成伤害时摸一张牌');
                         }
                     }
+                },
+                ai: {
+                    unequip: true,
+                    unequip_ai: true,
+                    directHit_ai: true,
+                    skillTagFilter(player, tag, arg) {
+                        if (tag === 'unequip') return !!arg && player.storage.minibenxi_unequip.includes(arg.card);
+                        return lib.skill.xinbenxi.ai.skillTagFilter(player, tag, arg);
+                    },
                 },
                 group: 'minibenxi_summer',
                 subSkill: {
@@ -15933,17 +15955,17 @@ const packs = function () {
                         },
                         async content(event, trigger, player) {
                             if (trigger.name === 'phase') {
-                                player.storage.xinbenxi = 0;
-                                player.storage.xinbenxi_unequip.length = 0;
-                                player.storage.xinbenxi_directHit.length = 0;
+                                player.storage.minibenxi = 0;
+                                player.storage.minibenxi_unequip.length = 0;
+                                player.storage.minibenxi_directHit.length = 0;
                             }
                             else if (event.triggername === 'useCard1') {
-                                player.storage.xinbenxi++;
-                                player.syncStorage('xinbenxi');
+                                player.storage.minibenxi++;
+                                player.syncStorage('minibenxi');
                             }
                             else {
-                                player.storage.xinbenxi_unequip.remove(trigger.card);
-                                player.storage.xinbenxi_directHit.remove(trigger.card);
+                                player.storage.minibenxi_unequip.remove(trigger.card);
+                                player.storage.minibenxi_directHit.remove(trigger.card);
                             }
                         },
                     },
