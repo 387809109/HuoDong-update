@@ -36579,7 +36579,7 @@ const packs = function () {
                     if (strategy === 'minilunce_中策') {
                         return -attitude * Math.min(2, target.countCards('he'));
                     }
-                    return attitude * (target.isDamaged() ? 2 + get.recoverEffect(target, player, player) : 0.5);
+                    return attitude * (target.isDamaged() ? 2 + get.recoverEffect(target, player, target) : 0.5);
                 },
                 filter(event, player) {
                     return game.hasPlayer(target => lib.skill.minilunce.derivation.some(i => !target.hasSkill(i)));
@@ -36659,7 +36659,7 @@ const packs = function () {
                                     if (get.name(card) !== 'sha') return false;
                                     return lib.filter.filterCard.apply(this, arguments);
                                 }, '###上策：是否执行' + str + '的计策？###使用一张无距离和次数限制的【杀】').set('addCount', false).set('nodistance', true).set('targetRequired', true).set('complexSelect', true).set('filterTarget', lib.filter.targetEnabled).forResult();
-                                player.storage[skill + '_result'] = result?.bool;
+                                if (result?.bool) player.storage[skill + '_result'] = true;
                                 return;
                             }
                             const bool = player.storage[skill + '_result'] === true;
