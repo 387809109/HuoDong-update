@@ -15926,7 +15926,7 @@ const packs = function () {
                 subSkill: {
                     // 扩展子技能可能先于本体子技能注册，不能继承尚未展开的子技能。
                     summer: {
-                        trigger: { player: ['phaseAfter', 'useCardAfter', 'useCard'] },
+                        trigger: { player: ['phaseAfter', 'useCardAfter', 'useCard1'] },
                         silent: true,
                         filter(event, player) {
                             return player === _status.currentPhase;
@@ -15937,7 +15937,7 @@ const packs = function () {
                                 player.storage.xinbenxi_unequip.length = 0;
                                 player.storage.xinbenxi_directHit.length = 0;
                             }
-                            else if (event.triggername === 'useCard') {
+                            else if (event.triggername === 'useCard1') {
                                 player.storage.xinbenxi++;
                                 player.syncStorage('xinbenxi');
                             }
