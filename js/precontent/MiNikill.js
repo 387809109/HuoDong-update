@@ -8,7 +8,7 @@ const packs = function () {
         characterSort: {
             MiNikill: {
                 MiNi_wei: ['zhanghu', 'yj_majun', 'caoyi', 'lvqian', 'hanlong', 'xiahoumao', 'guohuai', 'caochong', 'caochun', 'caoying', 'dc_jiachong', 'zhugeruoxue', 'dukui', 'xinpi', 'caimaozhangyun', 'bianyue', 'caoanmin', 'zhaoang', 'zhanggong', 'simalang', 'hanhaoshihuan', 'chentai', 'zhenghun', 'guanlu', 'guanqiujian', 'dc_liuye', 'chenlin', 'wangshuang', 'yanrou', 'dc_yanghu', 'ruanyu', 'chengyu', 'jianggan', 'yuejin', 'bianfuren', 'zhugedan', 'caohong', 'yinfuren', 'kuailiangkuaiyue', 'chenqun', 'xiahoulingnv', 'wenyang', 'caozhang', 'dufuren', 'yangxiu', 'zhangchangpu', 'zhonghui', 'caoxiu', 'xunyou', 'lidian', 'zhongyao', 'caozhen', 'guohuanghou', 'xinxianying', 'xiahouyuan', 'xizhicai', 'caorui', 'xunyu', 'dengai', 'caozhi', 'caopi', 'caoang', 'zhenji', 'old_caoren', 'zhangchunhua', 'xiahoudun', 'dianwei', 'zhanghe', 'yujin', 'xuhuang'].map(i => `Mbaby_${i}`),
-                MiNi_shu: ['ol_feiyi', 'wenyuan', 'xizheng', 'malingli', 'dc_wuban', 'pangtong', 'mifangfushiren', 'guanyue', 'xianglang', 'huanghao', 'zhaotongzhaoguang', 'wulan', 'leitong', 'zongyu', 're_mazhong', 're_dengzhi', 'dc_hujinding', 'jiangfei', 'zhangyi', 'guanzhang', 'wolongfengchu', 'wangtao', 'wangyue', 'xf_yiji', 'mizhu', 'mifuren', 'liuyong', 'ganfuren', 'lvkai', 'zhoucang', 'yangwan', 'liuchen', 'liyan', 'chendao', 'yanyan', 'xiahouba', 'huaman', 'sp_zhugeliang', 'zhugeguo', 'jianyong', 'wangping', 'mayunlu', 'guansuo', 'xiahoushi', 'shamoke', 'wuxian', 'zhugezhan', 'qinmi', 'guanyinping', 'guanyu', 'zhugeliang', 'liubei', 'machao', 'zhurong', 'zhangfei', 'zhaoyun', 'huangzhong', 'weiyan', 'liaohua', 'menghuo', 'ol_jiangwei', 'liushan', 'xin_fazheng', 'madai', 'guanping', 'liufeng', 'zhangxingcai', 'dongyun', 'xushu', 'xin_masu'].map(i => `Mbaby_${i}`),
+                MiNi_shu: ['wuyi', 'ol_feiyi', 'wenyuan', 'xizheng', 'malingli', 'dc_wuban', 'pangtong', 'mifangfushiren', 'guanyue', 'xianglang', 'huanghao', 'zhaotongzhaoguang', 'wulan', 'leitong', 'zongyu', 're_mazhong', 're_dengzhi', 'dc_hujinding', 'jiangfei', 'zhangyi', 'guanzhang', 'wolongfengchu', 'wangtao', 'wangyue', 'xf_yiji', 'mizhu', 'mifuren', 'liuyong', 'ganfuren', 'lvkai', 'zhoucang', 'yangwan', 'liuchen', 'liyan', 'chendao', 'yanyan', 'xiahouba', 'huaman', 'sp_zhugeliang', 'zhugeguo', 'jianyong', 'wangping', 'mayunlu', 'guansuo', 'xiahoushi', 'shamoke', 'wuxian', 'zhugezhan', 'qinmi', 'guanyinping', 'guanyu', 'zhugeliang', 'liubei', 'machao', 'zhurong', 'zhangfei', 'zhaoyun', 'huangzhong', 'weiyan', 'liaohua', 'menghuo', 'ol_jiangwei', 'liushan', 'xin_fazheng', 'madai', 'guanping', 'liufeng', 'zhangxingcai', 'dongyun', 'xushu', 'xin_masu'].map(i => `Mbaby_${i}`),
                 MiNi_wu: ['sunhuan', 'gexuan', 'lvfan', 'xielingyu', 'zhupeilan', 'xugong', 'chendong', 'kanze', 're_panzhangmazhong', 'weiwenzhugezhi', 'zhangwen', 'dc_sunhanhua', 'heqi', 'lvdai', 'jiangqing', 're_guyong', 'quancong', 'yufan', 'dc_sunru', 'sunxiu', 'zhangfen', 'xuezong', 'panjun', 'luji', 'zhoufang', 'zhangxuan', 'yanjun', 'zhuhuan', 'luyusheng', 're_jsp_pangtong', 'sunhao', 'lukang', 'buzhi', 'xushi', 'zhugeke', 'zhoufei', 'zhangzhang', 'sunliang', 'sunjian', 'zhuzhi', 'bulianshi', 'chengpu', 'daqiao', 'ganning', 'huanggai', 'lusu', 'luxun', 'lvmeng', 'sunce', 'sunluban', 'sunluyu', 'sunquan', 'sunshangxiang', 'taishici', 'wuguotai', 'xiaoqiao', 'xusheng', 'old_zhoutai', 'zhouyu', 'zhugejin', 'zumao'].map(i => `Mbaby_${i}`),
                 MiNi_qun: ['qiuliju', 'dc_sp_zhurong', 'tianfeng', 'xunchen', 'dongguiren', 'zhangren', 'kebineng', 'mangyachang', 're_hucheer', 'sp_duyu', 'ol_lisu', 'zhangchu', 'leibo', 'wangcan', 'diaochan', 'xurong', 're_taoqian', 'hejin', 'jiling', 'zhangrang', 'duanwei', 're_chendeng', 'caiyong', 'mengjie', 'dc_gaolan', 'yl_luzhi', 'tadun', 're_hansui', 'dongxie', 'fuwan', 'wutugu', 'huangfusong', 'fanchou', 'guosi', 'yanbaihu', 'dc_huangzu', 'licaiwei', 'ol_dingyuan', 'liubian', 're_pangdegong', 'zhangning', 'zhanglu', 'wangyun', 'zoushi', 'dc_huangchengyan', 'simahui', 'tw_mateng', 'laiyinger', 'sp_kongrong', 'zhujun', 'gongsunyuan', 'guotufengji', 'yanfuren', 'tangji', 'caojie', 'liangxing', 'caoxing', 'wangrong', 'hetaihou', 'zhangji', 'dongbai', 'beimihu', 'chunyuqiong', 'zhangqiying', 'fuhuanghou', 'liuxie', 'quyi', 'lijue', 'panfeng', 'liuzhang', 'jiaxu', 'zhangbao', 'zhangliang', 'gaoshun', 'caifuren', 'xuyou', 'pangde', 'yj_jushou', 'liru', 'dongzhuo', 'sp_zhangjiao', 'huatuo', 'lvbu', 'huaxiong', 'yuji', 'liubiao', 'yuanshao', 'yuanshu', 'chengong', 'zuoci'].map(i => `Mbaby_${i}`),
                 MiNi_shen: [
@@ -259,6 +259,7 @@ const packs = function () {
             Mbaby_wenyuan: ['female', 'shu', 3, ['minikengqiang', 'dckuichi', 'minishangjue']],
             Mbaby_xizheng: ['male', 'shu', 3, ['dcdanyi', 'miniwencan']],
             Mbaby_ol_feiyi: ['male', 'shu', 3, ['yanru', 'minihezhong']],
+            Mbaby_wuyi: ['male', 'shu', 4, ['minibenxi']],
             //吴
             Mbaby_bulianshi: ['female', 'wu', 3, ['minianxu', 'zhuiyi']],
             Mbaby_chengpu: ['male', 'wu', 4, ['minilihuo', 'minichunlao']],
@@ -15840,6 +15841,130 @@ const packs = function () {
                                     if (get.tag(card, 'reverse') && get.type(card) === 'trick') return 'zerotarget';
                                 },
                             },
+                        },
+                    },
+                },
+            },
+            //吴懿
+            minibenxi: {
+                audio: 'ext:活动武将/audio/skill:2',
+                trigger: { player: 'useCard1' },
+                filter(event, player) {
+                    return _status.currentPhase === player;
+                },
+                forced: true,
+                popup: false,
+                async content(event, trigger, player) {
+                    player.addTempSkill('minibenxi_distance');
+                    player.addMark('minibenxi_distance', 1, false);
+                },
+                extraTargets(event, player) {
+                    const info = get.info(event.card);
+                    if (info.allowMultiple === false || info.multitarget) return [];
+                    return game.filterPlayer(target => !event.targets.includes(target) &&
+                        lib.filter.targetEnabled2(event.card, player, target) &&
+                        lib.filter.targetInRange(event.card, player, target));
+                },
+                group: 'minibenxi_choose',
+                ai: { threaten: 2 },
+                subSkill: {
+                    distance: {
+                        charlotte: true,
+                        onremove: true,
+                        marktext: '袭',
+                        intro: { content: '本回合计算与其他角色的距离-$' },
+                        mod: {
+                            globalFrom(from, to, distance) {
+                                return distance - from.countMark('minibenxi_distance');
+                            },
+                        },
+                    },
+                    choose: {
+                        audio: 'minibenxi',
+                        trigger: { player: 'useCard2' },
+                        filter(event, player) {
+                            return _status.currentPhase === player && event.targets?.length === 1 &&
+                                (event.card.name === 'sha' || get.type(event.card, null, false) === 'trick') &&
+                                !game.hasPlayer(target => target !== player && get.distance(player, target) > 1);
+                        },
+                        locked: true,
+                        async cost(event, trigger, player) {
+                            const result = await player.chooseButton([
+                                get.prompt('minibenxi'),
+                                '依次选择至多两项，或取消',
+                                [[
+                                    ['extra', '此牌目标+1'],
+                                    ['unequip', '此牌无视防具'],
+                                    ['directHit', '此牌不能被抵消'],
+                                    ['draw', '此牌造成伤害时，摸一张牌'],
+                                ], 'textbutton'],
+                            ], [1, 2]).set('extraTargets', lib.skill.minibenxi.extraTargets(trigger, player))
+                                .set('benxiCard', trigger.card).set('benxiTargets', trigger.targets)
+                                .set('benxiDirectHit', trigger.directHit)
+                                .set('filterButton', button => button.link !== 'extra' || get.event().extraTargets.length > 0)
+                                .set('ai', button => {
+                                    const event = get.event(), player = get.player(), card = event.benxiCard;
+                                    const targets = event.benxiTargets;
+                                    if (button.link === 'extra') {
+                                        return Math.max(0, ...event.extraTargets.map(target => get.effect(target, card, player, player)));
+                                    }
+                                    if (button.link === 'draw') return get.tag(card, 'damage') ? 3 : 0;
+                                    if (button.link === 'unequip') {
+                                        return card.name === 'sha' && targets.some(target =>
+                                            get.attitude(player, target) < 0 && target.getEquip(2) &&
+                                            !player.hasSkillTag('unequip', false, { name: card.name, card, target })) ? 2 : 0;
+                                    }
+                                    return targets.some(target => get.effect(target, card, player, player) > 0 &&
+                                        !event.benxiDirectHit.includes(target)) ? 4 : 0;
+                                }).forResult();
+                            event.result = { bool: result.bool, cost_data: result.links };
+                        },
+                        async content(event, trigger, player) {
+                            // Effects belong to this use event, not to a card that can be used again.
+                            trigger.minibenxi = event.cost_data.slice();
+                            player.addTempSkill('minibenxi_effect');
+                            for (const choice of event.cost_data) {
+                                if (choice === 'extra') {
+                                    const targets = lib.skill.minibenxi.extraTargets(trigger, player);
+                                    if (targets.length) {
+                                        const result = await player.chooseTarget('奔袭：为此牌增加一个目标', true)
+                                            .set('targets', targets).set('benxiCard', trigger.card)
+                                            .set('filterTarget', (card, player, target) => get.event().targets.includes(target))
+                                            .set('ai', target => get.effect(target, get.event().benxiCard, get.player(), get.player()))
+                                            .forResult();
+                                        if (result.bool) {
+                                            trigger.targets.addArray(result.targets);
+                                            player.line(result.targets);
+                                            game.log(result.targets, '成为了', trigger.card, '的额外目标');
+                                        }
+                                    }
+                                }
+                                else if (choice === 'directHit') {
+                                    trigger.directHit.addArray(game.players);
+                                    game.log(trigger.card, '不能被抵消');
+                                }
+                                else {
+                                    game.log(trigger.card, choice === 'unequip' ? '无视防具' : '造成伤害时摸一张牌');
+                                }
+                            }
+                        },
+                    },
+                    effect: {
+                        charlotte: true,
+                        trigger: { player: 'useCardToPlayered', source: 'damageSource' },
+                        forced: true,
+                        popup: false,
+                        filter(event, player) {
+                            const use = event.getParent('useCard');
+                            return use?.player === player && use.card === event.card &&
+                                use.minibenxi?.includes(event.name === 'damage' ? 'draw' : 'unequip');
+                        },
+                        async content(event, trigger, player) {
+                            if (trigger.name === 'damage') await player.draw();
+                            else {
+                                trigger.target.addTempSkill('qinggang2');
+                                trigger.target.storage.qinggang2.add(trigger.card);
+                            }
                         },
                     },
                 },
@@ -46357,6 +46482,7 @@ const packs = function () {
             Mbaby_wenyuan: '欢杀文鸳',
             Mbaby_xizheng: '欢杀郤正',
             Mbaby_ol_feiyi: '欢杀费祎',
+            Mbaby_wuyi: '欢杀吴懿',
             miniwusheng: '武圣',
             miniwusheng_info: '锁定技。①你使用红色【杀】造成的伤害+1。②回合开始时，你从牌堆或弃牌堆中获得一张红色【杀】。',
             miniguanxing: '观星',
@@ -46673,6 +46799,9 @@ const packs = function () {
             minikunli_info: '觉醒技，你进入濒死状态时，回复体力至3点，增加1点体力上限并失去〖匮饬〗。',
             miniwencan_info: '出牌阶段限一次。你可以选择至多两名其他角色，这些角色依次选择一项：1.弃置两张花色不同的牌；2.本回合你对其使用牌无距离和次数限制。',
             minihezhong_info: '每回合每项各限一次，当你的手牌数变为1后，你可以展示唯一手牌并摸一张牌，然后你选择本回合使用点数大于等于或小于等于此牌点数的普通锦囊牌额外结算一次。',
+            minibenxi: '奔袭',
+            minibenxi_distance: '奔袭',
+            minibenxi_info: '锁定技，当你于回合内使用牌时，本回合你计算与其他角色的距离-1；你的回合内，若你与所有其他角色的距离均为1，则你使用仅指定一个目标的【杀】或普通锦囊牌时依次选择至多两项：①此牌目标+1；②此牌无视防具；③此牌不能被抵消；④此牌造成伤害时，摸一张牌。',
             //吴
             Mbaby_bulianshi: '欢杀步练师',
             Mbaby_chengpu: '欢杀程普',
@@ -48856,6 +48985,9 @@ const packs = function () {
             '#ext:活动武将/audio/skill/miniqingyuan_Mqing_diaochan1': '为君温酒，待君凯旋。',
             '#ext:活动武将/audio/skill/miniqingyuan_Mqing_diaochan2': '盛世繁华，与君同享。',
             '#ext:活动武将/audio/die/Mqing_lvdiao:die': '烽烟再起，举剑不知为谁……/罗裙今犹在，座前已无君……',
+            '#ext:活动武将/audio/skill/minibenxi1': '袭敌千里，溃敌百步！',
+            '#ext:活动武将/audio/skill/minibenxi2': '奔战万里，袭关斩将。',
+            '#ext:活动武将/audio/die/Mbaby_wuyi:die': '奔波已疲，难以~再战。',
         },
     };
     MiNikill_sight();//加载欢杀界面逻辑
