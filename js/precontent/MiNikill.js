@@ -36570,16 +36570,16 @@ const packs = function () {
             //神庞统
             minilunce: {
                 audio: 'ext:活动武将/audio/skill:2',
-                trigger: { global: 'roundStart' },
+                trigger: { global: 'roundStart', player: 'phaseBegin' },
                 getTargetEffect(player, target, strategy) {
                     const attitude = get.attitude(player, target);
                     if (strategy === 'minilunce_上策') {
-                        return attitude * (target.countCards('hs', { name: 'sha' }) ? 2 : 0.5);
+                        return player.countCards('hs', { name: 'sha' }) ? Math.min(2, target.countCards('h')) : 0.5;
                     }
                     if (strategy === 'minilunce_中策') {
                         return -attitude * Math.min(2, target.countCards('he'));
                     }
-                    return attitude * (target.isDamaged() ? 2 + get.recoverEffect(target, player, target) : 0.5);
+                    return 2 + get.recoverEffect(target, player, player);
                 },
                 filter(event, player) {
                     return game.hasPlayer(target => lib.skill.minilunce.derivation.some(i => !target.hasSkill(i)));
@@ -36645,26 +36645,22 @@ const packs = function () {
                     },
                     '上策': {
                         charlotte: true,
-                        onremove(player, skill) {
-                            delete player.storage[skill];
-                            delete player.storage[skill + '_result'];
-                        },
+                        onremove: true,
                         silent: true,
                         nopop: true,
-                        trigger: { player: ['phaseUseBegin', 'phaseEnd'] },
+                        trigger: { player: 'phaseEnd' },
                         async content(event, trigger, player) {
                             const skill = event.name, source = player.storage[skill], str = get.translation(source);
-                            if (trigger.name !== 'phase') {
-                                const result = await player.chooseToUse(function (card, player, event) {
-                                    if (get.name(card) !== 'sha') return false;
-                                    return lib.filter.filterCard.apply(this, arguments);
-                                }, '###上策：是否执行' + str + '的计策？###使用一张无距离和次数限制的【杀】').set('addCount', false).set('nodistance', true).set('targetRequired', true).set('complexSelect', true).set('filterTarget', lib.filter.targetEnabled).forResult();
-                                if (result?.bool) player.storage[skill + '_result'] = true;
-                                return;
-                            }
-                            const bool = player.storage[skill + '_result'] === true;
                             player.removeSkill(skill);
                             if (source?.isIn()) {
+                                let bool = false;
+                                if (player.hasHistory('sourceDamage')) {
+                                    const result = await source.chooseToUse(function (card, player, event) {
+                                        if (get.name(card) !== 'sha') return false;
+                                        return lib.filter.filterCard.apply(this, arguments);
+                                    }, '###上策：是否使用一张【杀】？###' + get.translation(player) + '本回合造成过伤害，你可以使用一张无距离和次数限制的【杀】').set('addCount', false).set('nodistance', true).set('targetRequired', true).set('complexSelect', true).set('filterTarget', lib.filter.targetEnabled).forResult();
+                                    bool = result?.bool === true;
+                                }
                                 event.bool = bool;
                                 event.lunceSource = source;
                                 source.popup(bool ? '洗具' : '杯具', bool ? 'wood' : 'fire');
@@ -36699,21 +36695,39 @@ const packs = function () {
                             const skill = event.name, source = player.storage[skill], str = get.translation(source);
                             if (trigger.name !== 'phase') {
                                 let bool = false;
-                                if (source?.isIn() && player.hasGainableCards(source, 'he')) {
-                                    source.line(player);
-                                    const result = await source.gainPlayerCard(player, 'he', true).forResult();
-                                    bool = result?.bool;
+                                if (source?.isIn()) {
+                                    const targets = [player, ...trigger.targets].unique().filter(target => target.isIn() && target.hasGainableCards(source, 'he'));
+                                    if (targets.length) {
+                                        const result = await source.chooseTarget('中策：获得出杀角色或其一名目标的一张牌', true).set('targets', targets).set('filterTarget', (card, player, target) => {
+                                            return get.event().targets.includes(target);
+                                        }).set('ai', target => {
+                                            const player = get.player();
+                                            return get.effect(target, { name: 'shunshou_copy2' }, player, player);
+                                        }).forResult();
+                                        if (result.bool) {
+                                            const target = result.targets[0];
+                                            source.line(target);
+                                            const gain = await source.gainPlayerCard(target, 'he', true).forResult();
+                                            bool = gain?.bool === true;
+                                        }
+                                    }
                                 }
                                 player.storage[skill + '_result'] = bool;
+                                if (bool) {
+                                    event.bool = true;
+                                    event.lunceSource = source;
+                                    source.popup('洗具', 'wood');
+                                    game.log(source, '的中策执行', '#g成功');
+                                }
                                 return;
                             }
                             const bool = player.storage[skill + '_result'] === true;
                             player.removeSkill(skill);
-                            if (source?.isIn()) {
-                                event.bool = bool;
+                            if (!bool && source?.isIn()) {
+                                event.bool = false;
                                 event.lunceSource = source;
-                                source.popup(bool ? '洗具' : '杯具', bool ? 'wood' : 'fire');
-                                game.log(source, '的中策执行', bool ? '#g成功' : '#y失败');
+                                source.popup('杯具', 'fire');
+                                game.log(source, '的中策执行', '#y失败');
                             }
                         },
                         mark: true,
@@ -36737,16 +36751,12 @@ const packs = function () {
                             player.removeSkill(skill);
                             if (source?.isIn()) {
                                 let bool = false;
-                                if (!player.hasHistory('sourceDamage', evt => evt.card?.name === 'sha' && evt.getParent('phaseUse', true)?.player === player) && source.countCards('he')) {
-                                    const result = await source.chooseCard('he', [1, 3], '下策：是否将至多三张牌交给' + get.translation(player) + '并令其回复1点体力？').set('ai', card => {
-                                        const source = get.player(), target = get.event().target;
-                                        if (get.attitude(source, target) <= 0) return 0;
-                                        return 6 - get.value(card);
-                                    }).set('target', player).forResult();
-                                    if (result?.bool && result.cards?.length) {
+                                if (!player.hasHistory('sourceDamage')) {
+                                    const result = await source.chooseBool('下策：是否摸两张牌并令' + get.translation(player) + '回复1点体力？').set('choice', 2 + get.recoverEffect(player, source, source) > 0).forResult();
+                                    if (result.bool) {
                                         bool = event.bool = true;
                                         source.line(player);
-                                        await source.give(result.cards, player);
+                                        await source.draw(2);
                                         await player.recover();
                                     }
                                 }
@@ -36770,20 +36780,15 @@ const packs = function () {
             minilanhai: {
                 audio: 'ext:活动武将/audio/skill:2',
                 trigger: { global: ['minilunce_上策After', 'minilunce_中策After', 'minilunce_下策After'] },
-                init(player) {
-                    player.removeMark('minilanhai_success', player.countMark('minilanhai_success'), false);
-                },
-                onremove(player) {
-                    player.removeMark('minilanhai_success', player.countMark('minilanhai_success'), false);
-                },
                 filter(event, player) {
                     return event.lunceSource === player;
                 },
                 forced: true,
                 async content(event, trigger, player) {
                     if (trigger.bool) {
-                        player.addMark('minilanhai_success', 1, false);
-                        await player.draw(Math.min(3, player.countMark('minilanhai_success')));
+                        player.getHistory('custom').push({ minilanhai: true });
+                        const num = player.getHistory('custom', evt => evt.minilanhai).length;
+                        await player.draw(num);
                         if (!game.hasPlayer(target => lib.skill.minilunce.derivation.some(i => !target.hasSkill(i)))) return;
                         const result = await lib.skill.minilunce.chooseStrategy(player, '览害：你可以发动一次【论策】');
                         if (result?.bool && result.targets?.length) {
@@ -36793,6 +36798,9 @@ const packs = function () {
                         }
                     }
                     else {
+                        player.addMark('minilanhai_fail', 1, false);
+                        if (player.countMark('minilanhai_fail') < 2) return;
+                        player.removeMark('minilanhai_fail', 2, false);
                         if (player.countMark('minilanhai') < 3) {
                             player.addMark('minilanhai', 1, false);
                             await player.gainMaxHp();
@@ -36801,21 +36809,6 @@ const packs = function () {
                     }
                 },
                 derivation: 'minilunce',
-                group: 'minilanhai_round',
-                subSkill: {
-                    round: {
-                        trigger: { global: 'roundStart' },
-                        forced: true,
-                        silent: true,
-                        firstDo: true,
-                        filter(event, player) {
-                            return player.hasMark('minilanhai_success');
-                        },
-                        content() {
-                            player.removeMark('minilanhai_success', player.countMark('minilanhai_success'), false);
-                        },
-                    },
-                },
             },
             //精卫
             minitianhai: {
@@ -47917,15 +47910,15 @@ const packs = function () {
             minicuike: '摧克',
             minicuike_info: '出牌阶段开始时，若你的“军略”标记数为：奇数，你可以对一名角色造成1点伤害；偶数，你可以横置一名角色并弃置其区域内的一张牌。若你的“军略”标记数量大于场上存活角色数，则你可以移去全部“军略”标记并对任意名其他角色造成1点伤害。',
             minilunce: '论策',
-            minilunce_info: '每轮开始时，你可以选择一项并指定场上的一名角色（每名角色每种计策至多拥有一个）。',
+            minilunce_info: '每轮和你的回合开始时，你可以选择一项并指定场上的一名角色（每名角色每种计策至多拥有一个）。',
             'minilunce_上策': '上策',
-            'minilunce_上策_info': '其出牌阶段开始时，可以立即使用一张无距离和次数限制的【杀】。',
+            'minilunce_上策_info': '其回合结束时，若其本回合造成过伤害，你可以立即使用一张无距离和次数限制的【杀】。',
             'minilunce_中策': '中策',
-            'minilunce_中策_info': '直到其回合结束，其回合内首次使用【杀】指定目标后，你获得其一张牌。',
+            'minilunce_中策_info': '直到其回合结束，其回合内首次使用【杀】指定目标时，你获得其或其一名目标的一张牌。',
             'minilunce_下策': '下策',
-            'minilunce_下策_info': '若其于出牌阶段未使用【杀】造成伤害，其回合结束时，你可以将至多三张牌交给其并令其回复1点体力。',
+            'minilunce_下策_info': '其回合结束时，若其本回合未造成伤害，你可以摸两张牌并令其回复1点体力。',
             minilanhai: '览害',
-            minilanhai_info: `锁定技。有计策的角色回合结束时，若本回合有计策：①成功执行，你摸X张牌并发动一次${get.poptip('minilunce')}（X为你本轮计策成功执行的次数且至多为3）；②未成功执行，你增加1点体力和体力上限（体力上限至多以此法增加3点）。`,
+            minilanhai_info: `锁定技。当计策成功发动时，你摸X张牌并发动一次${get.poptip('minilunce')}（X为你本回合计策成功的次数）；当计策每累计两次未成功发动时，你增加1点体力和体力上限（体力上限至多以此法增加3点）。`,
             minitianhai: '填海',
             minitianhai_info: '锁定技。①当你使用或打出手牌时，若此牌有点数且你未记录，则你记录之。②其他角色使用或打出与你〖填海①〗记录的点数相同的牌时，若此牌点数：不大于4，其下次受到的伤害+1；大于4且小于10，你摸一张牌；不小于10，其须弃置任意张牌直到这些牌的点数不小于此牌点数。',
             minihaiku: '海枯',
