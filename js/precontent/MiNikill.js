@@ -32202,7 +32202,7 @@ const packs = function () {
             minisbhuangtian: {
                 mod: {
                     maxHandcard(player, num) {
-                        if (player.hasZhuSkill('minisbhuangtian')) return num + game.countGroup() - 1;
+                        return num + game.countGroup() - 1;
                     },
                 },
                 audio: 'sbhuangtian',
@@ -32210,7 +32210,7 @@ const packs = function () {
                 forced: true,
                 zhuSkill: true,
                 filter(event, player) {
-                    if (!player.hasZhuSkill('minisbhuangtian') || !player.hasSkill('minisbguidao', null, false, false)) return false;
+                    if (!player.hasSkill('minisbguidao', null, false, false)) return false;
                     if (!event.source || player == event.source || event.source.group != 'qun') return false;
                     if (player.hasSkill('minisbguidao') && player.countMark('minisbguidao') >= 8) return false;
                     if (player.countMark('minisbhuangtian_count') >= 4) return false;
