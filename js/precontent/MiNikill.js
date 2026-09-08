@@ -238,7 +238,7 @@ const packs = function () {
             Mbaby_zhangyi: ['male', 'shu', 5, ['miniwurong', 'minishizhi']],
             Mbaby_jiangfei: ['male', 'shu', 3, ['reshengxi', 'minishoucheng']],
             Mbaby_sb_sunshangxiang: ['female', 'wu', 3, ['minisbxiaoji', 'minisbjieyin', 'minisbfanxiang'], ['border:shu']],
-            Mbaby_sb_xiahoushi: ['female', 'shu', 3, ['sbqiaoshi', 'minispyanyu'], ['name:夏侯|null']],
+            Mbaby_sb_xiahoushi: ['female', 'shu', 3, ['minispqiaoshi', 'minispyanyu'], ['name:夏侯|null']],
             Mbaby_dc_hujinding: ['female', 'shu', '3/6', ['dcdeshi', 'miniwuyuan', 'huaizi']],
             Mbaby_re_dengzhi: ['male', 'shu', 3, ['jianliang', 'miniweimeng']],
             Mbaby_re_mazhong: ['male', 'shu', 4, ['minifuman'], ['die:mazhong']],
@@ -14219,15 +14219,49 @@ const packs = function () {
                 },
             },
             //sp夏侯氏
+            minispqiaoshi: {
+                audio: 'sbqiaoshi',
+                trigger: { player: 'damageEnd' },
+                usable: 1,
+                filter(event, player) {
+                    return event.source && event.source != player && event.num > 0;
+                },
+                async cost(event, trigger, player) {
+                    const { source, num } = trigger;
+                    event.result = await player.chooseBool(get.prompt('minispqiaoshi'), `回复${num}点体力，然后${get.translation(source)}摸两张牌`)
+                        .set('ai', () => _status.event.goon)
+                        .set('goon', get.recoverEffect(player, player, player) * Math.min(num, player.maxHp - player.hp) +
+                            (source.isIn() ? 2 * get.effect(source, { name: 'draw' }, player, player) : 0) > 0)
+                        .forResult();
+                },
+                async content(event, trigger, player) {
+                    await player.recover(trigger.num);
+                    if (trigger.source.isIn()) await trigger.source.draw(2);
+                },
+                ai: {
+                    effect: {
+                        target(card, player, target) {
+                            if (!get.tag(card, 'damage') || player == target || target.storage.counttrigger?.minispqiaoshi) return;
+                            if (target.hp <= 1 && !player.canSave(target)) return;
+                            return [0, 0, 1, 2];
+                        },
+                    },
+                },
+            },
             minispyanyu: {
                 audio: 'sbyanyu',
                 trigger: { global: 'phaseUseBegin' },
                 filter(event, player) {
-                    return player.hasCard(card => _status.connectMode || lib.filter.cardDiscardable(card, player), 'he');
+                    return player.isIn() && player.hasCard(card => _status.connectMode || lib.filter.cardDiscardable(card, player, 'minispyanyu'), 'he');
                 },
                 async cost(event, trigger, player) {
-                    const name = event.name.slice(0, -5);
-                    const next = player.chooseToDiscard('he', get.prompt(name));
+                    event.result = await lib.skill.minispyanyu.chooseDiscard(trigger, player);
+                },
+                async chooseDiscard(trigger, player, restart = false) {
+                    const next = player.chooseToDiscard('he', get.prompt('minispyanyu'),
+                        restart ? '弃置一张牌，重置次数并立即发动【燕语】' : '弃置一张牌，本回合可分配进入弃牌堆的同类别牌');
+                    // Only this owner's activation cost is excluded; other owners may still respond.
+                    next.set('minispyanyu', player);
                     if (player == trigger.player) {
                         next.set('goon', (function () {
                             var map = {
@@ -14288,13 +14322,20 @@ const packs = function () {
                             return map[type] - get.value(cardx);
                         })
                     }
-                    next.logSkill = name;
-                    event.result = await next.forResult();
+                    next.logSkill = 'minispyanyu';
+                    return await next.forResult();
                 },
                 popup: false,
                 async content(event, trigger, player) {
-                    player.addTempSkill(event.name + '_effect');
-                    player.markAuto(event.name, [get.type2(event.cards[0])]);
+                    if (player.isIn()) lib.skill.minispyanyu.activate(player, event.cards[0]);
+                },
+                activate(player, card, restart = false) {
+                    player.addTempSkill('minispyanyu_effect', { global: ['phaseAfter', 'phaseBeforeStart'], player: 'dieAfter' });
+                    player.storage.minispyanyu = { type: get.type2(card, false), name: get.name(card, false) };
+                    if (restart) player.storage.minispyanyu_effect = 0;
+                },
+                onremove(player) {
+                    player.removeSkill('minispyanyu_effect');
                 },
                 subSkill: {
                     effect: {
@@ -14306,51 +14347,57 @@ const packs = function () {
                             delete player.storage.minispyanyu_effect;
                         },
                         trigger: {
-                            global: ['loseAfter', 'cardsDiscardAfter', 'loseAsyncAfter', 'equipAfter'],
+                            global: ['loseAfter', 'cardsDiscardAfter', 'loseAsyncAfter', 'equipAfter', 'gainAfter', 'addJudgeAfter', 'addToExpansionAfter'],
                         },
                         filter(event, player) {
-                            if (player.storage.minispyanyu_effect >= 2) return false;
+                            if (!player.isIn() || !player.storage.minispyanyu || player.storage.minispyanyu_effect >= 2) return false;
                             const evt = event.getParent('phaseUse');
                             if (!evt || evt.name != 'phaseUse') return false;
-                            const type = player.getStorage('minispyanyu'),
-                                cards = event.getd();
-                            return cards.some(card => type.includes(get.type2(card)) && get.position(card, true) == 'd');
+                            const parent = event.getParent();
+                            if (event.name == 'lose' && parent.name == 'discard' && parent.getParent().minispyanyu == player) return false;
+                            return event.getd().some(card => player.storage.minispyanyu.type == get.type2(card) && get.position(card, true) == 'd');
                         },
                         forced: true,
                         popup: false,
                         async content(event, trigger, player) {
-                            const type = player.getStorage('minispyanyu');
-                            let cards = trigger.getd().filter(card => type.includes(get.type2(card)) && get.position(card, true) == 'd');
-                            while (cards.length && player.storage.minispyanyu_effect < 2) {
-                                const { links } = await player.chooseCardButton(cards, '【燕语】：是否将其中的一张牌交给一名角色？').set('ai', card => {
-                                    if (card.name == 'du') return 10;
-                                    return get.value(card);
-                                }).forResult();
-                                if (!links || !links.length) return;
-                                player.storage.minispyanyu_effect++;
-                                if (!event.logged) {
-                                    await player.logSkill(event.name);
-                                    player.addExpose(0.25);
-                                    event.logged = true;
-                                }
-                                player.addExpose(0.25);
-                                const togain = links[0];
-                                cards.remove(togain);
-                                const { targets } = await player.chooseTarget(true, '请选择要获得' + get.translation(togain) + '的角色')
-                                    .set('ai', function (target) {
-                                        var att = get.attitude(_status.event.player, target);
-                                        var card = _status.event.card;
-                                        var val = get.value(card);
-                                        if (player.storage.minispyanyu_effect < 2 && target == _status.currentPhase && target.hasValueTarget(card, null, true)) att = att * 5;
-                                        else if (target == player && !player.hasJudge('lebu') && get.type(card) == 'trick') att = att * 3;
-                                        if (target.hasSkillTag('nogain')) att /= 10;
-                                        return att * val;
-                                    })
-                                    .set('card', togain).forResult();
-                                if (!targets || !targets.length) return;
-                                const target = targets[0];
-                                player.line(target, 'green');
-                                await target.gain(togain, 'gain2');
+                            if (!lib.skill.minispyanyu_effect.filter(trigger, player)) return;
+                            const state = player.storage.minispyanyu;
+                            const cards = trigger.getd().filter(card => state.type == get.type2(card) && get.position(card, true) == 'd');
+                            const { links } = await player.chooseCardButton(cards, '【燕语】：是否将其中的一张牌交给一名角色？').set('ai', button => {
+                                const card = button.link;
+                                return game.filterPlayer().reduce((best, target) => Math.max(best, get.attitude(player, target) * get.value(card, target)), 0) +
+                                    (get.name(card) == state.name ? 2 : 0);
+                            }).forResult();
+                            if (!links?.length || !player.isIn() || player.storage.minispyanyu != state) return;
+                            const togain = links[0];
+                            if (get.position(togain, true) != 'd') return;
+                            const sameName = get.name(togain) == state.name;
+                            const { targets } = await player.chooseTarget(true, '请选择要获得' + get.translation(togain) + '的角色')
+                                .set('ai', function (target) {
+                                    const player = _status.event.player, card = _status.event.card;
+                                    let att = get.attitude(player, target);
+                                    const val = get.value(card, target);
+                                    if ((player.storage.minispyanyu_effect < 1 || _status.event.sameName) && target == _status.currentPhase && target.hasValueTarget(card, null, true)) att *= 5;
+                                    else if (target == player && !player.hasJudge('lebu') && get.type(card) == 'trick') att *= 3;
+                                    if (target.hasSkillTag('nogain')) att /= 10;
+                                    return att * val;
+                                })
+                                .set('card', togain).set('sameName', sameName).forResult();
+                            if (!targets?.length || !player.isIn() || player.storage.minispyanyu != state || get.position(togain, true) != 'd') return;
+                            const target = targets[0];
+                            if (!target.isIn()) return;
+                            player.storage.minispyanyu_effect++;
+                            player.logSkill('minispyanyu', target);
+                            player.addExpose(0.25);
+                            const gain = target.gain(togain, 'gain2');
+                            await gain;
+                            if (!sameName || !target.getHistory('gain', evt => evt == gain && evt.cards.includes(togain)).length ||
+                                !player.hasSkill('minispyanyu_effect') || player.storage.minispyanyu != state ||
+                                !lib.skill.minispyanyu.filter(trigger, player)) return;
+                            // Resolve at most one card from this batch, even after a successful restart.
+                            const result = await lib.skill.minispyanyu.chooseDiscard(trigger.getParent('phaseUse'), player, true);
+                            if (result.bool && player.isIn() && player.hasSkill('minispyanyu_effect') && player.storage.minispyanyu == state) {
+                                lib.skill.minispyanyu.activate(player, result.cards[0], true);
                             }
                         },
                     },
@@ -46741,8 +46788,10 @@ const packs = function () {
             minisbjieyin_info: '①游戏开始时，你可以选择一名其他角色，你与其各获得1枚“姻”标记，然后令其获得〖结姻〗，最后你将势力变更至与其相同。②出牌阶段限一次，你可以将一张手牌交给一名有“姻”的其他角色或将一张装备牌置入一名有“姻”的其他角色的对应空置装备栏，然后你回复1点体力并摸一张牌。③拥有“姻”标记的角色死亡时，你获得其区域内所有的牌。',
             minisbfanxiang: '返乡',
             minisbfanxiang_info: '限定技，出牌阶段，你可以获得场上所有有“姻”标记的其他角色的装备区的牌，然后移去场上的所有“姻”标记并令所有角色失去〖结姻〗，最后你获得〖舞剑〗，将势力更换为吴。',
+            minispqiaoshi: '樵拾',
+            minispqiaoshi_info: '每回合限一次，你受到其他角色造成的伤害后，你可令你回复等同此次伤害值的体力。若如此做，该角色摸两张牌。',
             minispyanyu: '燕语',
-            minispyanyu_info: '一名角色的出牌阶段开始时，你可以弃置一张牌。若如此做，则此回合出牌阶段内限两次，当一张与你弃置的牌类别相同的其他牌进入弃牌堆后，你可令任意一名角色获得此牌。',
+            minispyanyu_info: '一名角色的出牌阶段开始时，你可以弃置一张牌。若如此做，此回合限两次，每当本回合的出牌阶段有与你弃置牌类别相同的其他牌进入弃牌堆时，你可令任意一名角色获得至多一张。若牌名也相同，则可重置并立即发动〖燕语〗。',
             miniwuyuan: '武缘',
             miniwuyuan_info: '出牌阶段限一次，将一张【杀】交给一名其他角色，然后你回复1点体力并与其各摸一张牌。若此【杀】为：①红色，其回复1点体力；②黑色，令其下回合使用【杀】的次数上限+1；③属性【杀】，其多摸一张牌。',
             miniweimeng: '危盟',
