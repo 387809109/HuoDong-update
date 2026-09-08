@@ -5578,11 +5578,12 @@ const packs = function () {
                     }).forResult();
                 },
                 async content(event, trigger, player) {
-                    const target = event.targets[0];
-                    const cards = [];
-                    for (const current of event.targets.addArray(game.filterPlayer(current => current.hasJudge('bingliang'))).sortBySeat()) {
+                    const targets = event.targets.slice().addArray(game.filterPlayer(current => current.hasJudge('bingliang'))).filter(current => current !== player).sortBySeat();
+                    let cards = [];
+                    for (const current of targets) {
+                        if (!player.isIn()) break;
                         if (!current.isIn()) continue;
-                        const result = await target.chooseToGive(player, `${get.translation(player)}对你发动了【${get.translation(event.name)}】`, `交给其一张手牌，或受到1点伤害`).set('ai', card => {
+                        const result = await current.chooseToGive(player, 1, 'h', `${get.translation(player)}对你发动了【${get.translation(event.name)}】`, `交给其一张手牌，或受到1点伤害`).set('ai', card => {
                             const { player, target } = get.event();
                             if (get.damageEffect(player, target, player) > 0) return 0;
                             if (get.attitude(player, target) > 0) return 1;
@@ -5590,15 +5591,19 @@ const packs = function () {
                             return (player.hp < 2 ? 7 : 5.5) - get.value(card);
                         }).forResult();
                         if (result?.bool) cards.addArray(result.cards);
-                        else await target.damage();
+                        else if (current.isIn()) await current.damage();
                     }
-                    if (cards.length && game.hasPlayer(current => player !== current)) {
+                    cards = cards.filter(card => player.getCards('h').includes(card) && game.hasPlayer(current => current !== player && lib.filter.canBeGained(card, current, player, 'minisbshipo')));
+                    if (player.isIn() && cards.length) {
                         const result = await player.chooseCardTarget({
-                            filterCard(card, player, target) {
-                                return get.event().cards.includes(card);
+                            filterCard(card, player) {
+                                return get.event().cards.includes(card) && player.getCards('h').includes(card) && game.hasPlayer(current => current !== player && ui.selected.cards.concat(card).every(card => lib.filter.canBeGained(card, current, player, 'minisbshipo')));
                             },
-                            filterTarget: lib.filter.notMe,
+                            filterTarget(card, player, target) {
+                                return target !== player && target.isIn() && ui.selected.cards.every(card => lib.filter.canBeGained(card, target, player, 'minisbshipo'));
+                            },
                             selectCard: [1, cards.length],
+                            complexCard: true,
                             prompt: '是否将任意张得到的牌交给一名其他角色？',
                             ai1(card) {
                                 const player = get.player();
@@ -5608,18 +5613,24 @@ const packs = function () {
                                 return Math.random() > 0.5 ? 1 : 0;
                             },
                             ai2(target) {
-                                const { player, cards } = get.event();
+                                const player = get.player(), cards = ui.selected.cards;
                                 let val = 0;
-                                for (var card of cards) {
+                                for (const card of cards) {
                                     val += target.getUseValue(card);
                                 }
                                 if (val > 0) return val * get.attitude(player, target) * 2;
-                                return get.value(card, target) * get.attitude(player, target);
+                                return get.value(cards, target) * get.attitude(player, target);
                             },
                             allowChooseAll: true,
                             cards,
                         }).forResult();
-                        if (result?.bool) await player.give(result.cards, result.targets[0]);
+                        if (result?.bool && player.isIn()) {
+                            const target = result.targets[0];
+                            if (target !== player && target.isIn()) {
+                                const gains = result.cards.filter(card => cards.includes(card) && player.getCards('h').includes(card) && lib.filter.canBeGained(card, target, player, 'minisbshipo'));
+                                if (gains.length) await player.give(gains, target);
+                            }
+                        }
                     }
                 },
             },
