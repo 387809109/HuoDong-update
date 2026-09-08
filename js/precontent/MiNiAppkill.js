@@ -1977,11 +1977,11 @@ const packs = function () {
                         mod: {
                             cardEnabled(card, player) {
                                 const source = _status.currentPhase;
-                                if (card.name === 'tao' && source?.isIn() && source !== player && source.hasSkill('rewansha') && !player.isDying()) return false;
+                                if (card.name === 'tao' && source?.isIn() && source !== player && source.hasSkill('mpwansha') && !player.isDying()) return false;
                             },
                             cardSavable(card, player) {
                                 const source = _status.currentPhase;
-                                if (card.name === 'tao' && source?.isIn() && source !== player && source.hasSkill('rewansha') && !player.isDying()) return false;
+                                if (card.name === 'tao' && source?.isIn() && source !== player && source.hasSkill('mpwansha') && !player.isDying()) return false;
                             },
                         },
                     },
