@@ -43442,8 +43442,8 @@ const packs = function () {
                                 num = Math.ceil(num / 2);
                                 if (event.result.card.name == 'sha') {
                                     event.result.card.storage.minifightkuangji_count = num;
-                                    player.when('useCard2').filter(evt => evt.skill == 'minifightkuangji_backup' && evt.card.name == 'sha' && evt.getParent() == event.getParent()).step(evt => {
-                                        evt.card.storage.minifightkuangji_targets = evt.targets.slice();
+                                    player.when('useCard2').filter(evt => evt.skill == 'minifightkuangji_backup' && evt.card.name == 'sha' && evt.getParent() == event.getParent()).step((event, trigger) => {
+                                        trigger.card.storage.minifightkuangji_targets = trigger.targets.slice();
                                     });
                                 }
                                 player.when('useCard').filter(evt => evt.skill == 'minifightkuangji_backup' && evt.card.name == 'shan' && evt.getParent() == event.getParent()).step(async () => {
