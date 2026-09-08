@@ -36579,7 +36579,7 @@ const packs = function () {
                     if (strategy === 'minilunce_中策') {
                         return -attitude * Math.min(2, target.countCards('he'));
                     }
-                    return 2 + get.recoverEffect(target, player, player);
+                    return get.effect(player, { name: 'draw' }, player, player) * 2 + get.recoverEffect(target, player, player);
                 },
                 filter(event, player) {
                     return game.hasPlayer(target => lib.skill.minilunce.derivation.some(i => !target.hasSkill(i)));
@@ -36752,7 +36752,7 @@ const packs = function () {
                             if (source?.isIn()) {
                                 let bool = false;
                                 if (!player.hasHistory('sourceDamage')) {
-                                    const result = await source.chooseBool('下策：是否摸两张牌并令' + get.translation(player) + '回复1点体力？').set('choice', 2 + get.recoverEffect(player, source, source) > 0).forResult();
+                                    const result = await source.chooseBool('下策：是否摸两张牌并令' + get.translation(player) + '回复1点体力？').set('choice', lib.skill.minilunce.getTargetEffect(source, player, skill) > 0).forResult();
                                     if (result.bool) {
                                         bool = event.bool = true;
                                         source.line(player);
@@ -36809,6 +36809,20 @@ const packs = function () {
                     }
                 },
                 derivation: 'minilunce',
+                subSkill: {
+                    fail: {
+                        charlotte: true,
+                        marktext: '败',
+                        intro: {
+                            markcount(num = 0) {
+                                return `${num}/2`;
+                            },
+                            content(num = 0) {
+                                return `计策失败进度：${num}/2次`;
+                            },
+                        },
+                    },
+                },
             },
             //精卫
             minitianhai: {
@@ -47919,6 +47933,7 @@ const packs = function () {
             'minilunce_下策_info': '其回合结束时，若其本回合未造成伤害，你可以摸两张牌并令其回复1点体力。',
             minilanhai: '览害',
             minilanhai_info: `锁定技。当计策成功发动时，你摸X张牌并发动一次${get.poptip('minilunce')}（X为你本回合计策成功的次数）；当计策每累计两次未成功发动时，你增加1点体力和体力上限（体力上限至多以此法增加3点）。`,
+            minilanhai_fail: '览害',
             minitianhai: '填海',
             minitianhai_info: '锁定技。①当你使用或打出手牌时，若此牌有点数且你未记录，则你记录之。②其他角色使用或打出与你〖填海①〗记录的点数相同的牌时，若此牌点数：不大于4，其下次受到的伤害+1；大于4且小于10，你摸一张牌；不小于10，其须弃置任意张牌直到这些牌的点数不小于此牌点数。',
             minihaiku: '海枯',
