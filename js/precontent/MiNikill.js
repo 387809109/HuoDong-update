@@ -35294,77 +35294,77 @@ const packs = function () {
                 limited: true,
                 skillAnimation: true,
                 animationColor: 'water',
+                filter(event, player) {
+                    return player.maxHp > 2;
+                },
                 filterTarget(card, player, target) {
-                    const list = target.getSkills(null, false, false).filter(skill => {
+                    return player.maxHp > 2;
+                },
+                getAwakeningSkills(target) {
+                    return target.getSkills(null, false, false).filter(skill => {
                         return !target.awakenedSkills.includes(skill) && lib.skill[skill]?.juexingji;
                     });
-                    return list.length ? player.maxHp >= game.players.length : player.maxHp >= 3;
                 },
                 selectTarget() {
-                    var player = _status.event.player;
-                    for (var target of game.filterPlayer()) {
-                        var list = target.getSkills(null, false, false).filter(function (skill) {
-                            if (target.awakenedSkills.includes(skill)) return false;
-                            return lib.skill[skill]?.juexingji;
-                        });
-                        var bool1 = (!list.length && player.maxHp >= 3);
-                        var bool2 = (list.length && player.maxHp >= game.players.length);
-                        target.prompt(bool1 ? '可摸牌' : bool2 ? '可觉醒' : '不可选择');
+                    const player = _status.event.player;
+                    for (const target of game.filterPlayer()) {
+                        const list = lib.skill.minihuishi.getAwakeningSkills(target);
+                        target.prompt(player.maxHp <= 2 ? '不可选择' : list.length ? '摸牌并可觉醒' : '可摸牌');
                     }
                     return 1;
                 },
-                content() {
-                    'step 0'
-                    player.awakenSkill('minihuishi');
-                    var list = target.getSkills(null, false, false).filter(function (skill) {
-                        if (target.awakenedSkills.includes(skill)) return false;
-                        return lib.skill[skill]?.juexingji;
-                    });
-                    if (!list.length && player.maxHp >= 3) {
-                        target.draw(4);
-                        event.goto(2);
-                        return;
-                    }
-                    if (list.length && player.maxHp >= game.players.length) {
-                        if (list.length == 1) event._result = { control: list[0] };
-                        else player.chooseControl(list).set('prompt', '选择一个觉醒技，令' + get.translation(target) + '可无视条件发动该技能');
-                    }
-                    else event.goto(2);
-                    'step 1'
-                    if (!result?.control) {
-                        event.finish();
-                        return;
-                    }
-                    const info = lib.skill[result.control];
-                    if (info.filter && !info.charlotte && !info.minihuishi_filter) {
-                        target.storage.minihuishi_mark = result.control;
-                        target.markSkill('minihuishi_mark');
+                async content(event, trigger, player) {
+                    const { target } = event;
+                    player.awakenSkill(event.name);
+                    await player.loseMaxHp(2);
+                    await target.draw(4);
+                    const list = lib.skill.minihuishi.getAwakeningSkills(target);
+                    if (list.length) {
+                        const result = list.length === 1 ? { control: list[0] } : await player.chooseControl(list)
+                            .set('prompt', `选择一个觉醒技，令${get.translation(target)}可无视条件发动该技能`)
+                            .set('target', target)
+                            .set('ai', () => {
+                                const { controls, target } = get.event();
+                                return controls.find(skill => !target.getStorage('minihuishi_mark').includes(skill)) || controls[0];
+                            })
+                            .forResult();
+                        if (!result?.control || !list.includes(result.control)) return;
+                        target.markAuto('minihuishi_mark', [result.control]);
                         game.broadcastAll(skill => {
                             const info = lib.skill[skill];
+                            if (!info.filter || info.minihuishi_filter) return;
                             info.minihuishi_filter = info.filter;
                             info.filter = function (event, player, ...args) {
-                                if (player.storage.minihuishi_mark === skill) return true;
+                                if (player.getStorage('minihuishi_mark').includes(skill) &&
+                                    lib.skill.minihuishi.getAwakeningSkills(player).includes(skill)) return true;
                                 return info.minihuishi_filter.call(this, event, player, ...args);
                             };
                         }, result.control);
                     }
-                    'step 2'
-                    player.loseMaxHp(2);
                 },
-                subSkill: { mark: { intro: { content: '发动【$】时无视条件' } } },
+                subSkill: {
+                    mark: {
+                        charlotte: true,
+                        intro: {
+                            content(storage, player) {
+                                const list = lib.skill.minihuishi.getAwakeningSkills(player).filter(skill => storage.includes(skill));
+                                return list.length ? `发动${get.translation(list)}时无视条件` : '暂无可无视条件发动的觉醒技';
+                            },
+                        },
+                    },
+                },
                 ai: {
                     order: 0.1,
                     expose: 0.2,
                     result: {
+                        player(player) {
+                            return -2 - Math.max(0, player.hp - player.maxHp + 2);
+                        },
                         target(player, target) {
-                            if (player.maxHp < 5) return 0;
-                            var list = target.getSkills(null, false, false).filter(function (skill) {
-                                return lib.skill[skill]?.juexingji;
-                            });
-                            if (list.length && player.maxHp >= game.players.length) return 10 * list.length;
-                            if (target.hasJudge('lebu') || target.hasSkillTag('nogain')) return 0;
-                            if (!list.length && player.maxHp >= 3) return 4;
-                            return 0;
+                            if (player.maxHp <= 2) return 0;
+                            const list = lib.skill.minihuishi.getAwakeningSkills(target).filter(skill => !target.getStorage('minihuishi_mark').includes(skill));
+                            const draw = target.hasJudge('lebu') || target.hasSkillTag('nogain') ? 0 : 4;
+                            return draw + (list.length ? 10 : 0);
                         },
                     },
                 },
@@ -48150,7 +48150,7 @@ const packs = function () {
             minizuoxing: '佐幸',
             minizuoxing_info: '出牌阶段，若神郭嘉存活且体力上限大于1，则你可以令神郭嘉减1点体力上限，视为使用一张本回合未以此法使用过的普通锦囊牌。',
             minihuishi: '辉逝',
-            minihuishi_info: '限定技，出牌阶段，你可选择一名角色。若其有未发动的觉醒技且你的体力上限不小于存活人数，则你选择其中一个技能，令其发动此技能无视条件；若其没有未发动的觉醒技且你的体力上限不小于3，其摸四张牌。然后你减2点体力上限。',
+            minihuishi_info: '限定技，出牌阶段，若你的体力上限大于2，你可以减2点体力上限并选择一名角色，令其摸四张牌。若其有未发动的觉醒技，你选择其中一个技能，令其发动此技能时无视觉醒条件。',
             minishenfu: '神赋',
             minishenfu_info: '出牌阶段限一次，你可以选择一名本回合未以此法选择过的角色并选择一项：1.你对其造成1点雷属性伤害；2.令其摸一张牌；3.弃置其一张牌。若其手牌数等于体力值，则此技能视为未发动过且你摸X张牌（X为你本回合发动〖神赋〗的次数+1且至多为5）。',
             minireqixian: '七弦',
