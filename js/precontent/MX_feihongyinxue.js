@@ -1672,6 +1672,7 @@ const packs = function () {
                 },
                 async content(event, trigger, player) {
                     const { cards } = event;
+                    const target = trigger.player;
                     player.$throw(cards, 1000);
                     game.log(player, '将', cards, '置入了仁库');
                     await player.lose(cards, ui.special, 'toRenku');
