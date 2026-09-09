@@ -43352,12 +43352,8 @@ const packs = function () {
                     player.storage.minifightchuanglie_mark ??= {};
                     if (typeof player.storage.minifightchuanglie_mark[target.playerid] != 'number') player.storage.minifightchuanglie_mark[target.playerid] = 0;
                     const count = ++player.storage.minifightchuanglie_mark[target.playerid];
-                    if (count == 3 && !Object.keys(player.storage.minifightchuanglie_mark).some(id => player.storage.minifightchuanglie_mark[id] > 2 && id != target.playerid) && ui._minifightchuanglie_wancheng) {
-                        const useEvent = trigger.getParent();
-                        for (const owner of game.filterPlayer(current => current.hasSkill('minifightchuanglie'))) {
-                            owner.storage.minifightchuanglie_reentry ??= [];
-                            owner.storage.minifightchuanglie_reentry.add(useEvent);
-                        }
+                    if (count == 3) {
+                        lib.skill.minifightchuanglie.updateReentry(trigger.getParent(), player, true);
                     }
                 }
             },
@@ -43374,9 +43370,28 @@ const packs = function () {
                         const storage = event.target.storage.minifightchuanglie_mark;
                         if (!storage) return false;
                         const { playerid } = event.player;
-                        return storage[playerid] == 3 && !Object.keys(storage).some(id => storage[id] > 2 && id != playerid) && !ui._minifightchuanglie_wancheng;
+                        return storage[playerid] == 3 && !ui._minifightchuanglie_wancheng;
                     }
                     return ui._minifightchuanglie_wancheng;
+                },
+                updateReentry(useEvent, target, eligible) {
+                    for (const owner of game.filterPlayer(current => current.hasSkill('minifightchuanglie'))) {
+                        const records = owner.getStorage('minifightchuanglie_reentry');
+                        let record = records.find(current => current.event == useEvent);
+                        if (eligible && ui._minifightchuanglie_wancheng) {
+                            if (!record) {
+                                record = { event: useEvent, targets: [] };
+                                records.push(record);
+                                owner.storage.minifightchuanglie_reentry = records;
+                            }
+                            record.targets.add(target);
+                        }
+                        else if (record) {
+                            record.targets.remove(target);
+                            if (!record.targets.length) records.remove(record);
+                            if (!records.length) delete owner.storage.minifightchuanglie_reentry;
+                        }
+                    }
                 },
                 enter(player, event) {
                     player.$fullscreenpop('宛城战场', 'fire');
@@ -43457,14 +43472,16 @@ const packs = function () {
                                 const evt = trigger.getParent();
                                 evt.triggeredTargets2.remove(target);
                                 evt.targets.remove(target);
-                                //神秘结算
-                                const num = target.storage.minifightchuanglie_mark?.[user.playerid]
+                                //转移目标时同步撤销旧目标的重入记录，再检查新目标。
+                                const num = target.storage.minifightchuanglie_mark?.[user.playerid];
                                 if (typeof num == 'number' && num > 0) target.storage.minifightchuanglie_mark[user.playerid]--;
+                                lib.skill.minifightchuanglie.updateReentry(evt, target, false);
                                 evt.targets.push(player);
                                 player.addTempSkill('minifightchuanglie_mark');
                                 player.storage.minifightchuanglie_mark ??= {};
                                 if (typeof player.storage.minifightchuanglie_mark[user.playerid] != 'number') player.storage.minifightchuanglie_mark[user.playerid] = 0;
-                                player.storage.minifightchuanglie_mark[user.playerid]++;
+                                const count = ++player.storage.minifightchuanglie_mark[user.playerid];
+                                lib.skill.minifightchuanglie.updateReentry(evt, player, count == 3);
                                 await game.delayx();
                             }
                         },
@@ -43475,10 +43492,11 @@ const packs = function () {
                         popup: false,
                         trigger: { global: 'useCardAfter' },
                         filter(event, player) {
-                            return player.getStorage('minifightchuanglie_reentry').includes(event);
+                            return player.getStorage('minifightchuanglie_reentry').some(record => record.event == event);
                         },
                         content(event, trigger, player) {
-                            player.storage.minifightchuanglie_reentry.removeArray([trigger]);
+                            const records = player.storage.minifightchuanglie_reentry;
+                            records.remove(records.find(record => record.event == trigger));
                             if (!player.storage.minifightchuanglie_reentry.length) delete player.storage.minifightchuanglie_reentry;
                             if (!ui._minifightchuanglie_wancheng) {
                                 lib.skill.minifightchuanglie.enter(player, event);
@@ -43586,13 +43604,15 @@ const packs = function () {
                                 num = Math.ceil(num / 2);
                                 if (event.result.card.name == 'sha') {
                                     event.result.card.storage.minifightkuangji_count = num;
-                                    player.when('useCard2').filter(evt => evt.skill == 'minifightkuangji_backup' && evt.card.name == 'sha' && evt.getParent() == event.getParent()).step(evt => {
-                                        evt.card.storage.minifightkuangji_targets = evt.targets.slice();
+                                    player.when('useCard2').filter(evt => evt.skill == 'minifightkuangji_backup' && evt.card.name == 'sha' && evt.getParent() == event.getParent()).step((event, trigger) => {
+                                        trigger.card.storage.minifightkuangji_targets = trigger.targets.slice();
                                     });
                                 }
-                                player.when('useCard').filter(evt => evt.skill == 'minifightkuangji_backup' && evt.card.name == 'shan' && evt.getParent() == event.getParent()).step(async () => {
-                                    await player.draw(num);
-                                });
+                                else {
+                                    player.when('useCard').filter(evt => evt.skill == 'minifightkuangji_backup' && evt.card.name == 'shan' && evt.getParent() == event.getParent()).step(async () => {
+                                        await player.draw(num);
+                                    });
+                                }
                                 event.result.cards = [];
                             },
                         };
@@ -43643,28 +43663,27 @@ const packs = function () {
                     },
                     equip: {
                         audio: 'minifightkuangji',
+                        getWeapons(excluded = []) {
+                            return Array.from(ui.cardPile.childNodes).filter(card => get.subtypes(card).includes('equip1') && !excluded.includes(card));
+                        },
                         trigger: {
                             global: 'phaseBefore',
                             player: 'enterGame',
                         },
                         filter(event, player) {
                             if (!player.countCards('h')) return false;
-                            return event.name != 'phase' || game.phaseNumber == 0;
+                            return (event.name != 'phase' || game.phaseNumber == 0) && lib.skill.minifightkuangji_equip.getWeapons().length > 0;
                         },
                         async cost(event, trigger, player) {
-                            event.result = await player.chooseCard(get.prompt(event.skill), '将至多两张手牌替换为武器牌', [1, 2], 'allowChooseAll').set('ai', card => {
+                            const max = Math.min(2, lib.skill.minifightkuangji_equip.getWeapons().length);
+                            event.result = await player.chooseCard(get.prompt(event.skill), '将至多两张手牌随机替换为剩余牌堆中的武器牌', [1, max], 'allowChooseAll').set('ai', card => {
                                 return 6 - get.value(card);
                             }).forResult();
                         },
                         async content(event, trigger, player) {
                             const { cards } = event;
                             await player.lose(cards, ui.cardPile);
-                            const gains = [];
-                            while (gains.length < cards.length) {
-                                const card = get.cardPile2(card => get.subtypes(card).includes('equip1') && !gains.includes(card));
-                                if (card) gains.push(card);
-                                else break;
-                            }
+                            const gains = lib.skill.minifightkuangji_equip.getWeapons(cards).randomGets(cards.length);
                             if (gains.length) await player.gain(gains, 'draw');
                         },
                     }
@@ -48388,7 +48407,7 @@ const packs = function () {
                 info: '你可以失去1点体力并摸一张牌，然后你对目标角色造成1点伤害；一名角色因此受到伤害时，你可以弃置一张装备牌令此伤害+1',
             })}〗；3.当你进入濒死状态时，你回复2点体力并退出“宛城战场”。`,
             minifightkuangji: '狂戟',
-            minifightkuangji_info: '①游戏开始时，你可以将至多两张手牌替换为牌堆中的等量张武器牌。②每回合限一次。你可以打出一张武器牌A并视为使用一张【闪】或额外结算X-1次的无任何次数限制的【杀】，且当你以此法使用【闪】时，你摸X张牌（X为A攻击范围的一半且向上取整）。',
+            minifightkuangji_info: '①游戏开始时，你可以将至多两张手牌随机替换为剩余牌堆中的等量张武器牌。②每回合限一次。你可以打出一张武器牌A并视为使用一张【闪】或额外结算X-1次的无任何次数限制的【杀】，且当你以此法使用【闪】时，你摸X张牌（X为A攻击范围的一半且向上取整）。',
             minifightdangfeng: '荡锋',
             minifightdangfeng_info: '一名角色的回合结束时，你依次执行以下项：1.若本回合没有角色受到过伤害，你从牌堆或弃牌堆中获得一张【杀】；2.若本回合没有角色使用过【杀】，你可以使用一张【杀】。',
             minifighthaiji: '骇击',
