@@ -14238,13 +14238,13 @@ const packs = function () {
                 filter(event, player) {
                     return event.source && event.source != player && event.num > 0;
                 },
-                async cost(event, trigger, player) {
-                    const { source, num } = trigger;
-                    event.result = await player.chooseBool(get.prompt('minispqiaoshi'), `回复${num}点体力，然后${get.translation(source)}摸两张牌`)
-                        .set('ai', () => _status.event.goon)
-                        .set('goon', get.recoverEffect(player, player, player) * Math.min(num, player.maxHp - player.hp) +
-                            (source.isIn() ? 2 * get.effect(source, { name: 'draw' }, player, player) : 0) > 0)
-                        .forResult();
+                prompt2(event, player) {
+                    const { source, num } = event;
+                    return `回复${num}点体力，${source.isIn() ? `然后${get.translation(source)}摸两张牌` : ''}`;
+                },
+                check(event, player) {
+                    const { source, num } = event;
+                    return get.recoverEffect(player, player, player) * Math.min(num, player.maxHp - player.hp) + (source.isIn() ? 2 * get.effect(source, { name: 'draw' }, player, player) : 0) > 0;
                 },
                 async content(event, trigger, player) {
                     await player.recover(trigger.num);
@@ -35344,9 +35344,7 @@ const packs = function () {
                 filter(event, player) {
                     return player.maxHp > 2;
                 },
-                filterTarget(card, player, target) {
-                    return player.maxHp > 2;
-                },
+                filterTarget: true,
                 getAwakeningSkills(target) {
                     return target.getSkills(null, false, false).filter(skill => {
                         return !target.awakenedSkills.includes(skill) && lib.skill[skill]?.juexingji;
@@ -42941,7 +42939,7 @@ const packs = function () {
                     return player.getStorage('minifightreliegong_events').includes(event.getParent()) && lib.skill.xinliegong.filter(event, player);
                 },
                 mod: {
-                    targetInRange() {},
+                    targetInRange() { },
                 },
                 ai: {
                     directHit_ai: true,
@@ -46997,7 +46995,7 @@ const packs = function () {
             minisbfanxiang: '返乡',
             minisbfanxiang_info: '限定技，出牌阶段，你可以获得场上所有有“姻”标记的其他角色的装备区的牌，然后移去场上的所有“姻”标记并令所有角色失去〖结姻〗，最后你获得〖舞剑〗，将势力更换为吴。',
             minispqiaoshi: '樵拾',
-            minispqiaoshi_info: '每回合限一次，你受到其他角色造成的伤害后，你可令你回复等同此次伤害值的体力。若如此做，该角色摸两张牌。',
+            minispqiaoshi_info: '每回合限一次，你受到其他角色造成的伤害后，你可回复等同此次伤害值的体力。若如此做，该角色摸两张牌。',
             minispyanyu: '燕语',
             minispyanyu_info: '一名角色的出牌阶段开始时，你可以弃置一张牌。若如此做，此回合限两次，每当本回合的出牌阶段有与你弃置牌类别相同的其他牌进入弃牌堆时，你可令任意一名角色获得至多一张。若牌名也相同，则可重置并立即发动〖燕语〗。',
             miniwuyuan: '武缘',
