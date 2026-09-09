@@ -229,6 +229,10 @@
             "size": 16874
         },
         {
+            "path": "audio/die/Mbaby_wuyi.mp3",
+            "size": 40846
+        },
+        {
             "path": "audio/die/Mbaby_xf_yiji.mp3",
             "size": 85263
         },
@@ -1783,6 +1787,14 @@
         {
             "path": "audio/skill/miniaocai2.mp3",
             "size": 28285
+        },
+        {
+            "path": "audio/skill/minibenxi1.mp3",
+            "size": 31397
+        },
+        {
+            "path": "audio/skill/minibenxi2.mp3",
+            "size": 28487
         },
         {
             "path": "audio/skill/minibenyue1.mp3",
@@ -6657,6 +6669,10 @@
             "size": 117889
         },
         {
+            "path": "image/character/Mbaby_wuyi.jpg",
+            "size": 134026
+        },
+        {
             "path": "image/character/Mbaby_xf_yiji.jpg",
             "size": 129565
         },
@@ -9234,7 +9250,7 @@
         },
         {
             "path": "js/precontent/MiNikill.js",
-            "size": 2935196
+            "size": 2945481
         },
         {
             "path": "js/precontent/MiNikill_sight.js",
