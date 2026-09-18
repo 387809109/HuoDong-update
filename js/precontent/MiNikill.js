@@ -34396,79 +34396,212 @@ const packs = function () {
             },
             miniduorui: {
                 audio: 'drlt_duorui',
-                trigger: { player: 'phaseUseBegin' },
-                filter(event, player) {
-                    return game.hasPlayer(function (current) {
-                        return current != player && current.countCards('h');
-                    });
+                init(player, skill) {
+                    player.addSkill(`${skill}_back`);
                 },
-                async cost(event, trigger, player) {
-                    event.result = await player.chooseTarget(get.prompt2('miniduorui'), function (card, player, target) {
-                        if (player == target) return false;
-                        return target.countCards('h');
-                    }).set('ai', function (target) {
-                        return -get.attitude(player, target) * (target.getDamagedHp() + 1);
-                    }).forResult();
-                },
-                content() {
-                    'step 0'
-                    player.gainPlayerCard(targets[0], 'h', true, 'visible');
-                    'step 1'
-                    if (result?.bool && result.cards?.length && targets[0].isIn()) {
-                        const color = get.color(result.cards[0], targets[0]);
-                        player.popup(get.translation(color));
-                        const id = targets[0].playerid;
-                        player.addTempSkill('miniduorui_effect');
-                        player.storage['miniduorui_effect'] ??= {};
-                        player.storage['miniduorui_effect'][id] ??= [];
-                        player.storage['miniduorui_effect'][id].add(color);
+                onremove(player, skill) {
+                    player.removeSkill(`${skill}_back`);
+                    for (const target of game.players.concat(game.dead)) {
+                        const record = target.getStorage(`${skill}_break`);
+                        const rest = record.filter(item => item.owner !== player);
+                        if (rest.length === record.length) continue;
+                        lib.skill.miniduorui.setBreak(target, rest);
                     }
                 },
-                subSkill: {
-                    effect: {
-                        charlotte: true,
-                        onremove: true,
-                        audio: 'drlt_duorui',
-                        trigger: { player: 'useCard' },
-                        filter(event, player) {
-                            return Object.values(player.storage['miniduorui_effect']).flat().includes(get.color(event.card));
-                        },
-                        silent: true,
-                        content() {
-                            const storage = player.storage[event.name], color = get.color(trigger.card);
-                            trigger.directHit.addArray(Object.keys(storage).filter(id => storage[id].includes(color)).map(id => {
-                                return (_status.connectMode ? lib.playerOL : game.playerMap)[id];
-                            }));
-                        },
-                        ai: {
-                            directHit_ai: true,
-                            skillTagFilter(player, tag, arg) {
-                                if (!arg?.card || !arg.target) return false;
-                                const color = get.color(arg.card), id = arg.target.playerid;
-                                return player.storage['miniduorui_effect']?.[id]?.includes(color);
+                setBreak(target, list) {
+                    if (list.length) {
+                        target.setStorage('miniduorui_break', list, true);
+                        return;
+                    }
+                    target.removeStorage('miniduorui_break', true);
+                    game.broadcastAll(function (current, skill) {
+                        delete current.storage[skill];
+                    }, target, 'miniduorui_break');
+                },
+                trigger: { player: 'phaseUseBegin' },
+                filter(event, player) {
+                    return game.hasPlayer(current => current !== player && current.hasCards('h'));
+                },
+                check(event, player) {
+                    return game.hasPlayer(current => current !== player && current.hasCards('h') && get.attitude(player, current) < 0);
+                },
+                async content(event, trigger, player) {
+                    const result = await player
+                        .chooseTarget({
+                            prompt: `${get.translation(event.name)}：选择一名其他角色，观看并获得其一张手牌`,
+                            filterTarget(card, p, target) {
+                                return target !== p && target.hasCards('h');
                             },
+                            ai(target) {
+                                return -get.attitude(get.player(), target);
+                            },
+                        })
+                        .forResult();
+                    const target = result?.targets?.[0];
+                    if (!target) return;
+                    player.line(target);
+                    await player.viewHandcards(target);
+                    const result2 = await player
+                        .chooseButton([`${get.translation(event.name)}：获得${get.translation(target)}的一张手牌`, target.getCards('h')], true)
+                        .set('ai', button => -get.value(button.link))
+                        .forResult();
+                    const card = result2?.links?.[0];
+                    if (!card) return;
+                    const color = get.color(card, target);
+                    await player.gain([card], target, 'giveAuto', 'bySelf');
+                    if (color !== 'red' && color !== 'black') return;
+                    player.addTempSkill('miniduorui_turn', { player: 'phaseAfter' });
+                    player.setStorage('miniduorui_turn', { target: target, color: color }, true);
+                    game.log(player, `本回合使用的${color === 'red' ? '#y红色' : '#b黑色'}牌不可被响应`);
+                },
+                subSkill: {
+                    turn: {
+                        charlotte: true,
+                        forced: true,
+                        popup: false,
+                        firstDo: true,
+                        trigger: { player: 'useCard1', source: 'damageEnd' },
+                        filter(event, player, name) {
+                            const record = player.getStorage('miniduorui_turn', {});
+                            if (!record.target) return false;
+                            if (!event.card || get.color(event.card, player) !== record.color) return false;
+                            if (name === 'useCard1') return true;
+                            return event.player === record.target && event.player.hasEnabledSlot();
+                        },
+                        async content(event, trigger, player) {
+                            if (event.triggername === 'useCard1') {
+                                trigger.directHit.addArray(game.players);
+                                game.log(trigger.card, '不可被响应');
+                                return;
+                            }
+                            const target = trigger.player;
+                            const list = [];
+                            for (let i = 1; i <= 5; i++) {
+                                if (target.hasEnabledSlot(i)) list.push(`equip${i}`);
+                            }
+                            if (!list.length) return;
+                            const slot = list.randomGet();
+                            await target.disableEquip({ source: player, slots: [slot] });
+                            target.markAuto('miniduorui_break', [{ slot: slot, owner: player }]);
+                        },
+                        onremove(player) {
+                            player.removeStorage('miniduorui_turn', true);
+                        },
+                    },
+                    break: {},
+                    back: {
+                        charlotte: true,
+                        forced: true,
+                        trigger: { player: 'damageEnd' },
+                        filter(event, player) {
+                            const source = event.source;
+                            if (!source || !source.isIn()) return false;
+                            return source.getStorage('miniduorui_break').some(item => item.owner === player);
+                        },
+                        async content(event, trigger, player) {
+                            const source = trigger.source;
+                            const record = source.getStorage('miniduorui_break');
+                            const mine = {};
+                            for (const item of record) {
+                                if (item.owner === player) mine[item.slot] = (mine[item.slot] || 0) + 1;
+                            }
+                            const slots = [];
+                            const drop = {};
+                            for (const slot of Object.keys(mine)) {
+                                const left = source.countDisabledSlot(slot);
+                                if (!left) {
+                                    drop[slot] = mine[slot];
+                                    continue;
+                                }
+                                for (let i = 0, num = Math.min(mine[slot], left); i < num; i++) slots.push(slot);
+                            }
+                            let restored = 0;
+                            if (slots.length) {
+                                const before = {};
+                                for (const slot of [...new Set(slots)]) before[slot] = source.countDisabledSlot(slot);
+                                await source.enableEquip({ source: player, slots: slots });
+                                for (const slot of Object.keys(before)) {
+                                    const got = Math.max(0, before[slot] - source.countDisabledSlot(slot));
+                                    if (!got) continue;
+                                    drop[slot] = (drop[slot] || 0) + got;
+                                    restored += got;
+                                }
+                            }
+                            if (!restored && !Object.keys(drop).length) return;
+                            const rest = [];
+                            for (const item of record) {
+                                if (item.owner === player && drop[item.slot] > 0) drop[item.slot]--;
+                                else rest.push(item);
+                            }
+                            lib.skill.miniduorui.setBreak(source, rest);
+                            if (restored) await player.draw(restored);
                         },
                     },
                 },
             },
             minizhiti: {
+                audio: 'drlt_zhiti',
+                locked: true,
+                init(player, skill) {
+                    player.addSkill(`${skill}_draw`);
+                    player.addSkill(`${skill}_discard`);
+                },
+                onremove(player, skill) {
+                    player.removeSkill(`${skill}_draw`);
+                    player.removeSkill(`${skill}_discard`);
+                },
+                zhitiValue() {
+                    let num = 0;
+                    for (const target of game.players) {
+                        if (!target.isIn()) continue;
+                        if (target.isDamaged()) num++;
+                        num += target.countDisabledSlot();
+                    }
+                    return num;
+                },
                 mod: {
                     cardUsable(card, player, num) {
-                        if (card.name == 'sha' && game.countPlayer(function (current) {
-                            return current.isDamaged();
-                        }) > 2) return num + 1;
+                        if (card.name !== 'sha' || typeof num !== 'number') return;
+                        if (lib.skill.minizhiti.zhitiValue() > 2) return num + 1;
                     },
                 },
-                audio: 'drlt_zhiti',
-                trigger: { player: 'phaseDrawBegin2' },
-                forced: true,
-                filter(event, player) {
-                    return game.countPlayer(function (current) {
-                        return current.isDamaged();
-                    }) > 1;
-                },
-                content() {
-                    trigger.num++;
+                subSkill: {
+                    draw: {
+                        charlotte: true,
+                        forced: true,
+                        popup: false,
+                        trigger: { player: 'phaseDrawBegin2' },
+                        filter(event, player) {
+                            return !event.numFixed && lib.skill.minizhiti.zhitiValue() > 1;
+                        },
+                        content(event, trigger, player) {
+                            trigger.num++;
+                            game.log(player, '的摸牌阶段摸牌数+1');
+                        },
+                    },
+                    discard: {
+                        charlotte: true,
+                        forced: true,
+                        trigger: { global: 'phaseDiscardEnd' },
+                        filter(event, player) {
+                            if (event.player === player) return false;
+                            if (!event.player.countDisabledSlot()) return false;
+                            return lib.skill.minizhiti.zhitiValue() > 3;
+                        },
+                        async content(event, trigger, player) {
+                            const target = trigger.player;
+                            const num = Math.min(target.countDisabledSlot(), target.countDiscardableCards(player, 'hej'));
+                            if (num > 0) {
+                                await player.discardPlayerCard({
+                                    target: target,
+                                    position: 'hej',
+                                    selectButton: num,
+                                    forced: true,
+                                    prompt: `${get.translation(event.name)}：弃置${get.translation(target)}区域里的${get.cnNumber(num)}张牌`,
+                                });
+                            }
+                        },
+                    },
                 },
             },
             //劝退
@@ -48150,9 +48283,9 @@ const packs = function () {
             minijieying: '结营',
             minijieying_info: '锁定技，游戏开始时或当你的武将牌重置时，你横置；所有已横置的角色手牌上限+2；结束阶段，你可以横置一名其他角色。当你受到伤害时，你摸一张牌。',
             miniduorui: '夺锐',
-            miniduorui_info: '出牌阶段开始时，你可以观看一名其他角色的手牌并获得其中一张，本回合其不能响应你使用的此颜色的牌。',
+            miniduorui_info: '出牌阶段开始时，你可以选择一名其他角色，观看并获得其一张手牌，然后本回合你使用该颜色的牌，其不能响应，若此颜色的牌对其造成伤害，则随机废弃其一个装备栏。当你受到伤害时，伤害来源恢复所有因此技能而废弃的装备栏，你摸等量的牌。',
             minizhiti: '止啼',
-            minizhiti_info: '锁定技，若已受伤角色数：大于1，你摸牌阶段摸牌数+1；大于2， 你使用【杀】的次数上限+1。',
+            minizhiti_info: '锁定技，若存活的已受伤角色数量与场上被废除的装备栏数之和：①大于1，你摸牌阶段摸牌数量+1；②大于2，你出【杀】次数+1；③大于3，其他角色弃牌阶段结束时，若其有已废除的装备栏，你弃置其区域里等量的牌。',
             miniquanxue: '劝学',
             miniquanxue_info: '出牌阶段开始时，你可令至多两名其他角色各获得1枚“学”。有“学”的角色回合开始时移除“学”并选择一项：① 出牌阶段不能对其他角色使用牌；②失去1点体力。',
             minishehu: '射虎',
