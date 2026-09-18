@@ -214,7 +214,7 @@ const packs = function () {
             wechat_shen_lvbu: ['male', 'shen', 5, ['wushuang', 'baonu', 'wumou', 'ol_shenfen'], ['qun']],
             wechat_new_simayi: ['male', 'shen', 4, ['wechatrenjie', 'wechatbaiyin', 'wechatlianpo'], ['wei', 'name:司马|懿']],
             wechat_shen_caocao: ['male', 'shen', 3, ['wechatguixin', 'feiying'], ['wei']],
-            wechat_shen_zhangliao: ['male', 'shen', 4, ['drlt_duorui', 'wechatzhiti'], ['wei']],
+            wechat_shen_zhangliao: ['male', 'shen', 4, ['wechat_duorui', 'wechatzhiti'], ['wei']],
             //只因武将
             wechat_zhiyin_lvbu: ['male', 'qun', 4, ['wushuang', 'wechatxiaohu']],
             wechat_zhiyin_daqiao: ['female', 'wu', 3, ['wechatjielie', 'wechatxiangzhi'], ['name:桥|null']],
@@ -16517,62 +16517,215 @@ const packs = function () {
                 }
             },
             // 神张辽
-            wechatzhiti: {
-                audio: 'drlt_zhiti',
-                inherit: 'drlt_zhiti',
-                filter(event, player) {
-                    if (!player.hasDisabledSlot()) {
-                        return false;
-                    }
-                    if (event.name == 'juedou') {
-                        if (![event.player, event.target].includes(player)) {
-                            return false;
-                        }
-                        if (!event.turn || event.turn === player) {
-                            return false;
-                        }
-                        const opposite = event.player === player ? event.target : event.player;
-                        return opposite?.isIn();
-                    } else if (event.name == 'damage') {
-                        return true;
-                    } else {
-                        if (![event.player, event.target].includes(player)) {
-                            return false;
-                        }
-                        if (event.preserve) {
-                            return false;
-                        }
-                        let opposite;
-                        if (player === event.player) {
-                            if (event.num1 > event.num2) {
-                                opposite = event.target;
-                            } else {
-                                return false;
-                            }
-                        } else {
-                            if (event.num1 < event.num2) {
-                                opposite = event.player;
-                            } else {
-                                return false;
-                            }
-                        }
-                        return opposite?.isIn() && opposite.isDamaged();
+            wechat_duorui: {
+                audio: 'drlt_duorui',
+                init(player, skill) {
+                    player.addSkill(`${skill}_back`);
+                },
+                onremove(player, skill) {
+                    player.removeSkill(`${skill}_back`);
+                    for (const target of game.players.concat(game.dead)) {
+                        const record = target.getStorage(`${skill}_break`);
+                        const rest = record.filter(item => item.owner !== player);
+                        if (rest.length === record.length) continue;
+                        lib.skill.wechat_duorui.setBreak(target, rest);
                     }
                 },
-                global: 'wechatzhiti_global',
-                subSkill: {
-                    global: {
-                        mod: {
-                            maxHandcard(player, num) {
-                                if (player.isDamaged()) {
-                                    return num - game.countPlayer(current => {
-                                        return current != player && current.hasSkill('wechatzhiti');
-                                    });
-                                }
-                            },
-                        },
+                setBreak(target, list) {
+                    if (list.length) {
+                        target.setStorage('wechat_duorui_break', list, true);
+                        return;
                     }
-                }
+                    target.removeStorage('wechat_duorui_break', true);
+                    game.broadcastAll(function (current, skill) {
+                        delete current.storage[skill];
+                    }, target, 'wechat_duorui_break');
+                },
+                trigger: { player: 'phaseUseBegin' },
+                filter(event, player) {
+                    return game.hasPlayer(current => current !== player && current.hasCards('h'));
+                },
+                check(event, player) {
+                    return game.hasPlayer(current => current !== player && current.hasCards('h') && get.attitude(player, current) < 0);
+                },
+                async content(event, trigger, player) {
+                    const result = await player
+                        .chooseTarget({
+                            prompt: `${get.translation(event.name)}：选择一名其他角色，观看并获得其一张手牌`,
+                            filterTarget(card, p, target) {
+                                return target !== p && target.hasCards('h');
+                            },
+                            ai(target) {
+                                return -get.attitude(get.player(), target);
+                            },
+                        })
+                        .forResult();
+                    const target = result?.targets?.[0];
+                    if (!target) return;
+                    player.line(target);
+                    await player.viewHandcards(target);
+                    const result2 = await player
+                        .chooseButton([`${get.translation(event.name)}：获得${get.translation(target)}的一张手牌`, target.getCards('h')], true)
+                        .set('ai', button => -get.value(button.link))
+                        .forResult();
+                    const card = result2?.links?.[0];
+                    if (!card) return;
+                    const color = get.color(card, target);
+                    await player.gain([card], target, 'giveAuto', 'bySelf');
+                    if (color !== 'red' && color !== 'black') return;
+                    player.addTempSkill('wechat_duorui_turn', { player: 'phaseAfter' });
+                    player.setStorage('wechat_duorui_turn', { target: target, color: color }, true);
+                    game.log(player, `本回合使用的${color === 'red' ? '#y红色' : '#b黑色'}牌不可被响应`);
+                },
+                subSkill: {
+                    turn: {
+                        charlotte: true,
+                        forced: true,
+                        popup: false,
+                        firstDo: true,
+                        trigger: { player: 'useCard1', source: 'damageEnd' },
+                        filter(event, player, name) {
+                            const record = player.getStorage('wechat_duorui_turn', {});
+                            if (!record.target) return false;
+                            if (!event.card || get.color(event.card, player) !== record.color) return false;
+                            if (name === 'useCard1') return true;
+                            return event.player === record.target && event.player.hasEnabledSlot();
+                        },
+                        async content(event, trigger, player) {
+                            if (event.triggername === 'useCard1') {
+                                trigger.directHit.addArray(game.players);
+                                game.log(trigger.card, '不可被响应');
+                                return;
+                            }
+                            const target = trigger.player;
+                            const list = [];
+                            for (let i = 1; i <= 5; i++) {
+                                if (target.hasEnabledSlot(i)) list.push(`equip${i}`);
+                            }
+                            if (!list.length) return;
+                            const slot = list.randomGet();
+                            await target.disableEquip({ source: player, slots: [slot] });
+                            target.markAuto('wechat_duorui_break', [{ slot: slot, owner: player }]);
+                        },
+                        onremove(player) {
+                            player.removeStorage('wechat_duorui_turn', true);
+                        },
+                    },
+                    break: {},
+                    back: {
+                        charlotte: true,
+                        forced: true,
+                        trigger: { player: 'damageEnd' },
+                        filter(event, player) {
+                            const source = event.source;
+                            if (!source || !source.isIn()) return false;
+                            return source.getStorage('wechat_duorui_break').some(item => item.owner === player);
+                        },
+                        async content(event, trigger, player) {
+                            const source = trigger.source;
+                            const record = source.getStorage('wechat_duorui_break');
+                            const mine = {};
+                            for (const item of record) {
+                                if (item.owner === player) mine[item.slot] = (mine[item.slot] || 0) + 1;
+                            }
+                            const slots = [];
+                            const drop = {};
+                            for (const slot of Object.keys(mine)) {
+                                const left = source.countDisabledSlot(slot);
+                                if (!left) {
+                                    drop[slot] = mine[slot];
+                                    continue;
+                                }
+                                for (let i = 0, num = Math.min(mine[slot], left); i < num; i++) slots.push(slot);
+                            }
+                            let restored = 0;
+                            if (slots.length) {
+                                const before = {};
+                                for (const slot of [...new Set(slots)]) before[slot] = source.countDisabledSlot(slot);
+                                await source.enableEquip({ source: player, slots: slots });
+                                for (const slot of Object.keys(before)) {
+                                    const got = Math.max(0, before[slot] - source.countDisabledSlot(slot));
+                                    if (!got) continue;
+                                    drop[slot] = (drop[slot] || 0) + got;
+                                    restored += got;
+                                }
+                            }
+                            if (!restored && !Object.keys(drop).length) return;
+                            const rest = [];
+                            for (const item of record) {
+                                if (item.owner === player && drop[item.slot] > 0) drop[item.slot]--;
+                                else rest.push(item);
+                            }
+                            lib.skill.wechat_duorui.setBreak(source, rest);
+                            if (restored) await player.draw(restored);
+                        },
+                    },
+                },
+            },
+            wechatzhiti: {
+                audio: 'drlt_zhiti',
+                locked: true,
+                init(player, skill) {
+                    player.addSkill(`${skill}_draw`);
+                    player.addSkill(`${skill}_discard`);
+                },
+                onremove(player, skill) {
+                    player.removeSkill(`${skill}_draw`);
+                    player.removeSkill(`${skill}_discard`);
+                },
+                zhitiValue() {
+                    let num = 0;
+                    for (const target of game.players) {
+                        if (!target.isIn()) continue;
+                        if (target.isDamaged()) num++;
+                        num += target.countDisabledSlot();
+                    }
+                    return num;
+                },
+                mod: {
+                    cardUsable(card, player, num) {
+                        if (card.name !== 'sha' || typeof num !== 'number') return;
+                        if (lib.skill.wechatzhiti.zhitiValue() > 2) return num + 1;
+                    },
+                },
+                subSkill: {
+                    draw: {
+                        charlotte: true,
+                        forced: true,
+                        popup: false,
+                        trigger: { player: 'phaseDrawBegin2' },
+                        filter(event, player) {
+                            return !event.numFixed && lib.skill.wechatzhiti.zhitiValue() > 1;
+                        },
+                        content(event, trigger, player) {
+                            trigger.num++;
+                            game.log(player, '的摸牌阶段摸牌数+1');
+                        },
+                    },
+                    discard: {
+                        charlotte: true,
+                        forced: true,
+                        trigger: { global: 'phaseDiscardEnd' },
+                        filter(event, player) {
+                            if (event.player === player) return false;
+                            if (!event.player.countDisabledSlot()) return false;
+                            return lib.skill.wechatzhiti.zhitiValue() > 3;
+                        },
+                        async content(event, trigger, player) {
+                            const target = trigger.player;
+                            const num = Math.min(target.countDisabledSlot(), target.countDiscardableCards(player, 'hej'));
+                            if (num > 0) {
+                                await player.discardPlayerCard({
+                                    target: target,
+                                    position: 'hej',
+                                    selectButton: num,
+                                    forced: true,
+                                    prompt: `${get.translation(event.name)}：弃置${get.translation(target)}区域里的${get.cnNumber(num)}张牌`,
+                                });
+                            }
+                        },
+                    },
+                },
             },
             // 阮籍
             wechatyonghuai: {
@@ -24742,8 +24895,11 @@ const packs = function () {
             wechattianqi: '天启',
             wechattianqi_info: `出牌阶段限一次。你可以选择一名角色，令其将其手牌中本回合被使用过的牌名的牌置于其武将牌上，直到其下一次受到伤害后。若其因此扣置了${get.poptip('wechatzhongxin')}记录牌名的牌或所有手牌，你可以令其将手牌摸至体力上限。`,
             wechat_shen_zhangliao: '小程序神张辽',
+            wechat_duorui: '夺锐',
+            wechat_duorui_info: '出牌阶段开始时，你可以选择一名其他角色，观看并获得其一张手牌，然后本回合你使用该颜色的牌，其不能响应，若此颜色的牌对其造成伤害，则随机废弃其一个装备栏。当你受到伤害时，伤害来源恢复所有因此技能而废弃的装备栏，你摸等量的牌。',
+            wechat_duorui_bg: '锐',
             wechatzhiti: '止啼',
-            wechatzhiti_info: '锁定技。①已受伤的其他角色手牌上限-1；②当你和已受伤的角色拼点或【决斗】胜利或受到伤害后，你恢复一个装备栏。',
+            wechatzhiti_info: '锁定技，若存活的已受伤角色数量与场上被废除的装备栏数之和：①大于1，你摸牌阶段摸牌数量+1；②大于2，你出【杀】次数+1；③大于3，其他角色弃牌阶段结束时，若其有已废除的装备栏，你弃置其区域里等量的牌。',
             wechat_ruanji: '小程序阮籍',
             wechatyonghuai: '咏怀',
             wechatyonghuai_info: '出牌阶段限一次，你可以弃置一张牌。若此牌的类型为：1.基本牌，你摸两张牌且本回合你的基本牌不计入手牌上限；2.锦囊牌，你视为使用一张锦囊牌且你可以为此牌增加或减少一个目标（此牌目标数至少为1）；3.装备牌，你观看牌堆顶的三张牌，获得其中一张牌并将剩余牌以任意顺序置于牌堆顶或牌堆底。',
