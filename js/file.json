@@ -4589,6 +4589,14 @@
             "size": 24283
         },
         {
+            "path": "audio/skill/wechatshaoyan1.mp3",
+            "size": 17028
+        },
+        {
+            "path": "audio/skill/wechatshaoyan2.mp3",
+            "size": 14834
+        },
+        {
             "path": "audio/skill/wechatshenfu1.mp3",
             "size": 19304
         },
@@ -4915,14 +4923,6 @@
         {
             "path": "audio/skill/wechatyuli2.mp3",
             "size": 11630
-        },
-        {
-            "path": "audio/skill/wechatzhaoyan1.mp3",
-            "size": 17028
-        },
-        {
-            "path": "audio/skill/wechatzhaoyan2.mp3",
-            "size": 14834
         },
         {
             "path": "audio/skill/wechatzhengren1.mp3",
@@ -9250,7 +9250,7 @@
         },
         {
             "path": "js/precontent/MiNikill.js",
-            "size": 2952660
+            "size": 2960573
         },
         {
             "path": "js/precontent/MiNikill_sight.js",

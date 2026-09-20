@@ -218,7 +218,7 @@ const packs = function () {
             //只因武将
             wechat_zhiyin_lvbu: ['male', 'qun', 4, ['wushuang', 'wechatxiaohu']],
             wechat_zhiyin_daqiao: ['female', 'wu', 3, ['wechatjielie', 'wechatxiangzhi'], ['name:桥|null']],
-            wechat_zhiyin_xiaoqiao: ['female', 'wu', 3, ['wechattongxin', 'wechatzhaoyan'], ['name:桥|null']],
+            wechat_zhiyin_xiaoqiao: ['female', 'wu', 3, ['wechattongxin', 'wechatshaoyan'], ['name:桥|null']],
             wechat_zhiyin_guojia: ['male', 'wei', 3, ['wechatdingce', 'wechatsuanlve']],
             wechat_zhiyin_caocao: ['male', 'wei', 4, ['wechatdelu', 'wechatzhujiu']],
             wechat_zhiyin_zhugeliang: ['male', 'shu', 3, ['wechatsangu', 'wechatyanshi'], ['name:诸葛|亮', 'clan:琅琊诸葛氏']],
@@ -2366,7 +2366,7 @@ const packs = function () {
                     },
                 },
             },
-            wechatzhaoyan: {
+            wechatshaoyan: {
                 audio: 'ext:活动武将/audio/skill:2',
                 trigger: { target: 'useCardToTargeted' },
                 filter(event, player) {
@@ -24003,8 +24003,8 @@ const packs = function () {
             wechat_zhiyin_xiaoqiao: '极小乔',
             wechattongxin: '同心',
             wechattongxin_info: `${get.poptip('rule_yunlvSkill')}，出牌阶段限一次，<br>平：出牌阶段限一次，你可以令一名其他角色交给你一张手牌，然后若其手牌数不大于你，其摸一张牌。<br>仄：出牌阶段限一次，你可以交给一名其他角色一张手牌，然后若其手牌数不小于你，你对其造成1点伤害。<br>转韵：你于出牌阶段使用本回合未使用过的类型的牌。`,
-            wechatzhaoyan: '昭颜',
-            wechatzhaoyan_info: '每回合限一次，当你成为其他角色使用牌的目标后，若其手牌数大于你，你摸一张牌。',
+            wechatshaoyan: '韶颜',
+            wechatshaoyan_info: '每回合限一次，当你成为其他角色使用牌的目标后，若其手牌数大于你，你摸一张牌。',
             wechat_caiwenji: '小程序蔡琰',
             wechatbeige: '悲歌',
             wechatbeige_info: '每回合限一次，当一名角色受到【杀】造成的伤害后，你可以弃置一张牌，然后若此牌为：红色，其摸两张牌；黑色，你视为对其使用一张【杀】。',
@@ -25062,8 +25062,8 @@ const packs = function () {
             '#ext:活动武将/audio/die/wechat_zhiyin_lvbu:die': '我天下无敌，却不能与貂蝉共度余生了……',
             '#ext:活动武将/audio/skill/wechattongxin1': '嘘~心悦何须盟誓，二人同心足矣。',
             '#ext:活动武将/audio/skill/wechattongxin2': '看！公瑾与我，如钱之两面，此方口自然为心！',
-            '#ext:活动武将/audio/skill/wechatzhaoyan1': '揽二乔于东南？哼，痴人说梦！',
-            '#ext:活动武将/audio/skill/wechatzhaoyan2': '有公瑾在，曹贼安可过江东天险？',
+            '#ext:活动武将/audio/skill/wechatshaoyan1': '揽二乔于东南？哼，痴人说梦！',
+            '#ext:活动武将/audio/skill/wechatshaoyan2': '有公瑾在，曹贼安可过江东天险？',
             '#ext:活动武将/audio/die/wechat_zhiyin_xiaoqiao:die': '公瑾，好想你再拥我入怀……',
             '#ext:活动武将/audio/skill/wechatlvyuan1': '卓识远虑，胜乃可图。',
             '#ext:活动武将/audio/skill/wechatlvyuan2': '天下风云多变，皆在肃胸腹之中。',
