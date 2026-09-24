@@ -693,13 +693,13 @@ const packs = function () {
                                 return lib.filter.cardDiscardable(card, player);
                             }, 'he')) return;
                             if (card.name !== 'sha' && !(get.tag(card, 'damage') && get.type(card) === 'trick' && [...ui.selected.targets].add(target).length === 1)) return;
-                            _status._liuli_check = true;
+                            _status._mpliuli_check = true;
                             let min = 1, friend = get.attitude(player, target) > 0;
                             for (const current of game.filterPlayer()) {
                                 if (player !== current && target !== current && get.attitude(target, current) < 0 && target.canUse(card, current)) {
                                     if (!friend) return 0;
                                     if (get.effect(current, card, player, player) > 0) {
-                                        if (!player.canUse(card, players[0])) {
+                                        if (!player.canUse(card, current)) {
                                             delete _status._mpliuli_check;
                                             return [0, 0.1];
                                         }
