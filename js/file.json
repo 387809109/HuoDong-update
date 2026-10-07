@@ -1,6 +1,10 @@
 {
     "files": [
         {
+            "path": ".workbuddy/memory/2026-10-07.md",
+            "size": 3043
+        },
+        {
             "path": "HuoDong_QQ.png",
             "size": 118446
         },
@@ -9250,7 +9254,7 @@
         },
         {
             "path": "js/precontent/MiNikill.js",
-            "size": 2960573
+            "size": 2984947
         },
         {
             "path": "js/precontent/MiNikill_sight.js",
@@ -9286,7 +9290,7 @@
         },
         {
             "path": "js/precontent/index.js",
-            "size": 43686
+            "size": 43727
         },
         {
             "path": "js/precontent/模板.js",
