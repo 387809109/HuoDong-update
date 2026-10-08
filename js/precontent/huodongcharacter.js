@@ -1315,26 +1315,8 @@ const packs = function () {
                     if (_status.connectMode) event.time = lib.configOL.choose_timeout;
                     event.videoId = lib.status.videoId++;
                     if (player.isUnderControl()) game.swapPlayerAuto(player);
-                    const switchToAuto = () => {
-                        return new Promise((resolve) => {
-                            game.pause();
-                            game.countChoose();
-                            event._result = {};
-                            for (const i in cardx) event._result[i] = cardx[i];
-                            setTimeout(() => {
-                                _status.imchoosing = false;
-                                if (event.dialog) event.dialog.close();
-                                game.resume();
-                                resolve(event._result);
-                            }, 5000);
-                        });
-                    };
-                    const createDialog = (player, id) => {
-                        if (_status.connectMode) lib.configOL.choose_timeout = "30";
-                        if (player === game.me) return;
-                        const dialog = ui.create.dialog(get.translation(player) + "正在整理经书...<br>");
-                        dialog.videoId = id;
-                    };
+                    //主视角是活人就自己切水果；人机/托管由主机自动切，所有人看的都是同一份画面
+                    const ownerIsHuman = player.isMine() || player.isOnline();
                     /*
                     第一版，全屏切水果，无进度条显示，炸弹为毒
                     const chooseButton = cardx => {
@@ -1973,501 +1955,721 @@ const packs = function () {
                     };
                     */
                     //第三版，来自橙续缘《娱乐补丁》，进行适配
-                    const chooseButton = cardx => {
-                        const { promise, resolve } = Promise.withResolvers();
-                        const event = _status.event;
-                        event.dialog = (cards => {
-                            let cards1 = [];
-                            let result = {};
-                            let items = [];
-                            let interval = null;
-                            let aiTimer = null;
-                            let frameId = null;
-                            let finished = false;
-                            let resizeObserver = null;
-                            let juices = [];
-                            let finishTimer = null;
-                            for (const name in cards) cards1 = cards1.concat(Array.from({ length: cards[name] }).map(() => name));
-                            if (!cards1.length) {
-                                resolve({ bool: false });
-                                return null;
+                    //改成全场共用同一个切水果画面（仿照水转百戏图的“看别人玩”）：主机负责判定与出牌，其他视角只看
+                    //人机/托管同样由主机自己动手切，切出来的切线会广播给所有人，谁都看得见AI在切水果
+                    const createStage = function (videoId, owner, ownerIsHuman, cards) {
+                        //各端共用的消息（同步画面、音效和关闭），只在本局使用
+                        lib.message.client.bilibili_zhengjing = function (type, id, data) {
+                            let dialog = null;
+                            for (const item of document.querySelectorAll('.dialog.bilibili_zhengjing')) {
+                                if (item.videoId == id) dialog = item;
                             }
-                            const baseWidth = 700;
-                            const baseHeight = 450;
-                            const canvasWidth = 650;
-                            const canvasHeight = 345;
-                            const dialog = (event.dialog = ui.create.dialog('hidden'));
-                            dialog.classList.add('popped');
-                            dialog.classList.add('static');
-                            dialog.style.position = 'fixed';
-                            dialog.style.width = '80%';
-                            dialog.style.height = '80%';
-                            dialog.style.left = '50%';
-                            dialog.style.top = '50%';
-                            dialog.style.transform = 'translate(-50%, -50%)';
-                            dialog.style.padding = '0';
-                            dialog.style.margin = '0';
-                            dialog.style.background = 'transparent';
-                            dialog.style.border = 'none';
-                            dialog.style.boxShadow = 'none';
-                            dialog.style.overflow = 'hidden';
-                            dialog.style.textAlign = 'left';
-                            dialog.style.zIndex = '10';
-                            ui.window.appendChild(dialog);
-                            dialog.innerHTML = '';
-                            const container = document.createElement('div');
-                            container.style.position = 'absolute';
-                            container.style.width = baseWidth + 'px';
-                            container.style.height = baseHeight + 'px';
-                            container.style.left = '50%';
-                            container.style.top = '50%';
-                            container.style.backgroundColor = '#bb936f';
-                            container.style.borderRadius = '4px';
-                            container.style.boxSizing = 'border-box';
-                            container.style.transformOrigin = 'center center';
-                            dialog.appendChild(container);
-                            const updateScale = () => {
-                                if (!dialog.parentNode) return;
-                                const scaleX = dialog.clientWidth / baseWidth;
-                                const scaleY = dialog.clientHeight / baseHeight;
-                                const scale = Math.min(scaleX, scaleY);
-                                container.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
-                                dialog.gameScale = scale;
-                            };
-                            updateScale();
-                            if (typeof ResizeObserver !== 'undefined') {
-                                resizeObserver = new ResizeObserver(updateScale);
-                                resizeObserver.observe(dialog);
-                            } else {
-                                window.addEventListener('resize', updateScale);
+                            const stage = dialog && dialog._zhengjing;
+                            if (!stage) return;
+                            if (type === 'render') {
+                                stage.applyRender(data);
+                                return;
                             }
-                            const frame = document.createElement('div');
-                            frame.style.position = 'absolute';
-                            frame.style.width = '670px';
-                            frame.style.height = '400px';
-                            frame.style.left = '15px';
-                            frame.style.top = '15px';
-                            frame.style.boxSizing = 'border-box';
-                            frame.style.border = '1px solid #c6aa8f';
-                            frame.style.borderRadius = '4px';
-                            container.appendChild(frame);
-                            const canvas = document.createElement('canvas');
-                            canvas.width = canvasWidth;
-                            canvas.height = canvasHeight;
-                            canvas.style.position = 'absolute';
-                            canvas.style.width = canvasWidth + 'px';
-                            canvas.style.height = canvasHeight + 'px';
-                            canvas.style.left = '25px';
-                            canvas.style.top = '20px';
-                            canvas.style.zIndex = '10';
-                            canvas.style.borderRadius = '4px';
-                            container.appendChild(canvas);
-                            const ctx = canvas.getContext('2d');
+                            if (type === 'splatter') {
+                                if (lib.config.background_speak) game.playAudio({ path: '../extension/活动武将/audio/effect/splatter' });
+                                return;
+                            }
+                            if (type === 'boom') {
+                                if (lib.config.background_speak) game.playAudio({ path: '../extension/活动武将/audio/effect/boom' });
+                                return;
+                            }
+                            if (type === 'close') {
+                                if (data && data.time != null && _status.connectMode && lib.configOL) lib.configOL.choose_timeout = data.time;
+                                delete lib.message.client.bilibili_zhengjing;
+                                stage.cleanup();
+                                dialog.delete();
+                            }
+                        };
+                        //有人玩的时候把选牌时间放长一些，免得小游戏还没玩完就被判超时
+                        if (_status.connectMode && lib.configOL) lib.configOL.choose_timeout = '30';
+                        const baseWidth = 700;
+                        const baseHeight = 450;
+                        const canvasWidth = 650;
+                        const canvasHeight = 345;
+                        const size = 76;
+                        const radius = size / 2;
+                        const strokeLife = 450; //切线保留的时间，方便大家看清谁切了哪一刀
+                        const splashLife = 900; //果汁残留的时间
+                        let resizeObserver = null;
+                        let frameId = null;
+                        let closed = false;
+                        const dialog = ui.create.dialog('hidden');
+                        dialog.classList.add('popped');
+                        dialog.classList.add('static');
+                        dialog.classList.add('bilibili_zhengjing');
+                        dialog.videoId = videoId;
+                        dialog.style.position = 'fixed';
+                        dialog.style.width = '80%';
+                        dialog.style.height = '80%';
+                        dialog.style.left = '50%';
+                        dialog.style.top = '50%';
+                        dialog.style.transform = 'translate(-50%, -50%)';
+                        dialog.style.padding = '0';
+                        dialog.style.margin = '0';
+                        dialog.style.background = 'transparent';
+                        dialog.style.border = 'none';
+                        dialog.style.boxShadow = 'none';
+                        dialog.style.overflow = 'hidden';
+                        dialog.style.textAlign = 'left';
+                        dialog.style.zIndex = '10';
+                        ui.window.appendChild(dialog);
+                        dialog.innerHTML = '';
+                        const container = document.createElement('div');
+                        container.style.position = 'absolute';
+                        container.style.width = baseWidth + 'px';
+                        container.style.height = baseHeight + 'px';
+                        container.style.left = '50%';
+                        container.style.top = '50%';
+                        container.style.backgroundColor = '#bb936f';
+                        container.style.borderRadius = '4px';
+                        container.style.boxSizing = 'border-box';
+                        container.style.transformOrigin = 'center center';
+                        dialog.appendChild(container);
+                        //画面按小窗口的大小等比缩放
+                        const updateScale = () => {
+                            if (!dialog.parentNode) return;
+                            const scaleX = dialog.clientWidth / baseWidth;
+                            const scaleY = dialog.clientHeight / baseHeight;
+                            const scale = Math.min(scaleX, scaleY);
+                            container.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+                        };
+                        updateScale();
+                        if (typeof ResizeObserver !== 'undefined') {
+                            resizeObserver = new ResizeObserver(updateScale);
+                            resizeObserver.observe(dialog);
+                        } else {
+                            window.addEventListener('resize', updateScale);
+                        }
+                        const frame = document.createElement('div');
+                        frame.style.position = 'absolute';
+                        frame.style.width = '670px';
+                        frame.style.height = '400px';
+                        frame.style.left = '15px';
+                        frame.style.top = '15px';
+                        frame.style.boxSizing = 'border-box';
+                        frame.style.border = '1px solid #c6aa8f';
+                        frame.style.borderRadius = '4px';
+                        container.appendChild(frame);
+                        const canvas = document.createElement('canvas');
+                        canvas.width = canvasWidth;
+                        canvas.height = canvasHeight;
+                        canvas.style.position = 'absolute';
+                        canvas.style.width = canvasWidth + 'px';
+                        canvas.style.height = canvasHeight + 'px';
+                        canvas.style.left = '25px';
+                        canvas.style.top = '20px';
+                        canvas.style.zIndex = '10';
+                        canvas.style.borderRadius = '4px';
+                        container.appendChild(canvas);
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#c6aa8f';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        const processNode = document.createElement('div');
+                        processNode.style.position = 'absolute';
+                        processNode.style.width = '700px';
+                        processNode.style.height = '50px';
+                        processNode.style.left = '0';
+                        processNode.style.bottom = '15px';
+                        processNode.style.padding = '0 7.5px';
+                        processNode.style.boxSizing = 'border-box';
+                        processNode.style.zIndex = '20';
+                        container.appendChild(processNode);
+                        //底部的进度条：每种牌切够张数就到手
+                        const progress = {};
+                        const processNames = Object.keys(cards).filter(name => name !== 'du');
+                        for (const name of processNames) {
+                            const item = document.createElement('div');
+                            item.style.width = 100 / processNames.length + '%';
+                            item.style.height = '50px';
+                            item.style.float = 'left';
+                            item.style.boxSizing = 'border-box';
+                            item.style.padding = '0 7.5px';
+                            item.style.position = 'relative';
+                            const card = document.createElement('div');
+                            card.style.width = '100%';
+                            card.style.height = '50px';
+                            card.style.backgroundColor = '#d2aa6e';
+                            card.style.border = '2px solid #bb936f';
+                            card.style.borderRadius = '4px';
+                            card.style.position = 'relative';
+                            card.style.boxSizing = 'border-box';
+                            const cardName = document.createElement('div');
+                            cardName.innerHTML = get.translation(name);
+                            cardName.style.position = 'absolute';
+                            cardName.style.width = '100%';
+                            cardName.style.height = '40px';
+                            cardName.style.left = '0';
+                            cardName.style.top = '0';
+                            cardName.style.lineHeight = '40px';
+                            cardName.style.textAlign = 'center';
+                            cardName.style.color = '#000';
+                            cardName.style.fontFamily = 'xinwei';
+                            cardName.style.fontSize = '20px';
+                            cardName.style.whiteSpace = 'nowrap';
+                            cardName.style.overflow = 'hidden';
+                            cardName.style.textOverflow = 'ellipsis';
+                            const probar = document.createElement('div');
+                            probar.style.position = 'absolute';
+                            probar.style.width = 'calc(100% - 10px)';
+                            probar.style.height = '5px';
+                            probar.style.left = '5px';
+                            probar.style.bottom = '2.5px';
+                            probar.style.borderRadius = '5px';
+                            probar.style.overflow = 'hidden';
+                            probar.style.backgroundColor = '#1e281a';
+                            const probarSpan = document.createElement('div');
+                            probarSpan.style.position = 'absolute';
+                            probarSpan.style.width = '0%';
+                            probarSpan.style.height = '5px';
+                            probarSpan.style.left = '0';
+                            probarSpan.style.top = '0';
+                            probarSpan.style.borderRadius = '5px';
+                            probarSpan.style.backgroundColor = '#ff773f';
+                            probarSpan.style.transition = 'width .15s';
+                            probar.appendChild(probarSpan);
+                            card.appendChild(cardName);
+                            card.appendChild(probar);
+                            item.appendChild(card);
+                            processNode.appendChild(item);
+                            progress[name] = { bar: probarSpan, current: -1, total: cards[name] };
+                        }
+                        //画面数据全部来自主机的快照，这边只负责画和插值
+                        const disp = { prev: null, cur: null, strokes: [], strokeMap: {}, splashes: [], result: {} };
+                        const juiceImage = new Image();
+                        juiceImage.src = lib.assetURL + 'extension/活动武将/image/card/qsg_juice.png';
+                        const drawPath = points => {
+                            ctx.beginPath();
+                            ctx.moveTo(points[0][0], points[0][1]);
+                            for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+                        };
+                        //切线画得亮一点，人机切水果的时候一眼就能看清
+                        const drawStroke = (line, alpha) => {
+                            if (line.points.length < 2) return;
+                            ctx.save();
+                            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+                            ctx.lineCap = 'round';
+                            ctx.lineJoin = 'round';
+                            ctx.strokeStyle = 'rgba(107,188,209,0.5)';
+                            ctx.lineWidth = 10;
+                            drawPath(line.points);
+                            ctx.stroke();
+                            ctx.strokeStyle = '#eaf9ff';
+                            ctx.lineWidth = 3.5;
+                            drawPath(line.points);
+                            ctx.stroke();
+                            ctx.restore();
+                        };
+                        const drawItem = item => {
+                            const isBomb = !!item[4];
+                            ctx.beginPath();
+                            ctx.fillStyle = isBomb ? 'rgba(0,0,0,.6)' : 'rgba(255,255,255,.6)';
+                            ctx.arc(item[2], item[3], radius, 0, Math.PI * 2, false);
+                            ctx.fill();
+                            ctx.beginPath();
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillStyle = isBomb ? '#fff' : '#000';
+                            ctx.font = '20px lishu';
+                            ctx.fillText(isBomb ? '炸弹' : get.translation(item[1]), item[2], item[3], size - 10);
+                        };
+                        const updateProgress = () => {
+                            for (const name in progress) {
+                                const data = progress[name];
+                                const current = disp.result[name] || 0;
+                                if (current === data.current) continue;
+                                data.current = current;
+                                data.bar.style.width = Math.min(100, (current / data.total) * 100) + '%';
+                                if (current >= data.total) data.bar.style.backgroundColor = '#6fbd63';
+                            }
+                        };
+                        //收到主机的一帧画面：记下位置，顺便把消失的牌变成一片果汁
+                        const applyRender = data => {
+                            if (closed || !data) return;
+                            const now = Date.now();
+                            disp.prev = disp.cur;
+                            disp.cur = { items: data.items || [], time: now };
+                            if (disp.prev) {
+                                const alive = {};
+                                for (const item of disp.cur.items) alive[item[0]] = true;
+                                for (const item of disp.prev.items) {
+                                    //掉出画面的是没切到的，别给它溅果汁
+                                    if (!alive[item[0]] && item[3] < canvasHeight) disp.splashes.push({ x: item[2], y: item[3], time: now });
+                                }
+                            }
+                            for (const raw of data.strokes || []) {
+                                const key = raw[0];
+                                if (disp.strokeMap[key]) continue;
+                                const points = [];
+                                for (let i = 1; i + 1 < raw.length; i += 2) points.push([raw[i], raw[i + 1]]);
+                                const line = { key: key, points: points, born: now };
+                                disp.strokeMap[key] = line;
+                                disp.strokes.push(line);
+                            }
+                            disp.result = data.result || {};
+                            updateProgress();
+                        };
+                        const drawItems = now => {
+                            const cur = disp.cur;
+                            if (!cur) return;
+                            let alpha = 1;
+                            if (disp.prev && cur.time > disp.prev.time) {
+                                //稍微慢一点再走，在两帧之间插值，看着才不卡
+                                alpha = (now - 25 - disp.prev.time) / (cur.time - disp.prev.time);
+                                alpha = Math.max(0, Math.min(2, alpha));
+                            }
+                            const prevMap = {};
+                            if (disp.prev) {
+                                for (const item of disp.prev.items) prevMap[item[0]] = item;
+                            }
+                            for (const item of cur.items) {
+                                const last = prevMap[item[0]];
+                                if (!last) {
+                                    drawItem(item);
+                                    continue;
+                                }
+                                drawItem([item[0], item[1], last[2] + (item[2] - last[2]) * alpha, last[3] + (item[3] - last[3]) * alpha, item[4]]);
+                            }
+                        };
+                        const render = () => {
+                            if (closed) return;
+                            frameId = requestAnimationFrame(render);
+                            const now = Date.now();
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
                             ctx.fillStyle = '#c6aa8f';
                             ctx.fillRect(0, 0, canvas.width, canvas.height);
-                            const processNode = document.createElement('div');
-                            processNode.style.position = 'absolute';
-                            processNode.style.width = '700px';
-                            processNode.style.height = '50px';
-                            processNode.style.left = '0';
-                            processNode.style.bottom = '15px';
-                            processNode.style.padding = '0 7.5px';
-                            processNode.style.boxSizing = 'border-box';
-                            processNode.style.zIndex = '20';
-                            container.appendChild(processNode);
-                            const process = {};
-                            const processNames = Object.keys(cards).filter(name => name !== 'du');
-                            for (const name of processNames) {
-                                const item = document.createElement('div');
-                                item.style.width = 100 / processNames.length + '%';
-                                item.style.height = '50px';
-                                item.style.float = 'left';
-                                item.style.boxSizing = 'border-box';
-                                item.style.padding = '0 7.5px';
-                                item.style.position = 'relative';
-                                const card = document.createElement('div');
-                                card.style.width = '100%';
-                                card.style.height = '50px';
-                                card.style.backgroundColor = '#d2aa6e';
-                                card.style.border = '2px solid #bb936f';
-                                card.style.borderRadius = '4px';
-                                card.style.position = 'relative';
-                                card.style.boxSizing = 'border-box';
-                                const cardName = document.createElement('div');
-                                cardName.innerHTML = get.translation(name);
-                                cardName.style.position = 'absolute';
-                                cardName.style.width = '100%';
-                                cardName.style.height = '40px';
-                                cardName.style.left = '0';
-                                cardName.style.top = '0';
-                                cardName.style.lineHeight = '40px';
-                                cardName.style.textAlign = 'center';
-                                cardName.style.color = '#000';
-                                cardName.style.fontFamily = 'xinwei';
-                                cardName.style.fontSize = '20px';
-                                cardName.style.whiteSpace = 'nowrap';
-                                cardName.style.overflow = 'hidden';
-                                cardName.style.textOverflow = 'ellipsis';
-                                const probar = document.createElement('div');
-                                probar.style.position = 'absolute';
-                                probar.style.width = 'calc(100% - 10px)';
-                                probar.style.height = '5px';
-                                probar.style.left = '5px';
-                                probar.style.bottom = '2.5px';
-                                probar.style.borderRadius = '5px';
-                                probar.style.overflow = 'hidden';
-                                probar.style.backgroundColor = '#1e281a';
-                                const probarSpan = document.createElement('div');
-                                probarSpan.style.position = 'absolute';
-                                probarSpan.style.width = '0%';
-                                probarSpan.style.height = '5px';
-                                probarSpan.style.left = '0';
-                                probarSpan.style.top = '0';
-                                probarSpan.style.borderRadius = '5px';
-                                probarSpan.style.backgroundColor = '#ff773f';
-                                probarSpan.style.transition = 'width .15s';
-                                probar.appendChild(probarSpan);
-                                card.appendChild(cardName);
-                                card.appendChild(probar);
-                                item.appendChild(card);
-                                processNode.appendChild(item);
-                                process[name] = {
-                                    node: item,
-                                    bar: probarSpan,
-                                    current: 0,
-                                    total: cards[name],
-                                };
-                            }
-                            let mouse = null;
-                            let lastMouse = null;
-                            const getPoint = e => {
-                                if (e.changedTouches) {
-                                    e = e.changedTouches[e.changedTouches.length - 1];
+                            for (let i = disp.splashes.length - 1; i >= 0; i--) {
+                                const splash = disp.splashes[i];
+                                if (now - splash.time >= splashLife) {
+                                    disp.splashes.splice(i, 1);
+                                    continue;
                                 }
+                                if (juiceImage.complete) ctx.drawImage(juiceImage, splash.x - radius, splash.y - radius, size, size);
+                            }
+                            for (let i = disp.strokes.length - 1; i >= 0; i--) {
+                                const line = disp.strokes[i];
+                                const age = now - line.born;
+                                if (age >= strokeLife) {
+                                    disp.strokes.splice(i, 1);
+                                    delete disp.strokeMap[line.key];
+                                    continue;
+                                }
+                                drawStroke(line, 1 - age / strokeLife);
+                            }
+                            drawItems(now);
+                        };
+                        //主视角才有输入：把滑过的线报给主机，由主机判定切到了什么
+                        const me = game.me;
+                        const isOwner = !!me && (owner === me || (!!owner.playerid && owner.playerid === me.playerid));
+                        if (isOwner && ownerIsHuman) {
+                            const report = payload => {
+                                payload.bilibili_zhengjing = videoId;
+                                if (game.online) {
+                                    game.send('tempResult', payload);
+                                } else if (dialog._zhengjingHandler) {
+                                    //主机自己的操作直接交给本地处理
+                                    dialog._zhengjingHandler(payload);
+                                }
+                            };
+                            const getPoint = e => {
+                                if (e.changedTouches) e = e.changedTouches[e.changedTouches.length - 1];
                                 const rect = canvas.getBoundingClientRect();
-                                return {
-                                    x: (e.clientX - rect.left) * (canvas.width / rect.width),
-                                    y: (e.clientY - rect.top) * (canvas.height / rect.height),
-                                };
+                                return [(e.clientX - rect.left) * (canvas.width / rect.width), (e.clientY - rect.top) * (canvas.height / rect.height)];
+                            };
+                            let points = [];
+                            let lastSend = 0;
+                            const sendPath = () => {
+                                if (points.length > 1) report({ type: 'slice', path: points.slice(0) });
+                                //留最后一个点当下一段线的起点，报上去的线才接得上
+                                points = points.length ? [points[points.length - 1]] : [];
+                                lastSend = Date.now();
                             };
                             const onMove = e => {
                                 const point = getPoint(e);
-                                if (mouse) {
-                                    lastMouse = mouse;
+                                if (points.length) {
+                                    const last = points[points.length - 1];
+                                    //鼠标一下跳太远就别连成一条长线了
+                                    if (Math.abs(point[0] - last[0]) + Math.abs(point[1] - last[1]) > 150) {
+                                        sendPath();
+                                        points = [];
+                                    }
                                 }
-                                mouse = point;
+                                points.push(point);
+                                //30毫秒报一次，既不卡手也不刷屏
+                                if (Date.now() - lastSend >= 30) sendPath();
                             };
-                            const onCancel = () => {
-                                mouse = null;
-                                lastMouse = null;
+                            const onEnd = () => {
+                                sendPath();
+                                points = [];
                             };
                             if (lib.device) {
-                                canvas.addEventListener('touchmove', onMove, {
-                                    passive: true,
-                                });
-                                canvas.addEventListener('touchend', onCancel);
-                                canvas.addEventListener('touchcancel', onCancel);
+                                canvas.addEventListener('touchmove', onMove, { passive: true });
+                                canvas.addEventListener('touchend', onEnd);
+                                canvas.addEventListener('touchcancel', onEnd);
                             } else {
                                 canvas.addEventListener('mousemove', onMove);
-                                canvas.addEventListener('mouseup', onCancel);
-                                canvas.addEventListener('mouseleave', onCancel);
+                                canvas.addEventListener('mouseup', onEnd);
+                                canvas.addEventListener('mouseleave', onEnd);
                             }
-                            const drawLine = () => {
-                                if (!mouse || !lastMouse) return;
-                                const gradient = ctx.createLinearGradient(lastMouse.x, lastMouse.y, mouse.x, mouse.y);
-                                gradient.addColorStop(0, '#c4ebf5');
-                                gradient.addColorStop(1, '#6bbcd1');
-                                ctx.beginPath();
-                                ctx.moveTo(lastMouse.x, lastMouse.y);
-                                ctx.lineTo(mouse.x, mouse.y);
-                                ctx.strokeStyle = gradient;
-                                ctx.lineCap = 'round';
-                                ctx.lineWidth = 4;
-                                ctx.stroke();
-                                setTimeout(onCancel, 0);
-                            };
-                            const distance = (x1, y1, x2, y2) => {
-                                return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
-                            };
-                            const checkCollision = (x, y, radius) => {
-                                if (!mouse || !lastMouse) {
-                                    return false;
-                                }
-                                const a = distance(x, y, mouse.x, mouse.y);
-                                const b = distance(x, y, lastMouse.x, lastMouse.y);
-                                const c = distance(mouse.x, mouse.y, lastMouse.x, lastMouse.y);
-                                if (!c) return false;
-                                const p = (a + b + c) / 2;
-                                const s = Math.sqrt(Math.max(0, p * (p - a) * (p - b) * (p - c)));
-                                const h = (2 * s) / c;
-                                if (h >= radius) {
-                                    return false;
-                                }
-                                if (a < radius || b < radius) {
-                                    return true;
-                                }
-                                const d1 = mouse.x - x;
-                                const d2 = lastMouse.x - x;
-                                return (d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0);
-                            };
-                            const size = 76;
-                            const juiceImage = new Image();
-                            juiceImage.src = lib.assetURL + 'extension/活动武将/image/card/qsg_juice.png';
-                            const createItem = name => {
-                                const item = {
-                                    id: name,
-                                    left: get.rand(2 * size, canvas.width - 2 * size),
-                                    bottom: 0,
-                                    speed: get.rand(3, 5),
-                                    direct: get.rand(70, 110),
-                                    acceleration: get.rand(2, 3),
-                                    name: name === 'du' ? '炸弹' : get.translation(name),
-                                    isBomb: name === 'du',
-                                    hadCut: false,
-                                };
-                                items.push(item);
-                            };
-                            const handler = item => {
-                                if (item.isBomb) {
-                                    finish(true);
-                                    return;
-                                }
-                                if (finishTimer) {
-                                    clearTimeout(finishTimer);
-                                    finishTimer = null;
-                                }
-                                if (lib.config.background_speak) game.playAudio({ path: '../extension/活动武将/audio/effect/splatter' });
-                                result[item.id] ??= 0;
-                                result[item.id]++;
-                                const data = process[item.id];
-                                if (!data) return;
-                                data.current = result[item.id];
-                                data.bar.style.width = Math.min(100, (data.current / data.total) * 100) + '%';
-                                if (data.current >= data.total) {
-                                    data.bar.style.backgroundColor = '#6fbd63';
-                                }
-                                juices.push({
-                                    x: item.left,
-                                    y: canvas.height - item.bottom - size,
-                                    size: size,
-                                    time: Date.now(),
-                                });
-                                let complete = true;
-                                for (const name of processNames) {
-                                    if ((result[name] || 0) < cards[name]) {
-                                        complete = false;
-                                        break;
-                                    }
-                                }
-                                if (complete && !finishTimer) finishTimer = setTimeout(finish, 2000);
-                            };
-                            const finish = boom => {
-                                if (finished) return;
-                                finished = true;
-                                juices.length = 0;
-                                if (interval) {
-                                    clearInterval(interval);
-                                    interval = null;
-                                }
-                                if (aiTimer) {
-                                    clearInterval(aiTimer);
-                                    aiTimer = null;
-                                }
-                                if (frameId) {
-                                    cancelAnimationFrame(frameId);
-                                    frameId = null;
-                                }
-                                if (resizeObserver) {
-                                    resizeObserver.disconnect();
-                                    resizeObserver = null;
-                                } else {
-                                    window.removeEventListener('resize', updateScale);
-                                }
-                                canvas.removeEventListener('touchmove', onMove);
-                                canvas.removeEventListener('touchend', onCancel);
-                                canvas.removeEventListener('touchcancel', onCancel);
-                                canvas.removeEventListener('mousemove', onMove);
-                                canvas.removeEventListener('mouseup', onCancel);
-                                canvas.removeEventListener('mouseleave', onCancel);
-                                const close = () => {
-                                    _status.imchoosing = false;
-                                    event.dialog?.close();
-                                    event._result = result;
-                                    game.resume();
-                                    resolve(result);
-                                };
-                                if (boom && lib.config.background_speak) {
-                                    game.playAudio({
-                                        path: '../extension/活动武将/audio/effect/boom',
-                                        onEnded: close,
-                                    });
-                                }
-                                else close();
-                            };
-                            const render = () => {
-                                if (finished) return;
-                                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                                ctx.fillStyle = '#c6aa8f';
-                                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                                drawLine();
-                                const scale = dialog.gameScale || 1;
-                                const physicsScale = Math.max(0.55, Math.min(1, scale));
-                                for (let i = items.length - 1; i >= 0; i--) {
-                                    const item = items[i];
-                                    if (item.hadCut) {
-                                        items.splice(i, 1);
-                                        continue;
-                                    }
-                                    item.speed -= item.acceleration * physicsScale * 0.0167;
-                                    item.bottom += item.speed * Math.sin((item.direct * 2 * Math.PI) / 360) * physicsScale;
-                                    item.left += Math.abs(item.speed) * Math.cos((item.direct * 2 * Math.PI) / 360) * physicsScale;
-                                    const radius = size / 2;
-                                    const x = item.left + radius;
-                                    const y = canvas.height - item.bottom - size + radius;
-                                    if (item.bottom + size < 0) {
-                                        items.splice(i, 1);
-                                        continue;
-                                    }
-                                    if (checkCollision(x, y, radius)) {
-                                        item.hadCut = true;
-                                        handler(item);
-                                        items.splice(i, 1);
-                                        if (finished) {
-                                            return;
-                                        }
-                                        continue;
-                                    }
-                                    ctx.beginPath();
-                                    ctx.fillStyle = item.isBomb ? 'rgba(0,0,0,.6)' : 'rgba(255,255,255,.6)';
-                                    ctx.arc(x, y, radius, 0, Math.PI * 2, false);
-                                    ctx.fill();
-                                    ctx.beginPath();
-                                    ctx.textAlign = 'center';
-                                    ctx.textBaseline = 'middle';
-                                    ctx.fillStyle = item.isBomb ? '#fff' : '#000';
-                                    ctx.font = '20px lishu';
-                                    ctx.fillText(item.name, x, y, size - 10);
-                                }
-                                const now = Date.now();
-                                for (let i = juices.length - 1; i >= 0; i--) {
-                                    const juice = juices[i];
-                                    if (now - juice.time >= 1000) {
-                                        juices.splice(i, 1);
-                                        continue;
-                                    }
-                                    if (juiceImage.complete) {
-                                        ctx.drawImage(juiceImage, juice.x, juice.y, juice.size, juice.size);
-                                    }
-                                }
-                                if (!cards1.length && !items.length && !finished) {
-                                    setTimeout(finish, 1000);
-                                    return;
-                                }
-                                frameId = requestAnimationFrame(render);
-                            };
-                            const totalCount = cards1.length;
-                            const spawnDelay = Math.max(180, Math.min(650, Math.floor(9000 / Math.max(1, totalCount))));
-                            interval = setInterval(() => {
-                                if (finished) return;
-                                if (_status.paused2) {
-                                    return;
-                                }
-                                const num = [0, 1, 1, 1, 1, 2].randomGet();
-                                for (let i = 0; i < num; i++) {
-                                    if (!cards1.length) {
-                                        break;
-                                    }
-                                    createItem(cards1.randomRemove());
-                                }
-                            }, spawnDelay);
-                            aiTimer = setInterval(() => {
-                                if (finished) {
-                                    clearInterval(aiTimer);
-                                    return;
-                                }
-                                for (let i = items.length - 1; i >= 0; i--) {
-                                    const item = items[i];
-                                    if (item.isBomb || item.hadCut) {
-                                        continue;
-                                    }
-                                    const djl = get.rand(10) > 4;
-                                    if (djl && typeof event.ai === 'function' && event.ai(item.id)) {
-                                        item.hadCut = true;
-                                        handler(item);
-                                        items.splice(i, 1);
-                                        if (finished) {
-                                            return;
-                                        }
-                                    }
-                                }
-                            }, 200);
-                            event.switchToAuto = () => {
-                                if (finished) return;
-                                finished = true;
-                                juices.length = 0;
-                                if (interval) {
-                                    clearInterval(interval);
-                                    interval = null;
-                                }
-                                if (aiTimer) {
-                                    clearInterval(aiTimer);
-                                    aiTimer = null;
-                                }
-                                if (frameId) {
-                                    cancelAnimationFrame(frameId);
-                                    frameId = null;
-                                }
-                                if (resizeObserver) {
-                                    resizeObserver.disconnect();
-                                    resizeObserver = null;
-                                } else {
-                                    window.removeEventListener('resize', updateScale);
-                                }
-                                canvas.removeEventListener('touchmove', onMove);
-                                canvas.removeEventListener('touchend', onCancel);
-                                canvas.removeEventListener('touchcancel', onCancel);
-                                canvas.removeEventListener('mousemove', onMove);
-                                canvas.removeEventListener('mouseup', onCancel);
-                                canvas.removeEventListener('mouseleave', onCancel);
-                                _status.imchoosing = false;
-                                event._result = {};
-                                for (const name in cards) {
-                                    event._result[name] = cards[name];
-                                }
-                                if (event.dialog) {
-                                    event.dialog.close();
-                                }
-                                game.resume();
-                                resolve(event._result);
-                            };
-                            _status.imchoosing = true;
-                            game.pause();
-                            game.countChoose();
-                            render();
-                            return dialog;
-                        })(cardx);
-                        return promise;
+                            dialog._zhengjingInputs = { onMove: onMove, onEnd: onEnd };
+                        }
+                        //各端自己的清理（动画帧、缩放监听、输入监听）
+                        const cleanup = () => {
+                            if (closed) return;
+                            closed = true;
+                            if (frameId) {
+                                cancelAnimationFrame(frameId);
+                                frameId = null;
+                            }
+                            if (resizeObserver) {
+                                resizeObserver.disconnect();
+                                resizeObserver = null;
+                            } else {
+                                window.removeEventListener('resize', updateScale);
+                            }
+                            if (dialog._zhengjingInputs) {
+                                const inputs = dialog._zhengjingInputs;
+                                canvas.removeEventListener('touchmove', inputs.onMove);
+                                canvas.removeEventListener('touchend', inputs.onEnd);
+                                canvas.removeEventListener('touchcancel', inputs.onEnd);
+                                canvas.removeEventListener('mousemove', inputs.onMove);
+                                canvas.removeEventListener('mouseup', inputs.onEnd);
+                                canvas.removeEventListener('mouseleave', inputs.onEnd);
+                                delete dialog._zhengjingInputs;
+                            }
+                        };
+                        dialog._zhengjing = { applyRender: applyRender, cleanup: cleanup };
+                        render();
                     };
-                    game.broadcastAll(createDialog, player, event.videoId);
-                    let next;
-                    if (event.isMine()) next = chooseButton(cardx);
-                    else if (event.isOnline()) {
-                        const { promise, resolve } = Promise.withResolvers();
-                        event.player.send(chooseButton, cardx);
-                        event.player.wait(async result => {
-                            if (result == "ai") result = await switchToAuto();
-                            resolve(result);
-                        });
-                        game.pause();
-                        next = promise;
+                    //以下是主机的权威逻辑，所有人看到的都是这一份画面
+                    game.broadcastAll(createStage, event.videoId, player, ownerIsHuman, cardx);
+                    let stageDialog = null;
+                    for (const item of document.querySelectorAll('.dialog.bilibili_zhengjing')) {
+                        if (item.videoId == event.videoId) stageDialog = item;
                     }
-                    else next = switchToAuto();
-                    const result = await next;
-                    game.broadcastAll((id, time) => {
-                        if (_status.connectMode) lib.configOL.choose_timeout = time;
-                        const dialog = get.idDialog(id);
-                        if (dialog) dialog.close();
-                    }, event.videoId, event.time);
+                    const canvasWidth = 650;
+                    const canvasHeight = 345;
+                    const size = 76;
+                    const radius = size / 2;
+                    const tickTime = 1000 / 60;
+                    const processNames = Object.keys(cardx).filter(name => name !== 'du');
+                    //出牌堆：每种牌各出num张，炸弹按种类数出，切到炸弹就结束
+                    let queue = [];
+                    for (const name in cardx) queue = queue.concat(Array.from({ length: cardx[name] }).map(() => name));
+                    if (!queue.length) return event.finish();
+                    const state = { items: [], result: {}, finished: false };
+                    const pendingStrokes = [];
+                    const waited = [];
+                    let uidSeed = 0;
+                    let strokeSeed = 0;
+                    let over = false;
+                    let timer = null;
+                    let aiPlay = !ownerIsHuman;
+                    let aiTicks = 0;
+                    let tickCount = 0;
+                    let finishTimer = null;
+                    let resolveResult;
+                    const resultPromise = new Promise(resolve => (resolveResult = resolve));
+                    const spawnDelay = Math.max(180, Math.min(650, Math.floor(9000 / Math.max(1, queue.length))));
+                    const spawnTicks = Math.max(1, Math.round(spawnDelay / tickTime));
+                    const itemX = item => item.left + radius;
+                    const itemY = item => canvasHeight - item.bottom - size + radius;
+                    //点到线段的距离，用来判断一刀有没有碰到牌
+                    const distToLine = (x0, y0, x1, y1, x, y) => {
+                        const dx = x1 - x0, dy = y1 - y0;
+                        const len2 = dx * dx + dy * dy;
+                        let t = 0;
+                        if (len2 > 0) t = Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / len2));
+                        return Math.sqrt(Math.pow(x - (x0 + t * dx), 2) + Math.pow(y - (y0 + t * dy), 2));
+                    };
+                    const createItem = () => {
+                        if (!queue.length) return;
+                        const name = queue.randomRemove();
+                        //尽量别跟场上的牌叠在一起，不然切这张就一定碰到那张
+                        let left = get.rand(2 * size, canvasWidth - 2 * size);
+                        for (let i = 0; i < 6; i++) {
+                            const test = get.rand(2 * size, canvasWidth - 2 * size);
+                            let ok = true;
+                            for (const item of state.items) {
+                                if (item.cut) continue;
+                                if (Math.abs(item.left - test) < size) {
+                                    ok = false;
+                                    break;
+                                }
+                            }
+                            if (ok) {
+                                left = test;
+                                break;
+                            }
+                        }
+                        //抛速和重力比旧版高一点，水果飞得快些，不拖时间
+                        state.items.push({
+                            uid: ++uidSeed,
+                            name: name,
+                            isBomb: name === 'du',
+                            left: left,
+                            bottom: 0,
+                            speed: get.rand(4, 6),
+                            direct: get.rand(70, 110),
+                            acceleration: get.rand(3, 4),
+                            cut: false,
+                        });
+                    };
+                    //还是第三版的抛物线，改成按固定帧走，主机的判定才稳
+                    const stepItems = () => {
+                        for (let i = state.items.length - 1; i >= 0; i--) {
+                            const item = state.items[i];
+                            if (item.cut) {
+                                state.items.splice(i, 1);
+                                continue;
+                            }
+                            item.speed -= item.acceleration * 0.0167;
+                            item.bottom += item.speed * Math.sin((item.direct * 2 * Math.PI) / 360);
+                            item.left += Math.abs(item.speed) * Math.cos((item.direct * 2 * Math.PI) / 360);
+                            if (item.bottom + size < 0) state.items.splice(i, 1);
+                        }
+                    };
+                    //主机判定这一刀切到了什么，先本地生效再广播给其他视角
+                    const slice = path => {
+                        if (over || state.finished) return;
+                        if (!Array.isArray(path) || path.length < 2) return;
+                        const hits = [];
+                        for (const item of state.items) {
+                            if (item.cut) continue;
+                            const x = itemX(item), y = itemY(item);
+                            for (let i = 0; i < path.length - 1; i++) {
+                                if (distToLine(path[i][0], path[i][1], path[i + 1][0], path[i + 1][1], x, y) <= radius) {
+                                    hits.push(item);
+                                    break;
+                                }
+                            }
+                        }
+                        //每刀都记下来，下一帧画面一起播出去，别人的屏幕上也能看到这条线
+                        pendingStrokes.push({
+                            key: ++strokeSeed,
+                            points: path.map(point => [Math.round(point[0]), Math.round(point[1])]),
+                        });
+                        let cutAny = false;
+                        for (const item of hits) {
+                            if (item.cut) continue;
+                            item.cut = true;
+                            if (item.isBomb) {
+                                //切到炸弹就直接结算，先把这一刀播出去
+                                broadcast();
+                                finishGame(true);
+                                return;
+                            }
+                            cutAny = true;
+                            state.result[item.name] ??= 0;
+                            state.result[item.name]++;
+                        }
+                        if (!cutAny) return;
+                        //切开的声音：自己这边放一次，其他视角收到消息后各自放
+                        if (lib.config.background_speak) game.playAudio({ path: '../extension/活动武将/audio/effect/splatter' });
+                        game.broadcast('bilibili_zhengjing', 'splatter', event.videoId);
+                        //每种牌都够数了就等一小会儿收尾
+                        let complete = true;
+                        for (const name of processNames) {
+                            if ((state.result[name] || 0) < cardx[name]) {
+                                complete = false;
+                                break;
+                            }
+                        }
+                        if (complete && !finishTimer) finishTimer = setTimeout(() => finishGame(false), 2000);
+                    };
+                    //人机/托管：等牌飞起来一点就挑最急着掉的那张切，一刀尽量多带几张，绝不碰炸弹
+                    const aiAngles = [45, 22.5, 67.5, 135, 112.5, 157.5, 0, 90];
+                    //半边长度先长后短：长刀更容易一刀带好几张，短刀更不容易蹭到炸弹
+                    const aiHalves = [radius + 44, radius + 16, radius + 2];
+                    //刀还能偏着切：炸弹贴脸的时候，从另一边擦过去照样能切到牌
+                    const aiOffsets = [0, 14, -14, 28, -28];
+                    //快切不到的时候把搜索放细一点（角度更密、偏移更多、贴边更近）
+                    const aiFineAngles = [];
+                    for (let i = 0; i < 12; i++) aiFineAngles.push(i * 15);
+                    const aiFineOffsets = [0, 6, -6, 12, -12, 18, -18, 24, -24, 30, -30, 36, -36];
+                    const aiFramesLeft = item => {
+                        let bottom = item.bottom, speed = item.speed, frames = 0;
+                        while (bottom + size >= 0 && frames < 600) {
+                            speed -= item.acceleration * 0.0167;
+                            bottom += speed;
+                            frames++;
+                        }
+                        return frames;
+                    };
+                    //给一张牌找一刀：不能蹭到炸弹，尽量多带几张
+                    const aiStrokeFor = (target, fine) => {
+                        const tx = itemX(target), ty = itemY(target);
+                        const halves = fine ? [radius + 2, radius + 16, radius + 30, radius + 44] : aiHalves;
+                        const angles = fine ? aiFineAngles : aiAngles;
+                        const offsets = fine ? aiFineOffsets : aiOffsets;
+                        const margin = fine ? radius + 0.5 : radius + 1;
+                        let best = null;
+                        for (const half of halves) {
+                            for (const angle of angles) {
+                                const rad = (angle * Math.PI) / 180;
+                                const dx = Math.cos(rad), dy = Math.sin(rad);
+                                for (const offset of offsets) {
+                                    const cx = tx - dy * offset, cy = ty + dx * offset;
+                                    const x0 = cx - dx * half, y0 = cy - dy * half;
+                                    const x1 = cx + dx * half, y1 = cy + dy * half;
+                                    //这一刀会不会蹭到炸弹
+                                    let safe = true;
+                                    for (const other of state.items) {
+                                        if (other.cut || !other.isBomb) continue;
+                                        if (distToLine(x0, y0, x1, y1, itemX(other), itemY(other)) < margin) {
+                                            safe = false;
+                                            break;
+                                        }
+                                    }
+                                    if (!safe) continue;
+                                    let covers = 0;
+                                    for (const other of state.items) {
+                                        if (other.cut || other.isBomb) continue;
+                                        if (distToLine(x0, y0, x1, y1, itemX(other), itemY(other)) <= radius) covers++;
+                                    }
+                                    //优先一刀多带几张，其次别切出画面、少偏一点，再其次斜着切好看
+                                    const inside = x0 >= 0 && y0 >= 0 && x1 >= 0 && y1 >= 0 && x0 <= canvasWidth && x1 <= canvasWidth && y0 <= canvasHeight && y1 <= canvasHeight;
+                                    const score = covers * 100 + (inside ? 20 : 0) + (Math.abs(Math.sin(2 * rad)) > 0.6 ? 5 : 0) + (half > radius + 30 ? 3 : 0) - Math.round(Math.abs(offset) / 4);
+                                    if (!best || score > best.score) best = { score: score, path: [[x0, y0], [x1, y1]] };
+                                }
+                            }
+                        }
+                        return best;
+                    };
+                    const aiTick = () => {
+                        const cands = [];
+                        for (const item of state.items) {
+                            if (item.cut || item.isBomb) continue;
+                            //等水果飞高一点再切，画面看着更自然，也不显得人机手太快
+                            if (item.bottom < radius * 1.2) continue;
+                            cands.push(item);
+                        }
+                        if (!cands.length) return;
+                        cands.sort((a, b) => aiFramesLeft(a) - aiFramesLeft(b));
+                        //先切最急着掉的那张，这张切不了就换下一张，别干等着
+                        for (const target of cands) {
+                            let best = aiStrokeFor(target, false);
+                            //快掉下去了还切不到，就把搜索放细一点再试
+                            if (!best && aiFramesLeft(target) < 60) best = aiStrokeFor(target, true);
+                            //实在切不了（炸弹贴太近）就先放一放，等牌飞开了再切
+                            if (!best) continue;
+                            slice(best.path);
+                            return;
+                        }
+                    };
+                    //每帧播一次画面，别人的屏幕上也连着
+                    const broadcast = () => {
+                        const items = [];
+                        for (const item of state.items) {
+                            if (item.cut) continue;
+                            items.push([item.uid, item.name, Math.round(itemX(item)), Math.round(itemY(item)), item.isBomb ? 1 : 0]);
+                        }
+                        //切线只发新的，各端收到后自己按时间淡出
+                        const strokes = [];
+                        for (const stroke of pendingStrokes) {
+                            const data = [stroke.key];
+                            for (const point of stroke.points) data.push(point[0], point[1]);
+                            strokes.push(data);
+                        }
+                        pendingStrokes.length = 0;
+                        game.broadcastAll('bilibili_zhengjing', 'render', event.videoId, { items: items, strokes: strokes, result: state.result });
+                    };
+                    //主视角的切线主机本地直接处理，联机客机的切线通过tempResult上报
+                    if (stageDialog) {
+                        stageDialog._zhengjingHandler = payload => {
+                            if (!payload || payload.bilibili_zhengjing != event.videoId) return;
+                            if (payload.type == 'slice' && Array.isArray(payload.path)) slice(payload.path);
+                        };
+                    }
+                    event._global_waiting = true;
+                    if (_status.connectMode) {
+                        game.filterPlayer(current => current.isOnline() && current == player).forEach(current => {
+                            const solver = (result, who) => {
+                                if (result && result.bilibili_zhengjing == event.videoId && result.type == 'slice' && Array.isArray(result.path)) slice(result.path);
+                                //返回false阻止unwait自动resume，游戏由主机自己控制
+                                return false;
+                            };
+                            current.wait(solver);
+                            waited.push(current);
+                        });
+                    }
+                    //中途托管就交给主机自动切：主机和客机都可能调到这里，只留一个不会报错的标记
+                    event.switchToAuto = function () {
+                        if (this && typeof this == 'object') this._zhengjingAuto = true;
+                    };
+                    //收尾：清掉等待和定时器，关闭所有视角的界面，再把结果还给整经
+                    const finishGame = boom => {
+                        if (over) return;
+                        over = true;
+                        state.finished = true;
+                        if (timer) {
+                            clearInterval(timer);
+                            timer = null;
+                        }
+                        if (finishTimer) {
+                            clearTimeout(finishTimer);
+                            finishTimer = null;
+                        }
+                        const close = () => {
+                            waited.forEach(current => {
+                                current.unwait({ bilibili_zhengjing: event.videoId, cleanup: true });
+                                current.hideTimer();
+                            });
+                            if (stageDialog) delete stageDialog._zhengjingHandler;
+                            if (_status.connectMode && lib.configOL && event.time != null) lib.configOL.choose_timeout = event.time;
+                            game.broadcastAll('bilibili_zhengjing', 'close', event.videoId, { time: event.time, boom: !!boom });
+                            delete event._global_waiting;
+                            _status.imchoosing = false;
+                            event._result = state.result;
+                            game.resume();
+                            resolveResult(state.result);
+                        };
+                        if (boom) {
+                            //切到炸弹了，别人那边也放个响
+                            game.broadcast('bilibili_zhengjing', 'boom', event.videoId);
+                            if (lib.config.background_speak) {
+                                game.playAudio({ path: '../extension/活动武将/audio/effect/boom', onEnded: close });
+                                return;
+                            }
+                        }
+                        close();
+                    };
+                    _status.imchoosing = true;
+                    game.pause();
+                    game.countChoose();
+                    //小游戏主循环，每帧跑一次物理、播一次画面
+                    timer = setInterval(() => {
+                        if (over) return;
+                        //中途托管就交给主机自己切
+                        if (!aiPlay && (event._zhengjingAuto || player.isAuto || (player == game.me && _status.auto))) {
+                            aiPlay = true;
+                        }
+                        if (_status.paused2) return;
+                        tickCount++;
+                        stepItems();
+                        if (tickCount % spawnTicks == 0) {
+                            const num = [0, 1, 1, 1, 1, 2].randomGet();
+                            for (let i = 0; i < num; i++) createItem();
+                        }
+                        if (aiPlay) {
+                            aiTicks++;
+                            //人机一直切不完就收尾，免得卡住（按帧算，后台降频也不会误判）
+                            if (aiTicks > 1800) {
+                                finishGame(false);
+                                return;
+                            }
+                            if (tickCount % 6 == 0) aiTick();
+                        }
+                        //牌出完了又没剩下什么就直接收尾
+                        if (!queue.length && !state.items.length && !finishTimer) finishTimer = setTimeout(() => finishGame(false), 1000);
+                        broadcast();
+                    }, tickTime);
+                    //所有人共用同一份画面，收尾已经在上面做完了
+                    const result = await resultPromise;
                     for (let i = 0; i < cards.length; i++) {
                         if (!result?.[cards[i].name] || result[cards[i].name] < num) cards.splice(i--, 1);
                     }
