@@ -1127,28 +1127,24 @@ export async function content(config, pack) {
 	};
 	//神张角
 	delete lib.skill.yizhao.intro.markcount;
-	Object.assign(lib.skill.yizhao, {
-		filter(event, player) {
-			return typeof get.number(event.card) == 'number' && (player.countMark('yizhao') < 184 || !lib.config.extension_活动武将_ShenZhangJiao);
-		},
-		content() {
-			'step 0'
-			event.num = player.countMark('yizhao');
-			player.addMark('yizhao', Math.min(get.number(trigger.card), (lib.config.extension_活动武将_ShenZhangJiao ? 184 - player.countMark('yizhao') : get.number(trigger.card))));
-			'step 1'
-			var num = Math.floor(num / 10) % 10, num2 = Math.floor(player.countMark('yizhao') / 10) % 10;
-			if (num != num2) {
-				var card = get.cardPile2(card => {
-					return get.number(card, false) == num2;
-				});
-				if (card) player.gain(card, 'gain2');
-				else {
-					player.chat('无牌可得？！');
-					game.log('但是牌堆中已经没有点数为', '#y' + num2, '的牌了！');
-				}
-			}
-		},
-	});
+	let yizhaoFilter = lib.skill.yizhao.filter;
+	lib.skill.yizhao.filter = function (event, player, ...args) {
+		if (lib.config.extension_活动武将_ShenZhangJiao && player.countMark('yizhao') >= 184) return false;
+		return yizhaoFilter.call(this, event, player, ...args);
+	};
+	if (lib.skill.dcyizhao.intro?.markcount) delete lib.skill.dcyizhao.intro.markcount;
+	let dcyizhaoFilter = lib.skill.dcyizhao.filter;
+	lib.skill.dcyizhao.filter = function (event, player, ...args) {
+		if (lib.config.extension_活动武将_ShenZhangJiao && player.countMark('yizhao') >= 184) return false;
+		return dcyizhaoFilter.call(this, event, player, ...args);
+	};
+	let yizhaoAddMark = lib.element.player.addMark;
+	lib.element.player.addMark = function (mark, num, ...args) {
+		if (typeof num !== 'number' || !num) num = 1;
+		if (typeof this.storage[mark] !== 'number') this.storage[mark] = 0;
+		if (mark === 'yizhao' && lib.config.extension_活动武将_ShenZhangJiao) num = Math.min(num, 184 - this.storage[mark]);
+		return yizhaoAddMark.call(this, mark, num, ...args);
+	};
 	//左慈
 	lib.skill.rehuashen.drawCharacter = function (player, list) {
 		game.broadcastAll(function (player, list) {
