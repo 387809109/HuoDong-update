@@ -14918,7 +14918,7 @@ const packs = function () {
             bfake_shen_jiaxu: '蝶设神贾诩',
             bfake_shen_jiaxu_prefix: '蝶设|神',
             boljiandai: '缄殆',
-            boljiandai_info: '锁定技，你的武将牌始终背面朝下。',
+            boljiandai_info: '锁定技，你的武将牌始终背面朝上。',
             boljiandai_info_guozhan: '锁定技，你的武将牌始终叠置。',
             bolfangcan: '纺残',
             bolfangcan_info: '锁定技，一名角色的回合结束时，你视为使用本回合进入且位于弃牌堆中的唯一一张普通锦囊牌或伤害牌。',
