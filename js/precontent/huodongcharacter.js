@@ -734,229 +734,450 @@ const packs = function () {
                 inherit: 'chongxu',
                 async content(event, trigger, player) {
                     await Promise.all(event.next);
-                    if (_status.connectMode) event.time = lib.configOL.choose_timeout;
+                    //记录原本的选择时间，并临时延长到30秒，避免“飞升”期间因选择超时掉线
+                    if (_status.connectMode) {
+                        event.time = lib.configOL.choose_timeout;
+                        lib.configOL.choose_timeout = '30';
+                    }
                     event.videoId = lib.status.videoId++;
                     if (player.isUnderControl()) game.swapPlayerAuto(player);
-                    let time = 10;
-                    const switchToAuto = () => {
-                        return new Promise((resolve) => {
-                            game.pause();
-                            game.countChoose();
-                            event._result = { score: 5 };
-                            setTimeout(() => {
-                                _status.imchoosing = false;
-                                if (event.dialog) event.dialog.close();
-                                game.resume();
-                                resolve(event._result);
-                            }, time * 1000);
+                    //集灵·飞升：全场共用同一个画面，主视角负责移动接球，其他视角只能用一次助力和妨碍
+                    const totalTime = 10;
+                    const ownerIsHuman = player.isMine() || player.isOnline();
+                    //以下函数会被发送到所有客户端执行，只能引用参数和全局变量
+                    const createStage = (videoId, owner, ownerIsHuman, totalTime) => {
+                        //各端共用的画面同步消息，只在本次“飞升”期间存在，收尾时删除
+                        lib.message.client.bilibili_chongxu = function (type, id, data) {
+                            let dialog = null;
+                            for (const item of document.querySelectorAll('.dialog.bilibili_chongxu')) {
+                                if (item.videoId == id) dialog = item;
+                            }
+                            if (!dialog) return;
+                            if (type === 'close') {
+                                delete lib.message.client.bilibili_chongxu;
+                                const stage = dialog._chongxu;
+                                if (stage) {
+                                    //孩子们，玩完游戏记得对页面进行清理哦
+                                    for (const cleanup of stage.cleanups || []) cleanup();
+                                    delete dialog._chongxu;
+                                }
+                                dialog.delete();
+                                return;
+                            }
+                            if (type === 'render' && data) {
+                                const stage = dialog._chongxu;
+                                if (!stage) return;
+                                Object.assign(stage.state, data);
+                                stage.draw();
+                            }
+                        };
+                        const width = 480, height = 320;
+                        //游戏dialog
+                        const dialog = ui.create.dialog('hidden');
+                        dialog.classList.add('popped');
+                        dialog.classList.add('static');
+                        dialog.videoId = videoId;
+                        dialog.innerHTML = '';
+                        //本体的dialog样式很霸道，布局属性必须带important才压得住，所以统一用setStyle写
+                        const setStyle = (node, styles) => {
+                            for (const key in styles) {
+                                node.style.setProperty(key, styles[key], 'important');
+                            }
+                        };
+                        setStyle(dialog, {
+                            position: 'absolute',
+                            left: '0px',
+                            top: '0px',
+                            width: '100%',
+                            height: '100%',
+                            margin: '0px',
+                            padding: '0px',
+                            transform: 'none',
+                            display: 'block',
+                            overflow: 'auto',
+                            background: 'rgba(0,0,0,0.85)',
+                            'text-align': 'center',
                         });
-                    };
-                    const createDialog = (player, id) => {
-                        if (_status.connectMode) lib.configOL.choose_timeout = '30';
-                        if (player === game.me) return;
-                        const dialog = ui.create.dialog(get.translation(player) + '正在进行“飞升”...<br>');
-                        dialog.videoId = id;
-                    };
-                    const chooseButton = (time) => {
-                        const { promise, resolve } = Promise.withResolvers(), event = _status.event;
-                        event.dialog = (() => {
-                            //游戏dialog
-                            const dialog = ui.create.dialog('hidden');
-                            dialog.classList.add('popped');
-                            dialog.classList.add('static');
-                            Object.assign(dialog.style, {
-                                height: '100%',
-                                width: '100%',
-                                top: '0px',
-                                left: '0px',
-                                background: 'rgba(0,0,0,0.85)',
-                                textAlign: 'center',
-                            });
-                            ui.window.appendChild(dialog);
-                            dialog.innerHTML = '';
-                            //游戏画布
-                            const canvas = document.createElement('canvas');
-                            const width = 480, height = 320;
-                            canvas.width = width;
-                            canvas.height = height;
-                            Object.assign(canvas.style, {
-                                display: 'block',
-                                margin: '40px auto 10px auto',
-                                background: '#000',
-                                borderRadius: '8px',
-                            });
-                            dialog.appendChild(canvas);
-                            const ctx = canvas.getContext('2d');
-                            //触控按钮，给手机端用的
-                            const ctrlBox = document.createElement('div');
-                            Object.assign(ctrlBox.style, {
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                width: '100%',
-                                margin: '0 auto',
-                                gap: '120px',
-                            });
-                            const leftBtn = document.createElement('button');
-                            const rightBtn = document.createElement('button');
-                            const styleBtn = {
+                        ui.window.appendChild(dialog);
+                        dialog.classList.add('bilibili_chongxu');
+                        //自己排布：标题、画布、操作区从上到下居中
+                        const container = document.createElement('div');
+                        setStyle(container, {
+                            position: 'absolute',
+                            left: '0px',
+                            top: '0px',
+                            right: '0px',
+                            bottom: '0px',
+                            margin: '0px',
+                            transform: 'none',
+                            display: 'flex',
+                            'flex-direction': 'column',
+                            'align-items': 'center',
+                            'justify-content': 'center',
+                            'text-align': 'center',
+                        });
+                        dialog.appendChild(container);
+                        //标题
+                        const title = document.createElement('div');
+                        setStyle(title, {
+                            position: 'static',
+                            left: 'auto',
+                            top: 'auto',
+                            transform: 'none',
+                            display: 'block',
+                            width: '100%',
+                            margin: '0px 0px 10px 0px',
+                            'text-align': 'center',
+                            color: '#fff',
+                            'font-size': '20px',
+                            'font-family': 'xinwei',
+                        });
+                        title.innerHTML = get.translation(owner) + '正在进行“飞升”';
+                        container.appendChild(title);
+                        //游戏画布
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        setStyle(canvas, {
+                            position: 'static',
+                            left: 'auto',
+                            top: 'auto',
+                            transform: 'none',
+                            display: 'block',
+                            margin: '0px auto',
+                            background: '#000',
+                            'border-radius': '8px',
+                        });
+                        container.appendChild(canvas);
+                        const ctx = canvas.getContext('2d');
+                        //底部操作区
+                        const ctrlBox = document.createElement('div');
+                        setStyle(ctrlBox, {
+                            position: 'static',
+                            left: 'auto',
+                            top: 'auto',
+                            transform: 'none',
+                            display: 'flex',
+                            'justify-content': 'center',
+                            'align-items': 'center',
+                            width: '100%',
+                            margin: '10px auto 0px auto',
+                            gap: '120px',
+                        });
+                        container.appendChild(ctrlBox);
+                        //画面数据全部由主机同步，各端只负责绘制
+                        const state = { x: width / 2 - 15, balls: [], score: 0, time: totalTime, notice: null, final: null };
+                        const draw = () => {
+                            ctx.clearRect(0, 0, width, height);
+                            ctx.fillStyle = 'white';
+                            ctx.fillRect(state.x, height - 30, 30, 30);
+                            for (const ball of state.balls) {
+                                ctx.beginPath();
+                                ctx.fillStyle = ball[2] ? 'lime' : 'red';
+                                ctx.arc(ball[0], ball[1], 8, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                            ctx.fillStyle = 'yellow';
+                            ctx.font = '16px monospace';
+                            ctx.textAlign = 'left';
+                            ctx.fillText('分数: ' + state.score, 10, 20);
+                            ctx.fillText('时间: ' + Math.max(0, state.time).toFixed(1) + 's', width - 110, 20);
+                            if (state.notice) {
+                                ctx.textAlign = 'center';
+                                ctx.font = '20px xinwei';
+                                ctx.fillStyle = state.notice.type == 'assist' ? '#5f5' : '#f55';
+                                ctx.fillText(state.notice.name + (state.notice.type == 'assist' ? '选择了助力！' : '选择了妨碍！'), width / 2, height / 2);
+                            }
+                            //结算画面：停顿展示最终得分
+                            if (state.final !== null && state.final !== undefined) {
+                                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                                ctx.fillRect(0, 0, width, height);
+                                ctx.textAlign = 'center';
+                                ctx.fillStyle = 'white';
+                                ctx.font = '22px xinwei';
+                                ctx.fillText('飞升结束！', width / 2, height / 2 - 24);
+                                ctx.fillStyle = 'yellow';
+                                ctx.font = '26px xinwei';
+                                ctx.fillText('最终得分：' + state.final, width / 2, height / 2 + 20);
+                            }
+                        };
+                        dialog._chongxu = { state, draw, cleanups: [] };
+                        //操作上报给主机，客机用tempResult，主机直接调用本地处理函数
+                        const report = payload => {
+                            payload.bilibili_chongxu = videoId;
+                            if (game.online) {
+                                game.send('tempResult', payload);
+                            } else if (dialog._chongxuHandler) {
+                                //主机自己的操作直接交给本地处理
+                                dialog._chongxuHandler(payload);
+                            }
+                        };
+                        const me = game.me;
+                        const isOwner = owner === me || (!!me && !!owner && !!owner.playerid && owner.playerid === me.playerid);
+                        const makeBtn = (text, background) => {
+                            const button = document.createElement('button');
+                            setStyle(button, {
+                                position: 'static',
+                                left: 'auto',
+                                top: 'auto',
+                                transform: 'none',
                                 width: '180px',
                                 height: '40px',
-                                fontSize: '20px',
-                                borderRadius: '8px',
-                                background: '#333',
+                                'font-size': '20px',
+                                'border-radius': '8px',
+                                background: background,
                                 color: '#fff',
                                 flex: 'none',
-                            };
-                            Object.assign(leftBtn.style, styleBtn);
-                            Object.assign(rightBtn.style, styleBtn);
-                            leftBtn.textContent = '←';
-                            rightBtn.textContent = '→';
+                            });
+                            button.textContent = text;
+                            return button;
+                        };
+                        if (isOwner && ownerIsHuman) {
+                            //主视角：方向键加触屏按钮，只上报按键状态
+                            const leftBtn = makeBtn('←', '#333');
+                            const rightBtn = makeBtn('→', '#333');
                             ctrlBox.appendChild(leftBtn);
                             ctrlBox.appendChild(rightBtn);
-                            dialog.appendChild(ctrlBox);
-                            //主角登场
-                            const player = { x: width / 2 - 15, y: height - 30, w: 30, h: 30, speed: 5 };
-                            const balls = [];
-                            let score = 0, running = true;
-                            const keys = { left: false, right: false };
-                            //电脑也干了
+                            const input = { left: false, right: false };
+                            const sendInput = () => report({ type: 'input', left: input.left, right: input.right });
                             const keyDown = e => {
-                                if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
-                                if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+                                if (e.key == 'ArrowLeft' || e.key == 'a') input.left = true;
+                                else if (e.key == 'ArrowRight' || e.key == 'd') input.right = true;
+                                else return;
+                                sendInput();
                             };
                             const keyUp = e => {
-                                if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
-                                if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+                                if (e.key == 'ArrowLeft' || e.key == 'a') input.left = false;
+                                else if (e.key == 'ArrowRight' || e.key == 'd') input.right = false;
+                                else return;
+                                sendInput();
                             };
                             window.addEventListener('keydown', keyDown);
                             window.addEventListener('keyup', keyUp);
                             //手机也干了
-                            let holdLeft = false, holdRight = false;
-                            leftBtn.addEventListener(lib.device ? 'touchstart' : 'mousedown', () => holdLeft = true);
-                            leftBtn.addEventListener(lib.device ? 'touchend' : 'mouseup', () => holdLeft = false);
-                            rightBtn.addEventListener(lib.device ? 'touchstart' : 'mousedown', () => holdRight = true);
-                            rightBtn.addEventListener(lib.device ? 'touchend' : 'mouseup', () => holdRight = false);
-                            const spawnBall = () => {
-                                const good = Math.random() < 0.6;
-                                balls.push({
-                                    x: Math.random() * (width - 15),
-                                    y: -10,
-                                    r: 8,
-                                    color: good ? 'lime' : 'red',
-                                    speed: 1.8 + Math.random(),
-                                    good,
-                                });
+                            leftBtn.addEventListener(lib.device ? 'touchstart' : 'mousedown', () => {
+                                input.left = true;
+                                sendInput();
+                            });
+                            leftBtn.addEventListener(lib.device ? 'touchend' : 'mouseup', () => {
+                                input.left = false;
+                                sendInput();
+                            });
+                            rightBtn.addEventListener(lib.device ? 'touchstart' : 'mousedown', () => {
+                                input.right = true;
+                                sendInput();
+                            });
+                            rightBtn.addEventListener(lib.device ? 'touchend' : 'mouseup', () => {
+                                input.right = false;
+                                sendInput();
+                            });
+                            //孩子们，玩完游戏记得对页面进行清理哦
+                            dialog._chongxu.cleanups.push(() => window.removeEventListener('keydown', keyDown));
+                            dialog._chongxu.cleanups.push(() => window.removeEventListener('keyup', keyUp));
+                            //定期补发按键状态，防止丢包导致主角一直移动
+                            const heartbeat = setInterval(sendInput, 500);
+                            dialog._chongxu.cleanups.push(() => clearInterval(heartbeat));
+                        } else if (!isOwner && me && me.isAlive()) {
+                            //其他视角：助力和妨碍各限一次
+                            let used = false;
+                            const assistBtn = makeBtn('助力', '#1f7a3d');
+                            const hinderBtn = makeBtn('妨碍', '#8d1f1f');
+                            const use = type => {
+                                if (used) return;
+                                used = true;
+                                assistBtn.disabled = true;
+                                hinderBtn.disabled = true;
+                                assistBtn.style.opacity = hinderBtn.style.opacity = '0.5';
+                                report({ type: type, player: me });
                             };
-                            //添加时间差变量
-                            let lastTime = 0;
-                            const update = (currentTime = 0) => {
-                                //计算时间差（将不同设备均标准化到60fps）
-                                const deltaTime = lastTime ? (currentTime - lastTime) / 16.67 : 1;
-                                lastTime = currentTime;
-                                if (keys.left || holdLeft) player.x -= player.speed * deltaTime;
-                                if (keys.right || holdRight) player.x += player.speed * deltaTime;
-                                player.x = Math.max(0, Math.min(width - player.w, player.x));
-                                if (Math.random() < 0.03) spawnBall();
-                                for (let i = balls.length - 1; i >= 0; i--) {
-                                    const b = balls[i];
-                                    b.y += b.speed * deltaTime;
-                                    if (
-                                        b.x + b.r > player.x &&
-                                        b.x < player.x + player.w &&
-                                        b.y + b.r > player.y &&
-                                        b.y < player.y + player.h
-                                    ) {
-                                        score += b.good ? 1 : -1;
-                                        score = Math.max(0, score);
-                                        balls.splice(i, 1);
-                                        continue;
-                                    }
-                                    if (b.y > height + 10) balls.splice(i, 1);
-                                }
-                            };
-                            const draw = () => {
-                                ctx.clearRect(0, 0, width, height);
-                                ctx.fillStyle = 'white';
-                                ctx.fillRect(player.x, player.y, player.w, player.h);
-                                for (const b of balls) {
-                                    ctx.beginPath();
-                                    ctx.fillStyle = b.color;
-                                    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-                                    ctx.fill();
-                                }
-                                ctx.fillStyle = 'yellow';
-                                ctx.font = '16px monospace';
-                                ctx.fillText(`分数: ${score}`, 10, 20);
-                                ctx.fillText(`时间: ${time.toFixed(1)}s`, width - 110, 20);
-                            };
-                            const loop = (currentTime) => {
-                                if (!running) return;
-                                update(currentTime);
-                                draw();
-                                requestAnimationFrame(loop);
-                            };
-                            const timer = setInterval(() => {
-                                time -= 0.1;
-                                if (time <= 0 || score >= 5) {
-                                    running = false;
-                                    clearInterval(timer);
-                                    setTimeout(endGame, 500);
-                                }
-                            }, 100);
-                            const endGame = () => {
-                                ctx.clearRect(0, 0, width, height);
-                                ctx.fillStyle = 'white';
-                                ctx.font = '24px sans-serif';
-                                ctx.textAlign = 'center';
-                                ctx.fillText(`游戏结束！得分：${score}`, width / 2, height / 2);
-                                event._result = { score };
-                                //孩子们，玩完游戏记得对页面进行清理哦
-                                window.removeEventListener('keydown', keyDown);
-                                window.removeEventListener('keyup', keyUp);
-                                leftBtn.remove();
-                                rightBtn.remove();
-                                ctrlBox.remove();
-                                setTimeout(() => {
-                                    if (event.dialog) event.dialog.close();
-                                    _status.imchoosing = false;
-                                    game.resume();
-                                    resolve(event._result);
-                                }, 2000);
-                            };
-                            requestAnimationFrame(loop);
-                            return dialog;
-                        })();
-                        event.switchToAuto = () => {
-                            event._result = { score: 5 };
-                            game.resume();
-                            resolve(event._result);
-                        };
-                        _status.imchoosing = true;
-                        game.pause();
-                        game.countChoose();
-                        return promise;
+                            assistBtn.onclick = () => use('assist');
+                            hinderBtn.onclick = () => use('hinder');
+                            ctrlBox.appendChild(assistBtn);
+                            ctrlBox.appendChild(hinderBtn);
+                        }
                     };
-                    game.broadcastAll(createDialog, player, event.videoId);
-                    let next;
-                    if (event.isMine()) next = chooseButton(time);
-                    else if (event.isOnline()) {
-                        const { promise, resolve } = Promise.withResolvers();
-                        event.player.send(chooseButton, time);
-                        event.player.wait(async result => {
-                            if (result === 'ai') result = await switchToAuto();
-                            resolve(result);
-                        });
-                        game.pause();
-                        next = promise;
+                    //主机的权威逻辑，所有人看到的都是这一份数据的画面
+                    game.broadcastAll(createStage, event.videoId, player, ownerIsHuman, totalTime);
+                    const width = 480, height = 320, speed = 5, step = 3;
+                    const state = { x: width / 2 - 15, balls: [], score: 0, time: totalTime, notice: null, final: null };
+                    const acted = [];
+                    const input = { left: false, right: false };
+                    let aiPlay = !ownerIsHuman;
+                    let over = false;
+                    event._global_waiting = true;
+                    //主视角中途托管的话交给主机自动操作
+                    event.switchToAuto = () => (aiPlay = true);
+                    //人机/托管当前追的球，单独存起来避免每帧换目标导致抽搐
+                    let aiTarget = null;
+                    const spawnBalls = (good, num) => {
+                        for (let i = 0; i < num; i++) {
+                            state.balls.push({
+                                x: Math.random() * (width - 15),
+                                y: -10 - i * 20,
+                                r: 8,
+                                good: good,
+                                speed: 1.8 + Math.random(),
+                            });
+                        }
+                    };
+                    //找最靠下（离档板最近）的绿球
+                    const findAiTarget = () => {
+                        let best = null;
+                        for (const ball of state.balls) {
+                            if (!ball.good) continue;
+                            if (!best || ball.y > best.y) best = ball;
+                        }
+                        return best;
+                    };
+                    //每个人只能选一次助力或者妨碍
+                    const applyAction = (actor, type) => {
+                        if (over || !actor || acted.includes(actor)) return;
+                        acted.push(actor);
+                        spawnBalls(type == 'assist', 12);
+                        state.notice = { name: get.translation(actor), type: type, life: 40 };
+                    };
+                    //主机自己的操作直接处理，客机的操作通过tempResult上报
+                    let stageDialog = null;
+                    for (const item of document.querySelectorAll('.dialog.bilibili_chongxu')) {
+                        if (item.videoId == event.videoId) stageDialog = item;
                     }
-                    else next = switchToAuto();
-                    const result2 = await next;
-                    game.broadcastAll((id, time) => {
-                        if (_status.connectMode) lib.configOL.choose_timeout = time;
-                        const dialog = get.idDialog(id);
-                        if (dialog) dialog.close();
-                    }, event.videoId, event.time);
+                    if (stageDialog) stageDialog._chongxuHandler = payload => {
+                        if (!payload) return;
+                        if (payload.type == 'input') {
+                            input.left = !!payload.left;
+                            input.right = !!payload.right;
+                        } else if (payload.type == 'assist' || payload.type == 'hinder') {
+                            applyAction(payload.player || game.me, payload.type);
+                        }
+                    };
+                    //客机的操作要靠等待接收，人机的操作由主机自己决定
+                    const waited = [];
+                    if (_status.connectMode) {
+                        game.filterPlayer(current => current.isOnline()).forEach(current => {
+                            const solver = (result, who) => {
+                                if (result && result.bilibili_chongxu == event.videoId) {
+                                    if (result.type == 'input') {
+                                        input.left = !!result.left;
+                                        input.right = !!result.right;
+                                    } else if (result.type == 'assist' || result.type == 'hinder') {
+                                        applyAction(who || result.player, result.type);
+                                    }
+                                }
+                                //返回false可以阻止unwait自动resume，游戏由我们自己控制
+                                return false;
+                            };
+                            current.wait(solver);
+                            waited.push(current);
+                        });
+                    }
+                    const aiActions = [];
+                    game.filterPlayer(current => current != player && current != game.me && !current.isOnline()).forEach(current => {
+                        const attitude = get.attitude(current, player);
+                        //态度为0的人机不参与
+                        if (attitude === 0) return;
+                        aiActions.push({ player: current, type: attitude > 0 ? 'assist' : 'hinder', at: 500 + Math.random() * 3000 });
+                    });
+                    const startTime = Date.now();
+                    const broadcast = () => {
+                        game.broadcastAll('bilibili_chongxu', 'render', event.videoId, {
+                            x: Math.round(state.x),
+                            balls: state.balls.map(ball => [Math.round(ball.x), Math.round(ball.y), ball.good ? 1 : 0]),
+                            score: state.score,
+                            time: Math.max(0, state.time),
+                            notice: state.notice ? { name: state.notice.name, type: state.notice.type } : null,
+                            final: state.final,
+                        });
+                    };
+                    //小游戏主循环，每50ms相当于原版的三帧
+                    const timer = setInterval(() => {
+                        if (over) return;
+                        state.time -= 0.05;
+                        const elapsed = Date.now() - startTime;
+                        //主视角中途托管
+                        if (!aiPlay && (player.isAuto || (player == game.me && _status.auto))) aiPlay = true;
+                        //主视角移动，人机和托管由主机自动操作
+                        if (aiPlay) {
+                            //追最靠下的绿球，只有新目标明显更靠下才换目标，避免左右来回抽搐
+                            if (!aiTarget || !state.balls.includes(aiTarget)) aiTarget = findAiTarget();
+                            else {
+                                const next = findAiTarget();
+                                if (next && next != aiTarget && next.y > aiTarget.y + 40) aiTarget = next;
+                            }
+                            if (aiTarget) {
+                                const diff = aiTarget.x - (state.x + 15);
+                                //单帧最多走range，逼近目标而不是直接越过去
+                                const range = speed * step * 2;
+                                if (Math.abs(diff) > 3) state.x += Math.max(-range, Math.min(range, diff));
+                            }
+                        } else {
+                            if (input.left) state.x -= speed * step;
+                            if (input.right) state.x += speed * step;
+                        }
+                        state.x = Math.max(0, Math.min(width - 30, state.x));
+                        //出球
+                        if (Math.random() < 0.09) {
+                            state.balls.push({
+                                x: Math.random() * (width - 15),
+                                y: -10,
+                                r: 8,
+                                good: Math.random() < 0.6,
+                                speed: 1.8 + Math.random(),
+                            });
+                        }
+                        //下落与接球
+                        for (let i = state.balls.length - 1; i >= 0; i--) {
+                            const ball = state.balls[i];
+                            ball.y += ball.speed * step;
+                            if (ball.x + ball.r > state.x && ball.x < state.x + 30 && ball.y + ball.r > height - 30 && ball.y < height) {
+                                state.score = Math.max(0, state.score + (ball.good ? 1 : -1));
+                                state.balls.splice(i, 1);
+                                continue;
+                            }
+                            if (ball.y > height + 10) state.balls.splice(i, 1);
+                        }
+                        //人机的助力/妨碍
+                        for (let i = aiActions.length - 1; i >= 0; i--) {
+                            if (elapsed >= aiActions[i].at) {
+                                applyAction(aiActions[i].player, aiActions[i].type);
+                                aiActions.splice(i, 1);
+                            }
+                        }
+                        if (state.notice && (state.notice.life -= 1) <= 0) state.notice = null;
+                        broadcast();
+                        if (state.time <= 0 || state.score >= 5) finish();
+                    }, 50);
+                    //收尾：清理等待和定时器，关闭所有视角的界面
+                    const removeWait = () => {
+                        waited.forEach(current => {
+                            current.unwait({ bilibili_chongxu: event.videoId, cleanup: true });
+                            current.hideTimer();
+                        });
+                    };
+                    let resolveScore;
+                    const scorePromise = new Promise(resolve => (resolveScore = resolve));
+                    const finish = () => {
+                        if (over) return;
+                        over = true;
+                        clearInterval(timer);
+                        //先停顿展示结算画面，再关闭界面
+                        const finalScore = state.score;
+                        state.final = finalScore;
+                        state.notice = null;
+                        broadcast();
+                        setTimeout(() => {
+                            removeWait();
+                            if (stageDialog) delete stageDialog._chongxuHandler;
+                            game.broadcastAll('bilibili_chongxu', 'close', event.videoId);
+                            delete event._global_waiting;
+                            _status.imchoosing = false;
+                            if (_status.connectMode) lib.configOL.choose_timeout = event.time;
+                            game.resume();
+                            resolveScore(finalScore);
+                        }, 2000);
+                    };
+                    _status.imchoosing = true;
+                    game.pause();
+                    const result2 = { score: await scorePromise };
                     if (!result2 || !result2.score || result2.score < 2) return;
                     const func = () => {
                         const event = get.event();
@@ -13989,53 +14210,30 @@ const packs = function () {
                     await Promise.all(event.next);
                     event.videoId = lib.status.videoId++;
                     if (player.isUnderControl()) game.swapPlayerAuto(player);
-                    const switchToAuto = function () {
-                        game.pause();
-                        game.countChoose();
-                        setTimeout(function () {
-                            _status.imchoosing = false;
-                            event._result = {
-                                bool: true,
-                                links: ['qiaosi_c1', 'qiaosi_c6'].concat(['qiaosi_c2', 'qiaosi_c3', 'qiaosi_c4', 'qiaosi_c5'].randomGets(1)),
-                            };
-                            if (event.dialog) event.dialog.close();
-                            if (event.controls) {
-                                for (const i of event.controls) i.close();
-                            }
-                            game.resume();
-                        }, 5000);
-                    };
-                    const createDialog = function (player, id) {
-                        if (player == game.me) return;
-                        const str = get.translation(player) + '正在表演...<br>';
-                        for (let i = 1; i < 7; i++) {
-                            str += get.translation('qiaosi_c' + i);
-                            if (i % 3 != 0) str += '　　';
-                            if (i == 3) str += '<br>';
-                        }
-                        ui.create.dialog(str, 'forcebutton').videoId = id;
-                    };
+                    //水转百戏：全场共用同一个表演画面，只有主视角能点击，人机/托管由主机按真人的节奏自动点
+                    const ownerIsHuman = player.isMine() || player.isOnline();
                     //来自橙续缘《娱乐补丁》，进行适配
-                    const chooseButton = function () {
-                        const event = _status.event;
-                        const { promise, resolve } = Promise.withResolvers();
-                        event.status = {
-                            qiaosi_c1: 0,
-                            qiaosi_c2: 0,
-                            qiaosi_c3: 0,
-                            qiaosi_c4: 0,
-                            qiaosi_c5: 0,
-                            qiaosi_c6: 0,
+                    //以下函数会被发送到所有客户端执行，只能引用参数和全局变量
+                    const createStage = function (videoId, owner, ownerIsHuman) {
+                        //各端共用的消息（同步点击和关闭），只在本局使用
+                        lib.message.client.bilibili_qiaosi = function (type, id, data) {
+                            let dialog = null;
+                            for (const item of document.querySelectorAll('.dialog.bilibili_qiaosi')) {
+                                if (item.videoId == id) dialog = item;
+                            }
+                            const stage = dialog && dialog._qiaosi;
+                            if (!stage) return;
+                            if (type === 'click') {
+                                stage.applyClick(data);
+                                return;
+                            }
+                            if (type === 'close') {
+                                delete lib.message.client.bilibili_qiaosi;
+                                stage.cleanup();
+                                dialog.delete();
+                            }
                         };
-                        event.map = {
-                            qiaosi_c1: [40, 60],
-                            qiaosi_c2: [80, 120],
-                            qiaosi_c3: [90, 110],
-                            qiaosi_c4: [90, 110],
-                            qiaosi_c5: [80, 120],
-                            qiaosi_c6: [40, 60],
-                        };
-                        event.finishedx = [];
+                        const time = 1.5; // 水柱动画时长，点击间隔与动画时长保持一致
                         const items = [
                             { name: '王', rotate: 4, max: 36, id: 'qiaosi_c1' },
                             { name: '商', rotate: 8, max: 24, id: 'qiaosi_c2' },
@@ -14044,16 +14242,14 @@ const packs = function () {
                             { name: '士', rotate: 8, max: 24, id: 'qiaosi_c5' },
                             { name: '将', rotate: 4, max: 36, id: 'qiaosi_c6' },
                         ];
-                        let finished = false;
-                        let timeoutId = null;
-                        let aiTimer = null;
                         let resizeObserver = null;
                         const baseWidth = 700;
                         const baseHeight = 400;
-                        event.dialog = ui.create.dialog('hidden');
-                        event.dialog.classList.add('popped');
-                        event.dialog.classList.add('static');
-                        const dialog = event.dialog;
+                        const dialog = ui.create.dialog('hidden');
+                        dialog.classList.add('popped');
+                        dialog.classList.add('static');
+                        dialog.classList.add('bilibili_qiaosi');
+                        dialog.videoId = videoId;
                         dialog.style.position = 'fixed';
                         dialog.style.width = '80%';
                         dialog.style.height = '80%';
@@ -14135,7 +14331,33 @@ const packs = function () {
                         container.style.width = baseWidth + 'px';
                         container.style.height = baseHeight + 'px';
                         const processHeight = baseHeight * 0.45;
-                        const time = 1.5;//水柱动画时间
+                        //每根管子的状态；点击效果各端都执行，主机负责判定与广播
+                        const actions = {};
+                        const applyClick = id => {
+                            const action = actions[id];
+                            if (!action) return;
+                            if (action.rotate >= action.link.max) return;
+                            action.rotate = Math.min(action.rotate + action.link.rotate, action.link.max);
+                            action.processSpan.style.height = (100 * action.rotate) / action.link.max + '%';
+                            action.style.transform = 'translateX(-50%) rotate(' + (360 * action.rotate) / 12 + 'deg)';
+                            action.disabled = true;
+                            //兜底：万一动画事件没触发，也要把管子重新放开
+                            setTimeout(() => (action.disabled = false), (time + 0.1) * 1000);
+                        };
+                        //点击交给主机（客机用tempResult，主机走本地处理），再由主机广播给所有视角
+                        const report = id => {
+                            const payload = { bilibili_qiaosi: videoId, type: 'click', id: id };
+                            if (game.online) {
+                                game.send('tempResult', payload);
+                            } else if (dialog._qiaosiHandler) {
+                                dialog._qiaosiHandler(payload);
+                            }
+                        };
+                        const me = game.me;
+                        const isOwner = owner === me || (!!me && !!owner && !!owner.playerid && owner.playerid === me.playerid);
+                        //只有主视角能操作，其他视角只能看进度
+                        const canControl = isOwner && ownerIsHuman;
+                        dialog._qiaosi = { actions, applyClick, time };
                         items.forEach(link => {
                             const item = document.createElement('div');
                             item.style.width = baseWidth / items.length + 'px';
@@ -14282,30 +14504,24 @@ const packs = function () {
                             action.disabled = false;
                             action.processSpan = processSpan;
                             action.style.transform = 'translateX(-50%) rotate(0deg)';
-                            const click = () => {
-                                if (finished) return;
-                                if (action.disabled) return;
-                                if (action.rotate === link.max) return;
-                                action.rotate += link.rotate;
-                                action.rotate = Math.min(action.rotate, link.max);
-                                event.status[link.id] = action.rotate;
-                                action.processSpan.style.height = (100 * action.rotate) / link.max + '%';
-                                action.style.transform = 'translateX(-50%) rotate(' + (360 * action.rotate) / 12 + 'deg)';
-                                action.disabled = true;
-                                if (action.rotate === link.max && event.finishedx.length < 3) {
-                                    event.finishedx.push(link.id);
-                                    if (event.finishedx.length >= 3) setTimeout(finish, (time + 1) * 1000);
-                                }
-                            };
-                            link.click = click;
-                            action.addEventListener(lib.device ? 'touchend' : 'click', e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                click();
-                            });
+                            actions[link.id] = action;
+                            //动画播完才能再点同一根管子，和真人点击的限制一致
                             action.addEventListener('transitionend', () => {
                                 action.disabled = false;
                             });
+                            if (canControl) {
+                                action.style.cursor = 'pointer';
+                                action.addEventListener(lib.device ? 'touchend' : 'click', e => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (action.disabled || action.rotate >= link.max) return;
+                                    report(link.id);
+                                });
+                            } else {
+                                //其他视角只能观看
+                                action.style.cursor = 'default';
+                                action.style.pointerEvents = 'none';
+                            }
                         });
                         const style = document.createElement('style');
                         style.textContent = [
@@ -14333,63 +14549,165 @@ const packs = function () {
                             '}',
                         ].join('\n');
                         document.head.appendChild(style);
-                        function finish(delay = 0) {
-                            if (finished) return;
-                            finished = true;
-                            if (timeoutId) {
-                                clearTimeout(timeoutId);
-                                timeoutId = null;
-                            }
-                            if (aiTimer) {
-                                clearInterval(aiTimer);
-                                aiTimer = null;
-                            }
+                        //各端自己的清理（动画样式表、缩放监听）
+                        const cleanup = () => {
                             if (resizeObserver) {
                                 resizeObserver.disconnect();
                                 resizeObserver = null;
                             } else {
                                 window.removeEventListener('resize', updateScale);
                             }
-                            if (style.parentNode) {
-                                style.parentNode.removeChild(style);
-                            }
-                            setTimeout(() => {
-                                _status.imchoosing = false;
-                                event._result = {
-                                    bool: event.finishedx.length > 0,
-                                    links: event.finishedx.slice(0),
-                                };
-                                event.dialog?.close();
-                                resolve(event._result);
-                                game.resume();
-                            }, delay);
-                        }
-                        event.switchToAuto = () => {
-                            if (finished) return;
-                            finish();
+                            if (style.parentNode) style.parentNode.removeChild(style);
                         };
-                        if (_status.connectMode) timeoutId = setTimeout(finish, 25000);
-                        _status.imchoosing = true;
-                        game.pause();
-                        game.countChoose();
-                        return promise;
+                        dialog._qiaosi.cleanup = cleanup;
                     };
-                    game.broadcastAll(createDialog, player, event.videoId);
-                    let next;
-                    if (event.isMine()) next = chooseButton();
-                    else if (event.isOnline()) {
-                        const { promise, resolve } = Promise.withResolvers();
-                        event.player.send(chooseButton);
-                        event.player.wait(async result => {
-                            if (result === 'ai') result = await switchToAuto();
-                            resolve(result);
-                        });
-                        game.pause();
-                        next = promise;
+                    //以下是主机的权威逻辑
+                    game.broadcastAll(createStage, event.videoId, player, ownerIsHuman);
+                    let stageDialog = null;
+                    for (const item of document.querySelectorAll('.dialog.bilibili_qiaosi')) {
+                        if (item.videoId == event.videoId) stageDialog = item;
                     }
-                    else next = switchToAuto();
-                    const result2 = await next;
-                    game.broadcastAll('closeDialog', event.videoId);
+                    const stage = stageDialog._qiaosi;
+                    const finishedx = [];
+                    const waited = [];
+                    let over = false;
+                    let aiPlay = !ownerIsHuman;
+                    let aiSince = 0;
+                    let aiTimer = null;
+                    let timeoutId = null;
+                    let resolveResult;
+                    const resultPromise = new Promise(resolve => (resolveResult = resolve));
+                    //点一根管子：主机校验后本地生效，然后广播给其他视角
+                    const clickTube = id => {
+                        if (over) return;
+                        const action = stage.actions[id];
+                        if (!action) return;
+                        if (action.disabled || action.rotate >= action.link.max) return;
+                        stage.applyClick(id);
+                        game.broadcast('bilibili_qiaosi', 'click', event.videoId, id);
+                        if (action.rotate >= action.link.max && !finishedx.includes(id)) {
+                            finishedx.push(id);
+                            if (finishedx.length >= 3) endStage((stage.time + 1) * 1000);
+                        }
+                    };
+                    //主机自己的点击直接处理，客机的点击通过tempResult上报
+                    stageDialog._qiaosiHandler = payload => {
+                        if (payload && payload.type == 'click') clickTube(payload.id);
+                    };
+                    if (_status.connectMode) {
+                        game.filterPlayer(current => current.isOnline() && current == player).forEach(current => {
+                            const solver = (result, who) => {
+                                if (result && result.bilibili_qiaosi == event.videoId && result.type == 'click') clickTube(result.id);
+                                //返回false阻止unwait自动resume，游戏由我们自己控制
+                                return false;
+                            };
+                            current.wait(solver);
+                            waited.push(current);
+                        });
+                    }
+                    //人机/托管：随机挑三根管子转出来；中途托管时优先接着已经有水的管子倒
+                    let aiPlan = null;
+                    const aiMakePlan = () => {
+                        const partial = [];
+                        const rest = [];
+                        for (const id in stage.actions) {
+                            const action = stage.actions[id];
+                            if (action.rotate >= action.link.max) continue;
+                            if (action.rotate > 0) partial.push(id);
+                            else rest.push(id);
+                        }
+                        //已经有水的管子接着倒，剩下的位置随机挑管子补足到三根
+                        const need = Math.max(0, 3 - finishedx.length - partial.length);
+                        return partial.concat(rest.randomSort().slice(0, need));
+                    };
+                    const aiClick = () => {
+                        if (!aiPlan) aiPlan = aiMakePlan();
+                        let best = null;
+                        //计划里有水的管子优先，完成度接近的随机挑一根
+                        const partial = [];
+                        for (const id of aiPlan) {
+                            const action = stage.actions[id];
+                            if (!action || action.disabled || action.rotate >= action.link.max) continue;
+                            if (action.rotate > 0) partial.push({ id: id, ratio: action.rotate / action.link.max });
+                        }
+                        if (partial.length) {
+                            partial.sort((a, b) => b.ratio - a.ratio);
+                            const pool = partial.filter(item => item.ratio >= partial[0].ratio - 0.15);
+                            best = pool.randomGet().id;
+                        }
+                        if (!best) {
+                            const pool = aiPlan.filter(id => {
+                                const action = stage.actions[id];
+                                return action && !action.disabled && action.rotate < action.link.max;
+                            });
+                            //计划里的管子都注满了就重新随机一批
+                            if (pool.length) best = pool.randomGet();
+                            else aiPlan = aiMakePlan();
+                        }
+                        if (best) clickTube(best);
+                    };
+                    //按真人的节奏点：每0.3~0.6秒一下，同一根管子同样要等1.5秒动画
+                    const aiLoop = delay => {
+                        if (over) return;
+                        aiTimer = setTimeout(() => {
+                            if (over) return;
+                            //中途托管就交给主机自动操作，并按当前进度重新排一批目标
+                            if (!aiPlay && (player.isAuto || (player == game.me && _status.auto))) {
+                                aiPlay = true;
+                                aiPlan = null;
+                            }
+                            //取消托管就交还给玩家自己点
+                            else if (aiPlay && ownerIsHuman && !player.isAuto && !(player == game.me && _status.auto)) {
+                                aiPlay = false;
+                                aiSince = 0;
+                            }
+                            if (aiPlay) {
+                                if (!aiSince) aiSince = Date.now();
+                                //人机一直点不完就30秒收尾，避免卡住
+                                if (Date.now() - aiSince > 30000) {
+                                    endStage();
+                                    return;
+                                }
+                                aiClick();
+                            }
+                            aiLoop(300 + Math.random() * 300);
+                        }, delay);
+                    };
+                    const endStage = (delay = 0) => {
+                        if (over) return;
+                        over = true;
+                        if (aiTimer) {
+                            clearTimeout(aiTimer);
+                            aiTimer = null;
+                        }
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                            timeoutId = null;
+                        }
+                        setTimeout(() => {
+                            waited.forEach(current => {
+                                current.unwait({ bilibili_qiaosi: event.videoId, cleanup: true });
+                                current.hideTimer();
+                            });
+                            delete stageDialog._qiaosiHandler;
+                            delete lib.message.client.bilibili_qiaosi;
+                            game.broadcast('bilibili_qiaosi', 'close', event.videoId);
+                            stage.cleanup();
+                            stageDialog.delete();
+                            delete event._global_waiting;
+                            _status.imchoosing = false;
+                            game.resume();
+                            resolveResult({ bool: finishedx.length > 0, links: finishedx.slice(0) });
+                        }, delay);
+                    };
+                    event.switchToAuto = () => (aiPlay = true);
+                    event._global_waiting = true;
+                    if (_status.connectMode) timeoutId = setTimeout(() => endStage(), 25000);
+                    _status.imchoosing = true;
+                    game.pause();
+                    game.countChoose();
+                    aiLoop(800 + Math.random() * 800);
+                    const result2 = await resultPromise;
                     if (!result2?.bool || !result2.links?.length) {
                         player.chat('杯具', 'fire');
                         game.log(player, '表演失败');
