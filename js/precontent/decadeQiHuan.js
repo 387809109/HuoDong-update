@@ -86,7 +86,7 @@ const packs = function () {
                         trigger.getParent().targets.remove(player);
                         trigger.getParent().triggeredTargets2.remove(player);
                     }
-                    else trigger.getParent().directHit.addArray(trigger.targets.some(target => (get.mode() === 'identity' ? get.attitude(player, target) < 0 : target.isEnemyOf(player))));
+                    else trigger.getParent().directHit.addArray(trigger.targets.filter(target => (get.mode() === 'identity' ? get.attitude(player, target) < 0 : target.isEnemyOf(player))));
                 },
                 subSkill: {
                     useCardToPlayered: { charlotte: true },
