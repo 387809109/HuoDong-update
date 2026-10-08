@@ -68,17 +68,17 @@ const packs = function () {
                 filter(event, player, name) {
                     if (player.hasSkill('QH_rehuanshi_' + name)) return false;
                     if (!game.hasPlayer(function (current) {
-                        if (!lib.skill.lztunjiang.filterx({ player: current }, player)) return false;
+                        if (!(get.mode() === 'identity' ? get.attitude(player, current) > 0 : current.isFriendOf(player))) return false;
                         return current != player && current.hasSkill('QH_rehuanshi') && current.countCards('he', card => get.type2(card) == get.type2(event.card));
                     })) return false;
-                    if (name == 'useCardToTarget') return lib.skill.lztunjiang.filtery({ player: event.player }, player) && event.targets.length == 1;
-                    return event.isFirstTarget && event.targets.some(target => lib.skill.lztunjiang.filtery({ player: target }, player));
+                    if (name == 'useCardToTarget') return (get.mode() === 'identity' ? get.attitude(player, event.player) < 0 : event.player.isEnemyOf(player)) && event.targets.length == 1;
+                    return event.isFirstTarget && event.targets.some(target => (get.mode() === 'identity' ? get.attitude(player, target) < 0 : target.isEnemyOf(player)));
                 },
                 forced: true,
                 content() {
                     player.addTempSkill('QH_rehuanshi_' + event.triggername);
                     var target = game.filterPlayer(function (current) {
-                        if (!lib.skill.lztunjiang.filterx({ player: current }, player)) return false;
+                        if (!(get.mode() === 'identity' ? get.attitude(player, current) > 0 : current.isFriendOf(player))) return false;
                         return current != player && current.hasSkill('QH_rehuanshi') && current.countCards('he', card => get.type2(card) == get.type2(trigger.card));
                     }).randomGet();
                     target.discard(target.getCards('he', card => card => get.type2(card) == get.type2(trigger.card)).randomGets(1));
@@ -86,7 +86,7 @@ const packs = function () {
                         trigger.getParent().targets.remove(player);
                         trigger.getParent().triggeredTargets2.remove(player);
                     }
-                    else trigger.getParent().directHit.addArray(trigger.targets.some(target => lib.skill.lztunjiang.filtery({ player: target }, player)));
+                    else trigger.getParent().directHit.addArray(trigger.targets.some(target => (get.mode() === 'identity' ? get.attitude(player, target) < 0 : target.isEnemyOf(player))));
                 },
                 subSkill: {
                     useCardToPlayered: { charlotte: true },
@@ -347,7 +347,7 @@ const packs = function () {
                 audio: 'ext:活动武将/audio/skill:true',
                 trigger: { global: 'useCard' },
                 filter(event, player) {
-                    if (!lib.skill.lztunjiang.filtery(event, player) || !event.player.isPhaseUsing()) return false;
+                    if (!(get.mode() === 'identity' ? get.attitude(player, event.player) < 0 : event.player.isEnemyOf(player)) || !event.player.isPhaseUsing()) return false;
                     var evt = event.getParent('phaseUse');
                     var history = event.player.getHistory('useCard', function (evt2) {
                         return evt2.getParent('phaseUse') == evt && get.type2(evt2.card) == 'trick';
@@ -377,14 +377,14 @@ const packs = function () {
                 filter(event, player) {
                     if (!['sha', 'juedou', 'guohe'].includes(event.card.name)) return false;
                     return game.hasPlayer(function (current) {
-                        return lib.skill.lztunjiang.filtery({ player: current }, player) && !event.targets.includes(current) && lib.filter.targetEnabled2(event.card, player, current);
+                        return (get.mode() === 'identity' ? get.attitude(player, current) < 0 : current.isEnemyOf(player)) && !event.targets.includes(current) && lib.filter.targetEnabled2(event.card, player, current);
                     });
                 },
                 forced: true,
                 usable: 3,
                 logTarget(event, player) {
                     return game.filterPlayer(function (current) {
-                        return lib.skill.lztunjiang.filtery({ player: current }, player) && !event.targets.includes(current) && lib.filter.targetEnabled2(event.card, player, current);
+                        return (get.mode() === 'identity' ? get.attitude(player, current) < 0 : current.isEnemyOf(player)) && !event.targets.includes(current) && lib.filter.targetEnabled2(event.card, player, current);
                     });
                 },
                 content() {
@@ -403,7 +403,7 @@ const packs = function () {
                     'step 0'
                     player.draw(3);
                     'step 1'
-                    var targets = game.filterPlayer(current => current.countCards('h') < player.countCards('h') && lib.skill.lztunjiang.filtery({ player: current }, player));
+                    var targets = game.filterPlayer(current => current.countCards('h') < player.countCards('h') && (get.mode() === 'identity' ? get.attitude(player, current) < 0 : current.isEnemyOf(player)));
                     if (targets.length) {
                         for (var target of targets) player.gainPlayerCard(target, 'he', true);
                     }
@@ -413,7 +413,7 @@ const packs = function () {
                 audio: 'ext:活动武将/audio/skill:true',
                 trigger: { global: 'useCardToPlayered' },
                 filter(event, player) {
-                    if (!lib.skill.lztunjiang.filtery(event, player) || !_status.currentPhase || _status.currentPhase != event.player) return false;
+                    if (!(get.mode() === 'identity' ? get.attitude(player, event.player) < 0 : event.player.isEnemyOf(player)) || !_status.currentPhase || _status.currentPhase != event.player) return false;
                     return event.isFirstTarget && event.player.getHistory('useCard', evt => evt.card.name == 'sha').length >= 3;
                 },
                 forced: true,
@@ -464,12 +464,12 @@ const packs = function () {
                 audio: 'ext:活动武将/audio/skill:true',
                 trigger: { player: 'damageEnd' },
                 filter(event, player) {
-                    const targets = game.filterPlayer(current => lib.skill.lztunjiang.filtery({ player: current }, player));
+                    const targets = game.filterPlayer(current => (get.mode() === 'identity' ? get.attitude(player, current) < 0 : current.isEnemyOf(player)));
                     if (!targets.length) return false;
                     return targets.length == 1 || targets[0].hp != targets[1].hp;
                 },
                 logTarget(event, player) {
-                    const targets = game.filterPlayer(current => lib.skill.lztunjiang.filtery({ player: current }, player));
+                    const targets = game.filterPlayer(current => (get.mode() === 'identity' ? get.attitude(player, current) < 0 : current.isEnemyOf(player)));
                     targets.sort((a, b) => a.hp - b.hp);
                     return targets[0];
                 },
@@ -487,7 +487,7 @@ const packs = function () {
                 trigger: { global: 'dying' },
                 filter(event, player) {
                     if (!event.player.countCards('h')) return false;
-                    return lib.skill.lztunjiang.filtery(event, player);
+                    return (get.mode() === 'identity' ? get.attitude(player, event.player) < 0 : event.player.isEnemyOf(player));
                 },
                 logTarget: 'player',
                 forced: true,
@@ -547,7 +547,7 @@ const packs = function () {
                 audio: 'ext:活动武将/audio/skill:true',
                 trigger: { global: 'phaseJieshuBegin' },
                 filter(event, player) {
-                    if (!lib.skill.lztunjiang.filtery(event, player)) return false;
+                    if (!(get.mode() === 'identity' ? get.attitude(player, event.player) < 0 : event.player.isEnemyOf(player))) return false;
                     var num = 0;
                     event.player.getHistory('sourceDamage', function (evt) {
                         if (evt.player == player) num += evt.num;
@@ -648,7 +648,7 @@ const packs = function () {
                 trigger: { player: 'damageEnd', source: 'damageBegin1' },
                 filter(event, player, name) {
                     if (name == 'damageEnd') return player.countMark('QH_yankong') < 4;
-                    return lib.skill.lztunjiang.filtery(event, player) && player.hasMark('QH_yankong');
+                    return (get.mode() === 'identity' ? get.attitude(player, event.player) < 0 : event.player.isEnemyOf(player)) && player.hasMark('QH_yankong');
                 },
                 forced: true,
                 content() {
@@ -669,7 +669,7 @@ const packs = function () {
                     if (player.countCards('h') < 10) player.drawTo(10);
                     'step 1'
                     if (player.isMaxHandcard()) {
-                        var targets = game.filterPlayer(current => current.countCards('h') && lib.skill.lztunjiang.filtery({ player: current }, player));
+                        var targets = game.filterPlayer(current => current.countCards('h') && (get.mode() === 'identity' ? get.attitude(player, current) < 0 : current.isEnemyOf(player)));
                         if (targets.length) {
                             player.line(targets);
                             for (var i of targets) player.gain(i.getCards('h').randomGets(1), i, 'giveAuto');
@@ -683,14 +683,14 @@ const packs = function () {
                 trigger: { global: ['gainAfter', 'loseAsyncAfter'] },
                 filter(event, player) {
                     return game.hasPlayer(function (current) {
-                        if (!lib.skill.lztunjiang.filtery({ player: current }, player)) return false;
+                        if (!(get.mode() === 'identity' ? get.attitude(player, current) < 0 : current.isEnemyOf(player))) return false;
                         return current.isPhaseUsing() && event.getg(current).length > 0 && current.countCards('h') > 10;
                     });
                 },
                 forced: true,
                 logTarget(event, player) {
                     return game.findPlayer(function (current) {
-                        if (!lib.skill.lztunjiang.filtery({ player: current }, player)) return false;
+                        if (!(get.mode() === 'identity' ? get.attitude(player, current) < 0 : current.isEnemyOf(player))) return false;
                         return current.isPhaseUsing() && event.getg(current).length > 0 && current.countCards('h') > 10;
                     });
                 },
@@ -707,7 +707,7 @@ const packs = function () {
                             if (!event.isPhaseUsing()) return false;
                             var num = 0;
                             player.getHistory('damage', evt => num += evt.num);
-                            return num >= 5 && lib.skill.lztunjiang.filtery(event, player) && event.player.countCards('he');
+                            return num >= 5 && (get.mode() === 'identity' ? get.attitude(player, event.player) < 0 : event.player.isEnemyOf(player)) && event.player.countCards('he');
                         },
                         forced: true,
                         logTarget: 'player',
@@ -723,7 +723,7 @@ const packs = function () {
                 trigger: { global: 'useCard' },
                 filter(event, player) {
                     if (!_status.currentPhase || _status.currentPhase != event.player) return false;
-                    if (!lib.skill.lztunjiang.filtery(event, player)) return false;
+                    if (!(get.mode() === 'identity' ? get.attitude(player, event.player) < 0 : event.player.isEnemyOf(player))) return false;
                     return event.player.getHistory('useCard').indexOf(event) == 0;
                 },
                 forced: true,
@@ -736,12 +736,12 @@ const packs = function () {
                 audio: 'ext:活动武将/audio/skill:true',
                 trigger: { player: 'damageEnd' },
                 filter(event, player) {
-                    if (!game.hasPlayer(current => lib.skill.lztunjiang.filtery({ player: current }, player))) return false;
+                    if (!game.hasPlayer(current => (get.mode() === 'identity' ? get.attitude(player, current) < 0 : current.isEnemyOf(player)))) return false;
                     return player.getHistory('damage').indexOf(event) < 3;
                 },
                 forced: true,
                 content() {
-                    var target = game.filterPlayer(current => lib.skill.lztunjiang.filtery({ player: current }, player)).randomGet();
+                    var target = game.filterPlayer(current => (get.mode() === 'identity' ? get.attitude(player, current) < 0 : current.isEnemyOf(player))).randomGet();
                     player.line(target);
                     target.loseHp();
                 },
@@ -794,7 +794,7 @@ const packs = function () {
                     var num = player.countCards('h') - target.countCards('h');
                     if (num > 0) player.chooseToDiscard(num, 'he', true);
                     'step 1'
-                    var targets = game.filterPlayer(current => lib.skill.lztunjiang.filtery({ player: current }, player));
+                    var targets = game.filterPlayer(current => (get.mode() === 'identity' ? get.attitude(player, current) < 0 : current.isEnemyOf(player)));
                     if (targets.length) {
                         var map = {}, num = 5;
                         while (num > 0) {
