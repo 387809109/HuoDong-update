@@ -1,10 +1,6 @@
 {
     "files": [
         {
-            "path": ".workbuddy/memory/2026-10-07.md",
-            "size": 3043
-        },
-        {
             "path": "HuoDong_QQ.png",
             "size": 118446
         },
@@ -5669,6 +5665,10 @@
             "size": 67129
         },
         {
+            "path": "image/character/Mbaby_huangwudie.jpg",
+            "size": 153046
+        },
+        {
             "path": "image/character/Mbaby_huangzhong.jpg",
             "size": 119534
         },
@@ -6287,6 +6287,10 @@
         {
             "path": "image/character/Mbaby_sb_xiahoushi.jpg",
             "size": 750157
+        },
+        {
+            "path": "image/character/Mbaby_sb_xizhicai.jpg",
+            "size": 155704
         },
         {
             "path": "image/character/Mbaby_sb_xuhuang.jpg",
@@ -9254,7 +9258,7 @@
         },
         {
             "path": "js/precontent/MiNikill.js",
-            "size": 2984947
+            "size": 2977087
         },
         {
             "path": "js/precontent/MiNikill_sight.js",

@@ -261,7 +261,7 @@ const packs = function () {
             Mbaby_xizheng: ['male', 'shu', 3, ['dcdanyi', 'miniwencan']],
             Mbaby_ol_feiyi: ['male', 'shu', 3, ['yanru', 'minihezhong']],
             Mbaby_wuyi: ['male', 'shu', 4, ['minibenxi']],
-            Mbaby_huangwudie: ['female', 'shu', 4, ['minishuangrui', 'minifuxie'], ['die:dc_huangwudie']],
+            Mbaby_huangwudie: ['female', 'shu', 4, ['minishuangrui', 'dcfuxie'], ['die:dc_huangwudie']],
             //吴
             Mbaby_bulianshi: ['female', 'wu', 3, ['minianxu', 'zhuiyi']],
             Mbaby_chengpu: ['male', 'wu', 4, ['minilihuo', 'minichunlao']],
@@ -16388,10 +16388,10 @@ const packs = function () {
                     let directHit = [], baseDamage = 1;
                     if (player.inRange(target)) {
                         baseDamage++;
-                        await player.addSkills('minishaxue');
+                        await player.addSkills('dcshaxue');
                     } else {
                         directHit.addArray(game.players);
-                        await player.addSkills('minishouxing');
+                        await player.addSkills('dcshouxing');
                     }
                     await player.useCard({ name: 'sha', isCard: true }, target, false).set('directHit', directHit).set('baseDamage', baseDamage);
                 },
@@ -16402,153 +16402,7 @@ const packs = function () {
                     },
                     directHit_ai: true,
                 },
-                derivation: ['minishouxing', 'minishaxue'],
-            },
-            minifuxie: {
-                audio: 'dcfuxie',
-                enable: 'phaseUse',
-                filter(event, player) {
-                    return game.hasPlayer(current => current != player && current.countCards('he'));
-                },
-                chooseButton: {
-                    dialog(event, player) {
-                        const skills = player.getSkills(null, false, false).filter(skill => {
-                            const info = get.info(skill);
-                            if (!info || info.charlotte || get.skillInfoTranslation(skill, player).length == 0) return false;
-                            return true;
-                        });
-                        const dialog = ui.create.dialog('伏械：弃置一张武器牌或移除一个技能');
-                        dialog.direct = true;
-                        dialog.add([
-                            [['discardEquip1', '弃置武器牌']],
-                            (item, type, position, noclick, node) => {
-                                node = ui.create.buttonPresets.tdnodes(item, type, position, noclick);
-                                node.link = ['discard', 'equip1'];
-                                return node;
-                            },
-                        ]);
-                        dialog.add([skills, 'skill']);
-                        return dialog;
-                    },
-                    filter(button, player) {
-                        if (Array.isArray(button.link)) {
-                            return player.countDiscardableCards(player, 'he', card => get.subtype(card) == button.link[1]);
-                        }
-                        return true;
-                    },
-                    check(button) {
-                        const player = get.player();
-                        if (Array.isArray(button.link)) {
-                            if (player.countDiscardableCards(player, 'he', card => get.subtype(card) == button.link[1] && get.value(card) < 10)) return 3;
-                            return 1;
-                        }
-                        if (['minishouxing', 'minishaxue'].includes(button.link)) return 0.5;
-                        return 2;
-                    },
-                    backup(links, player) {
-                        return {
-                            audio: 'dcfuxie',
-                            choice: links[0],
-                            filterCard(card) {
-                                const { choice } = get.info('minifuxie_backup');
-                                if (Array.isArray(choice)) {
-                                    return get.subtype(card) == 'equip1' && lib.filter.cardDiscardable(card, player, 'minifuxie');
-                                }
-                                return false;
-                            },
-                            position: 'he',
-                            selectCard() {
-                                const { choice } = get.info('minifuxie_backup');
-                                if (Array.isArray(choice)) return 1;
-                                return -1;
-                            },
-                            filterTarget(card, player2, target) {
-                                return target != player2 && target.countCards('he');
-                            },
-                            async content(event, trigger, player2) {
-                                const { choice } = get.info('minifuxie_backup');
-                                if (Array.isArray(choice)) {
-                                    await player2.modedDiscard(event.cards);
-                                } else {
-                                    await player2.removeSkills(choice);
-                                }
-                                const target = event.target;
-                                await target.chooseToDiscard(2, true, 'he');
-                            },
-                            ai1(card) {
-                                return 10 - get.value(card);
-                            },
-                            ai2(target) {
-                                const player2 = get.player();
-                                return get.effect(target, { name: 'guohe_copy2' }, player2, player2);
-                            },
-                        };
-                    },
-                    prompt(links, player) {
-                        const prompt = Array.isArray(links[0]) ? '弃置一张武器牌' : `移除【${get.translation(links[0])}】`;
-                        return `${prompt}，令一名角色弃置两张牌`;
-                    },
-                },
-                subSkill: { backup: {} },
-                ai: {
-                    order: 3,
-                    result: {
-                        player(player) {
-                            if (player.countCards('he', card => get.subtype(card) == 'equip1')) return 1;
-                            return 0;
-                        },
-                    },
-                },
-            },
-            minishouxing: {
-                audio: 'dcshouxing',
-                enable: 'chooseToUse',
-                filterCard: true,
-                selectCard: [1, Infinity],
-                position: 'hse',
-                viewAs: { name: 'sha' },
-                viewAsFilter(player) {
-                    if (!player.countCards('hse')) return false;
-                },
-                filterTarget(card, player, target) {
-                    const cards = ui.selected.cards;
-                    if (!cards || !cards.length) return false;
-                    if (player.inRange(target)) return false;
-                    if (get.distance(player, target) != cards.length) return false;
-                    return lib.filter.targetEnabled(card, player, target);
-                },
-                complexSelect: true,
-                prompt: '将X张牌当杀对一名攻击范围外的角色使用（X为你计算与其的距离）',
-                check(card) {
-                    return 4.5 - get.value(card);
-                },
-                async precontent(event) {
-                    event.getParent().addCount = false;
-                },
-                ai: {
-                    skillTagFilter(player) {
-                        if (!player.countCards('hes')) return false;
-                    },
-                    respondSha: true,
-                },
-            },
-            minishaxue: {
-                audio: 'dcshaxue',
-                trigger: { source: 'damageSource' },
-                filter(event, player) {
-                    return event.player != player;
-                },
-                check(event, player) {
-                    return get.distance(player, event.player) <= 2;
-                },
-                logTarget: 'player',
-                async content(event, trigger, player) {
-                    await player.draw(2);
-                    const num = get.distance(player, trigger.player);
-                    if (num > 0 && trigger.player.isIn()) {
-                        await player.chooseToDiscard(num, 'he', true);
-                    }
-                },
+                derivation: ['dcshouxing', 'dcshaxue'],
             },
             //吴
             //孙权
@@ -47616,13 +47470,7 @@ const packs = function () {
             minibenxi: '奔袭',
             minibenxi_info: '锁定技，当你于回合内使用牌时，本回合你计算与其他角色的距离-1；你的回合内，若你与所有其他角色的距离均为1，则你使用仅指定一个目标的【杀】或普通锦囊牌时依次选择至多两项：①此牌目标+1；②此牌无视防具；③此牌不能被抵消；④此牌造成伤害时，摸一张牌。',
             minishuangrui: '双锐',
-            minishuangrui_info: '准备阶段，你可以选择一名其他角色，视为对其使用一张【杀】。若其：①不在你的攻击范围内，此【杀】不可被响应，你获得〖狩星〗；②在你的攻击范围内，此【杀】伤害+1，你获得〖铩雪〗。',
-            minifuxie: '伏械',
-            minifuxie_info: '出牌阶段，你可以弃置一张武器牌或移除一个技能，令一名其他角色弃置两张牌。',
-            minishouxing: '狩星',
-            minishouxing_info: '你可以将X张牌当一张不计次数的【杀】对一名攻击范围外的角色使用（X为你计算与该角色的距离）。',
-            minishaxue: '铩雪',
-            minishaxue_info: '你对其他角色造成伤害后，可以摸2张牌然后弃X张牌（X为你计算与该角色的距离）。',
+            minishuangrui_info: `准备阶段，你可以选择一名其他角色，视为对其使用一张【杀】。若其：①不在你的攻击范围内，此【杀】不可被响应，你获得${get.poptip('dcshouxing')}；②在你的攻击范围内，此【杀】伤害+1，你获得${get.poptip('dcshaxue')}。`,
             //吴
             Mbaby_bulianshi: '欢杀步练师',
             Mbaby_chengpu: '欢杀程普',
