@@ -48,7 +48,7 @@ const packs = function () {
                     })(),
                     ...['zhenji', 'diaochan', 'wangcan', 'machao', 'pangde', 'jiangwei', 'taishici', 'caiwenji'].map(i => `wechat_sp_${i}`),
                     ...['zhurong', 'zhangfei', 'zhenji', 'menghuo', 'zhouyu', 'zhugeliang', 'sp_zhugeliang', 'lvbu', 'lvmeng', 'yujin', 'huaxiong', 'sunquan', 'xiaoqiao', 'xiahouyuan', 'gaoshun', 'handang', 'guojia', 'huanggai', 'diaochan', 'huangyueying', 'zhangliao', 'sunshangxiang', 'zhaoyun', 'machao', 'huangzhong', 'caocao', 'sunce'].map(i => `wechat_sb_${i}`),
-                    ...['shamoke', 'wangyuanji', 'caochun', 'old_sunluyu', 'shantao', 'ruanji', 'jikang', 'caojie', 'xuezong', 'caiyong', 'xushi', 'sundeng', 'huanghao', 'guohuanghou', 'liucheng', 'sunluyu', 'jsp_huangyueying', 'wanglang', 'chendeng', 'zhuling', 'caizhenji', 'ol_bianfuren', 'zhangxingcai', 'huojun'].map(i => `wechat_${i}`),
+                    ...['shamoke', 'wangyuanji', 'caochun', 'old_sunluyu', 'shantao', 'ruanji', 'jikang', 'ruanxian', 'caojie', 'xuezong', 'caiyong', 'xushi', 'sundeng', 'huanghao', 'guohuanghou', 'liucheng', 'sunluyu', 'jsp_huangyueying', 'wanglang', 'chendeng', 'zhuling', 'caizhenji', 'ol_bianfuren', 'zhangxingcai', 'huojun'].map(i => `wechat_${i}`),
                     ...[],
                 ],
                 wechat_wanxiang: [
@@ -190,6 +190,7 @@ const packs = function () {
             wechat_liubiao: ['male', 'qun', 3, ['wechatzishou', 'wechatzongshi']],
             wechat_re_liubiao: ['male', 'qun', 3, ['wechatrezishou', 'wechatrezongshi']],
             wechat_ruanji: ['male', 'wei', 3, ['wechatyonghuai', 'wechatqiongtu']],
+            wechat_ruanxian: ['male', 'wei', 3, ['wechatzhenglv', 'wechathanyin', 'wechatcibi']],
             wechat_shantao: ['male', 'qun', 3, ['wechatjieshen', 'wechatqishi']],
             wechat_re_huangzhong: ['male', 'shu', 4, ['wechatreliegong']],
             wechat_yj_jushou: ['male', 'qun', 3, ['wechatxinjianying', 'wechatshibei']],
@@ -328,6 +329,7 @@ const packs = function () {
                 ].randomGet();
             },
             wechat_shantao: '山涛（205年－283年3月3日），字巨源。河内郡怀县（今河南武陟西）人。三国至西晋时期官员、玄学家、名士，“竹林七贤”之一。山涛早年孤贫，喜好老庄学说，与嵇康、阮籍等交游。四十岁时，才任郡主簿。大将军司马师执政时，山涛被举为秀才，累迁尚书吏部郎。后迁大将军从事中郎。景元五年（264年），以本职行军司马，镇守邺城，监视曹魏宗室。同年受封新沓子，转相国左长史。西晋建立后，升任大鸿胪。历任侍中、吏部尚书、太子少傅、左仆射等职，封新沓伯。他每次选用官吏，皆先秉承晋武帝意旨，且亲作评论，时人称之为“山公启事”。曾多次以老病辞官，皆不准。太康三年（282年），升为司徒，以老病归家。太康四年（283年），山涛去世，享年七十九岁，谥号“康”。山涛前后选举百官，都能选贤用能。在武帝诏罢天下兵役时，他反对废除州郡武备，此后局势混乱，州郡无力镇压，果如其所言。原有文集十卷，今已佚。《全晋文》《晋书》辑有其文。',
+            wechat_ruanxian: '阮咸，字仲容，陈留尉氏（今河南尉氏）人，三国至西晋时期名士、音乐家，“竹林七贤”之一，阮籍之侄。阮咸精通音律，善弹琵琶，后世以其名命名一种长颈琵琶“阮咸”（简称“阮”）。曾任散骑侍郎，后因与荀勖论音律不合而出补始平太守，以寿终。',
             wechat_zhi_zhushixing: '朱士行（203年－282年），颍川（今河南禹州）人，三国曹魏时期高僧，中国历史上首位受戒的汉族僧人，法号八戒。曹魏嘉平二年（250年）于洛阳白马寺受戒，后因对《道行般若经》译本不满，于甘露五年（260年）从雍州出发西行求法，穿越流沙抵达于阗国（今新疆和田）。在于阗获《大品般若经》梵本九十章六十余万字，并学习当地语言。西晋太康三年（282年）遣弟子弗如檀将经本送回洛阳，自身留在于阗终老。该经本后被译为《放光般若经》，成为汉地佛教义学研究的重要典籍。朱士行是汉地僧人西行求法的先驱，其经历为后世法显、玄奘等取经者提供了先例。杭州西湖飞来峰存有北宋时期雕刻的取经图像，相关事迹见于《出三藏记集》《高僧传》等典籍。',
         },
         characterSubstitute: {
@@ -16757,6 +16759,133 @@ const packs = function () {
                 },
                 ai: { combo: 'wechatyonghuai' }
             },
+            // 阮咸
+            wechatzhenglv: {
+                enable: 'phaseUse',
+                filter(event, player) {
+                    const num = player.countCards('h'), used = player.getStorage('wechatzhenglv_used');
+                    if (!used.includes('more') && game.hasPlayer(current => current != player && current.countCards('h') > num && current.hasCard(card => lib.filter.cardDiscardable(card, current, 'wechatzhenglv'), 'h'))) return true;
+                    if (!used.includes('less') && game.hasPlayer(current => current != player && current.countCards('h') < num)) return true;
+                    return false;
+                },
+                filterTarget(card, player, target) {
+                    const num = player.countCards('h'), used = player.getStorage('wechatzhenglv_used');
+                    const tnum = target.countCards('h');
+                    if (tnum > num) return !used.includes('more') && target.hasCard(c => lib.filter.cardDiscardable(c, target, 'wechatzhenglv'), 'h');
+                    if (tnum < num) return !used.includes('less');
+                    return false;
+                },
+                async content(event, trigger, player) {
+                    const target = event.targets?.[0];
+                    if (!target?.isIn()) return;
+                    const diff = target.countCards('h') - player.countCards('h');
+                    if (!diff) return;
+                    const more = diff > 0;
+                    if (more) {
+                        if (!target.countCards('h', c => lib.filter.cardDiscardable(c, target, event.name))) return;
+                        const res = await target.chooseToDiscard('h', true).forResult();
+                        if (!res?.bool || !res.cards?.length) return;
+                    }
+                    else await target.draw();
+                    player.addTempSkill(event.name + '_used', 'phaseUseEnd');
+                    player.markAuto(event.name + '_used', [more ? 'more' : 'less']);
+                    if (!target.isIn()) return;
+                    if (player.countCards('h') != target.countCards('h')) return;
+                    const card = get.autoViewAs({ name: more ? 'wuzhong' : 'jiu', isCard: true });
+                    if (!player.hasUseTarget(card, undefined, true)) return;
+                    await player.chooseUseTarget(card, true);
+                },
+                ai: {
+                    order: 7,
+                    result: { player: 1 },
+                },
+                subSkill: {
+                    used: {
+                        charlotte: true,
+                        onremove: true,
+                    }
+                },
+            },
+            wechathanyin: {
+                trigger: { player: 'useCard' },
+                filter(event, player) {
+                    if (!event.card || get.name(event.card) != 'jiu') return false;
+                    if (event._wechathanyin) return false;
+                    return player.canMoveCard();
+                },
+                async cost(event, trigger, player) {
+                    trigger._wechathanyin = true;
+                    event.result = await player.chooseBool(get.prompt(event.skill)).set('ai', () => true).forResult();
+                },
+                async content(event, trigger, player) {
+                    const prompt = '酣饮：请移动场上的一张牌，然后失去该牌的角色摸一张牌';
+                    const result = await player.moveCard(true, prompt).set('logSkill', event.name).forResult();
+                    if (!result?.bool || !result.card || result.targets?.length != 2) return;
+                    const from = result.targets[0];
+                    if (from?.isIn()) await from.draw();
+                },
+                ai: { result: { player: 1 } },
+            },
+            wechatcibi: {
+                trigger: { player: ['gainAfter', 'recoverBefore'] },
+                usable: 1,
+                getPayableCards(event, player) {
+                    const gained = event?.getg?.(player) || [];
+                    if (!gained.length) return [];
+                    if (!gained.every(card => get.itemtype(card) == 'card' && player.hasCard(card, 'hesj'))) return [];
+                    return gained.slice();
+                },
+                recoverValid(event, player) {
+                    return !event.finished && !event._cancelled && event.num > 0 && !player.isHealthy();
+                },
+                filter(event, player) {
+                    if (!game.hasPlayer(current => current != player)) return false;
+                    const info = get.info('wechatcibi');
+                    if (event.name == 'recover') return info.recoverValid(event, player);
+                    const phaseDraw = event.getParent('phaseDraw');
+                    if (phaseDraw && phaseDraw.player == player) return false;
+                    return info.getPayableCards(event, player).length > 0;
+                },
+                async cost(event, trigger, player) {
+                    const info = get.info(event.skill);
+                    if (trigger.name == 'recover') {
+                        if (!info.recoverValid(trigger, player)) {
+                            event.result = { bool: false };
+                            return;
+                        }
+                    }
+                    else if (!info.getPayableCards(trigger, player).length) {
+                        event.result = { bool: false };
+                        return;
+                    }
+                    const result = await player.chooseTarget(get.prompt(event.skill), '令一名其他角色摸两张牌', (card, player, target) => target != player).set('ai', target => {
+                        const player2 = get.player();
+                        return get.effect(target, { name: 'draw' }, player2, player2) * 2;
+                    }).forResult();
+                    event.result = {
+                        bool: !!result?.targets?.length,
+                        targets: result?.targets || [],
+                    };
+                },
+                async content(event, trigger, player) {
+                    const [target] = event.targets;
+                    if (!target?.isIn()) return;
+                    const info = get.info(event.name);
+                    if (trigger.name == 'recover') {
+                        if (!info.recoverValid(trigger, player)) return;
+                        trigger.cancel();
+                    }
+                    else {
+                        const cards = info.getPayableCards(trigger, player);
+                        if (!cards.length) return;
+                        await player.loseToDiscardpile(cards);
+                        if (cards.some(card => player.hasCard(card, 'hesj'))) return;
+                    }
+                    if (!target.isIn()) return;
+                    await target.draw(2);
+                },
+                ai: { result: { player: 1 } },
+            },
             // 极秦宓
             wechatgaogai: {
                 audio: 'ext:活动武将/audio/skill:2',
@@ -24749,6 +24878,13 @@ const packs = function () {
             wechatyonghuai_info: '出牌阶段限一次，你可以弃置一张牌。若此牌的类型为：1.基本牌，你摸两张牌且本回合你的基本牌不计入手牌上限；2.锦囊牌，你视为使用一张锦囊牌且你可以为此牌增加或减少一个目标（此牌目标数至少为1）；3.装备牌，你观看牌堆顶的三张牌，获得其中一张牌并将剩余牌以任意顺序置于牌堆顶或牌堆底。',
             wechatqiongtu: '穷途',
             wechatqiongtu_info: `当你进入濒死状态时，若${get.poptip('wechatyonghuai')}剩余分支大于1，则你可以移去其中一个分支并将体力回复至1点，然后你令一名其他角色执行此分支的效果。`,
+            wechat_ruanxian: '小程序阮咸',
+            wechatzhenglv: '正律',
+            wechatzhenglv_info: '出牌阶段各限一次，你可以令一名手牌数大于/小于你的角色选择一项：令其弃置/摸一张牌，若你们手牌数相同视为使用一张【无中生有】/【酒】。',
+            wechathanyin: '酣饮',
+            wechathanyin_info: '当你使用【酒】时，你可以移动场上区域的一张牌，然后失去其区域牌的角色摸一张牌。',
+            wechatcibi: '辞辟',
+            wechatcibi_info: '每回合限一次，当你摸牌阶段外获得牌或者回复体力时，你可以将获得的牌置入弃牌堆或者放弃回复体力，然后你令一名其他角色摸两张牌。',
             wechat_zhiyin_qinmi: '极秦宓',
             wechatgaogai: '高概',
             wechatgaogai_info: `锁定技。出牌阶段限一次，一名角色失去一种颜色的所有手牌后，你令其将手牌摸至X（X为你的体力上限），然后若场上有角色拥有与其中一种颜色的“天”标记，你摸两张牌。`,
