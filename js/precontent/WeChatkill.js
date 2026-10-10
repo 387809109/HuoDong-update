@@ -12219,7 +12219,7 @@ const packs = function () {
                 },
                 async content(event, trigger, player) {
                     const { targets: [target] } = event;
-                    await game.asyncDraw([player, target].sortBySeat(), 2);
+                    await game.asyncDraw([player, target].sortBySeat(), 3);
                     player.addTempSkill(event.name + '_effect', { player: 'phaseBegin' });
                     player.markAuto(event.name + '_effect', [target]);
                 },
@@ -24686,7 +24686,7 @@ const packs = function () {
             wechatyifu_info: '出牌阶段限一次，你可以判定。若结果为：红色，你令一名角色回复1点体力；黑色，你对一名角色造成1点伤害。然后若你以次此法选择的角色体力值与你相等，你可以移动其或你场上的一张牌。',
             wechat_zhiyin_xinxianying: '极辛宪英',
             wechatyanzheng: '言正',
-            wechatyanzheng_info: '摸牌阶段，你可以改为与一名其他角各摸两张牌。若如此做，直到你的下回合开始，当你或其下次造成伤害后，你弃置伤害来源区域内的一张牌。',
+            wechatyanzheng_info: '摸牌阶段，你可以改为与一名其他角各摸三张牌。若如此做，直到你的下回合开始，当你或其下次造成伤害后，你弃置伤害来源区域内的一张牌。',
             wechatgaojie: '高节',
             wechatgaojie_info: '出牌阶段开始时，你可以重铸你区域内点数最大和最小的牌各一张。若如此做，你可以令一名角色摸两张牌或回复1点体力，然后本回合你不能对体力值小于你的角色使用这两个点数之间的牌。',
             wechat_sp_zhenji: 'SP小程序甄宓',
