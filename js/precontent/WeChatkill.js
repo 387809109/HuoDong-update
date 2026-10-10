@@ -319,7 +319,7 @@ const packs = function () {
             wechat_baixiang: ['male', 'qun', 4, ['wechatzigan'], ['name:孙|国帅-栗|瑞明-踩背|祥']],
             wechat_dihuangxia: ['male', 'qun', 4, ['wechattianxing', 'wechatjiguang'], ['name:李|炘南-北|淼-东|杉-西|钊-坤|中']],
             wechat_yanlongxia: ['male', 'qun', 4, ['wechatyanlong', 'wechatyingyan', 'wechatfengmo'], ['name:李|炘南-张|健-殿|南']],
-            wechat_yuwenyuejuanren: ['male', 'none', 6, ['wechatyuedu', 'wechatmoxie', 'wechatzuowen'], ['name:null|null']],
+            wechat_yuwenyuejuanren: ['male', 'none', 6, ['wechatyuedu', 'wechatmoxie', 'wechatzuowen'], ['name:闹动|导近']],
         },
         characterIntro: {
             get wechat_nailong() {
