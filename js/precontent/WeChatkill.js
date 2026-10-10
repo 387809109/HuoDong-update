@@ -16759,8 +16759,9 @@ const packs = function () {
                 },
                 ai: { combo: 'wechatyonghuai' }
             },
-            // 阮咸
+            //阮咸
             wechatzhenglv: {
+                audio: 'ext:活动武将/audio/skill:2',
                 enable: 'phaseUse',
                 filter(event, player) {
                     const num = player.countCards('h'), used = player.getStorage('wechatzhenglv_used');
@@ -16776,115 +16777,98 @@ const packs = function () {
                     return false;
                 },
                 async content(event, trigger, player) {
-                    const target = event.targets?.[0];
-                    if (!target?.isIn()) return;
-                    const diff = target.countCards('h') - player.countCards('h');
-                    if (!diff) return;
-                    const more = diff > 0;
+                    const target = event.target;
+                    const more = target.countCards('h') - player.countCards('h') > 0;
+                    player.addTempSkill(event.name + '_used', 'phaseUseEnd');
+                    player.markAuto(event.name + '_used', [more ? 'more' : 'less']);
                     if (more) {
-                        if (!target.countCards('h', c => lib.filter.cardDiscardable(c, target, event.name))) return;
+                        if (!target.hasCard(c => lib.filter.cardDiscardable(c, target, 'wechatzhenglv'), 'h')) return;
                         const res = await target.chooseToDiscard('h', true).forResult();
                         if (!res?.bool || !res.cards?.length) return;
                     }
                     else await target.draw();
-                    player.addTempSkill(event.name + '_used', 'phaseUseEnd');
-                    player.markAuto(event.name + '_used', [more ? 'more' : 'less']);
-                    if (!target.isIn()) return;
-                    if (player.countCards('h') != target.countCards('h')) return;
+                    if (player.countCards('h') !== target.countCards('h')) return;
                     const card = get.autoViewAs({ name: more ? 'wuzhong' : 'jiu', isCard: true });
-                    if (!player.hasUseTarget(card, undefined, true)) return;
-                    await player.chooseUseTarget(card, true);
+                    if (player.hasUseTarget(card, undefined, true)) await player.chooseUseTarget(card, true, false);
                 },
                 ai: {
                     order: 7,
-                    result: { player: 1 },
+                    result: {
+                        player(player, target) {
+                            const more = target.countCards('h') - player.countCards('h') > 0;
+                            if (more) return get.effect(target, { name: 'guohe_copy', position: 'h' }, target, player) * (more === 1 ? 114514 : 1);
+                            return get.effect(target, { name: 'draw' }, player, player) * (more === -1 ? 1919810 : 1);
+                        },
+                    },
                 },
                 subSkill: {
                     used: {
                         charlotte: true,
                         onremove: true,
-                    }
+                    },
                 },
             },
             wechathanyin: {
+                audio: 'ext:活动武将/audio/skill:2',
                 trigger: { player: 'useCard' },
                 filter(event, player) {
-                    if (!event.card || get.name(event.card) != 'jiu') return false;
-                    if (event._wechathanyin) return false;
-                    return player.canMoveCard();
+                    return event.card.name === 'jiu' && player.canMoveCard();
                 },
                 async cost(event, trigger, player) {
-                    trigger._wechathanyin = true;
-                    event.result = await player.chooseBool(get.prompt(event.skill)).set('ai', () => true).forResult();
+                    event.result = await player.moveCard(get.prompt2(event.skill)).set('logSkill', event.skill).forResult();
                 },
+                popup: false,
                 async content(event, trigger, player) {
-                    const prompt = '酣饮：请移动场上的一张牌，然后失去该牌的角色摸一张牌';
-                    const result = await player.moveCard(true, prompt).set('logSkill', event.name).forResult();
-                    if (!result?.bool || !result.card || result.targets?.length != 2) return;
-                    const from = result.targets[0];
+                    const from = event.targets[0];
                     if (from?.isIn()) await from.draw();
                 },
-                ai: { result: { player: 1 } },
             },
             wechatcibi: {
-                trigger: { player: ['gainAfter', 'recoverBefore'] },
-                usable: 1,
-                getPayableCards(event, player) {
-                    const gained = event?.getg?.(player) || [];
-                    if (!gained.length) return [];
-                    if (!gained.every(card => get.itemtype(card) == 'card' && player.hasCard(card, 'hesj'))) return [];
-                    return gained.slice();
-                },
-                recoverValid(event, player) {
-                    return !event.finished && !event._cancelled && event.num > 0 && !player.isHealthy();
+                audio: 'ext:活动武将/audio/skill:2',
+                trigger: {
+                    player: ['gainAfter', 'recoverBegin'],
+                    global: 'loseAsyncAfter',
                 },
                 filter(event, player) {
-                    if (!game.hasPlayer(current => current != player)) return false;
+                    if (!game.hasPlayer(current => current !== player)) return false;
                     const info = get.info('wechatcibi');
-                    if (event.name == 'recover') return info.recoverValid(event, player);
-                    const phaseDraw = event.getParent('phaseDraw');
-                    if (phaseDraw && phaseDraw.player == player) return false;
-                    return info.getPayableCards(event, player).length > 0;
+                    if (event.name === 'recover') return true;
+                    if (event.getParent('phaseDraw', true)) return false;
+                    return event.getg?.(player)?.some(card => get.owner(card) === 'player' && 'he'.includes(get.position(card)));
                 },
-                async cost(event, trigger, player) {
-                    const info = get.info(event.skill);
-                    if (trigger.name == 'recover') {
-                        if (!info.recoverValid(trigger, player)) {
-                            event.result = { bool: false };
-                            return;
-                        }
+                check(event, player) {
+                    if (event.name === 'recover' && player.isDying()) return false;
+                    let effect = get.recoverEffect(player, event.source || player, player) * (event.num || 1);
+                    if (event.name !== 'recover') {
+                        const cards = event.getg(player).filter(card => get.owner(card) === 'player' && 'he'.includes(get.position(card)));
+                        effect = cards.reduce((sum, card) => sum + get.value(card), 0);
                     }
-                    else if (!info.getPayableCards(trigger, player).length) {
-                        event.result = { bool: false };
-                        return;
-                    }
-                    const result = await player.chooseTarget(get.prompt(event.skill), '令一名其他角色摸两张牌', (card, player, target) => target != player).set('ai', target => {
-                        const player2 = get.player();
-                        return get.effect(target, { name: 'draw' }, player2, player2) * 2;
-                    }).forResult();
-                    event.result = {
-                        bool: !!result?.targets?.length,
-                        targets: result?.targets || [],
-                    };
+                    return Math.max(...game.filterPlayer(current => current !== player).map(target => get.effect(target, { name: 'draw' }, player, player) * 2)) > effect;
                 },
+                prompt2(event, player) {
+                    let str = '放弃此次体力回复';
+                    if (event.name !== 'recover') str = `将${get.translation(event.getg(player).filter(card => get.owner(card) === 'player' && 'he'.includes(get.position(card))))}置入弃牌堆`;
+                    return `${str}，令一名其他角色摸两张牌`;
+                },
+                usable: 1,
                 async content(event, trigger, player) {
-                    const [target] = event.targets;
-                    if (!target?.isIn()) return;
-                    const info = get.info(event.name);
-                    if (trigger.name == 'recover') {
-                        if (!info.recoverValid(trigger, player)) return;
-                        trigger.cancel();
-                    }
+                    if (trigger.name === 'recover') trigger.cancel();
                     else {
-                        const cards = info.getPayableCards(trigger, player);
+                        const cards = trigger.getg(player).filter(card => get.owner(card) === 'player' && 'he'.includes(get.position(card)));
                         if (!cards.length) return;
                         await player.loseToDiscardpile(cards);
-                        if (cards.some(card => player.hasCard(card, 'hesj'))) return;
                     }
-                    if (!target.isIn()) return;
-                    await target.draw(2);
+                    if (!game.hasPlayer(current => current !== player)) return;
+                    const result = await player.chooseTarget(`${get.translation(event.name)}：令一名其他角色摸两张牌`, lib.filter.notMe, true).set('ai', target => {
+                        const player = get.player();
+                        return get.effect(target, { name: 'draw' }, player, player);
+                    }).forResult();
+                    if (result?.bool && result.targets?.length) {
+                        const target = result.targets[0];
+                        player.line(target);
+                        await target.draw(2);
+                    }
                 },
-                ai: { result: { player: 1 } },
             },
             // 极秦宓
             wechatgaogai: {
@@ -24880,11 +24864,11 @@ const packs = function () {
             wechatqiongtu_info: `当你进入濒死状态时，若${get.poptip('wechatyonghuai')}剩余分支大于1，则你可以移去其中一个分支并将体力回复至1点，然后你令一名其他角色执行此分支的效果。`,
             wechat_ruanxian: '小程序阮咸',
             wechatzhenglv: '正律',
-            wechatzhenglv_info: '出牌阶段各限一次，你可以令一名手牌数大于/小于你的角色选择一项：令其弃置/摸一张牌，若你们手牌数相同视为使用一张【无中生有】/【酒】。',
+            wechatzhenglv_info: '出牌阶段各限一次，你可以令一名手牌数大于/小于你的角色弃置一张手牌/摸一张牌，然后若你们手牌数相同，你视为使用一张【无中生有】/【酒】。',
             wechathanyin: '酣饮',
             wechathanyin_info: '当你使用【酒】时，你可以移动场上区域的一张牌，然后失去其区域牌的角色摸一张牌。',
             wechatcibi: '辞辟',
-            wechatcibi_info: '每回合限一次，当你摸牌阶段外获得牌或者回复体力时，你可以将获得的牌置入弃牌堆或者放弃回复体力，然后你令一名其他角色摸两张牌。',
+            wechatcibi_info: '每回合限一次，当你摸牌阶段外获得牌或者回复体力时，你可以将获得的牌置入弃牌堆或者放弃回复体力，然后令一名其他角色摸两张牌。',
             wechat_zhiyin_qinmi: '极秦宓',
             wechatgaogai: '高概',
             wechatgaogai_info: `锁定技。出牌阶段限一次，一名角色失去一种颜色的所有手牌后，你令其将手牌摸至X（X为你的体力上限），然后若场上有角色拥有与其中一种颜色的“天”标记，你摸两张牌。`,
