@@ -9495,13 +9495,11 @@ const packs = function () {
                             cardEnabled(card, player) {
                                 const type = get.type2(card);
                                 if (typeof player.storage['bilibili_xiezhi_buff'][type] !== 'number') return;
-                                const stat = player.getStat('card');
                                 if (player.storage['bilibili_xiezhi_buff'][type] <= 0) return false;
                             },
                             cardSavable(card, player) {
                                 const type = get.type2(card);
                                 if (typeof player.storage['bilibili_xiezhi_buff'][type] !== 'number') return;
-                                const stat = player.getStat('card');
                                 if (player.storage['bilibili_xiezhi_buff'][type] <= 0) return false;
                             },
                         },
