@@ -65,7 +65,7 @@ const packs = function () {
                 wechat_zhi_bei: ['caojie', 'caocao'].map(i => `wechat_zhi_${i}`),
                 wechat_zhi_han: ['fuhuanghou', 'zhangjiao'].map(i => `wechat_zhi_${i}`),
                 wechat_zhi: ['liubiao', 'caozhi', 'old_yuanshu', 'caopi', 'liubei', 'yuanshu', 'yanghu', 'jiaxu'].map(i => `wechat_zhi_${i}`),
-                wechat_shengzhiyifa: ['baixiang', 'hema', 'gaoluji', 'mashe', 'yingjiang', 'yuehanniu', 'luotuo', 'hansimao', 'dihuangxia', 'yanlongxia', 'nailong'].map(i => `wechat_${i}`),//任何答辩，终将绳之以法！！！！！
+                wechat_shengzhiyifa: ['yuwenyuejuanren', 'baixiang', 'hema', 'gaoluji', 'mashe', 'yingjiang', 'yuehanniu', 'luotuo', 'hansimao', 'dihuangxia', 'yanlongxia', 'nailong'].map(i => `wechat_${i}`),//任何答辩，终将绳之以法！！！！！
             },
         },
         character: {
@@ -319,6 +319,7 @@ const packs = function () {
             wechat_baixiang: ['male', 'qun', 4, ['wechatzigan'], ['name:孙|国帅-栗|瑞明-踩背|祥']],
             wechat_dihuangxia: ['male', 'qun', 4, ['wechattianxing', 'wechatjiguang'], ['name:李|炘南-北|淼-东|杉-西|钊-坤|中']],
             wechat_yanlongxia: ['male', 'qun', 4, ['wechatyanlong', 'wechatyingyan', 'wechatfengmo'], ['name:李|炘南-张|健-殿|南']],
+            wechat_yuwenyuejuanren: ['male', 'none', 6, ['wechatyuedu', 'wechatmoxie', 'wechatzuowen'], ['name:null|null']],
         },
         characterIntro: {
             get wechat_nailong() {
@@ -23774,6 +23775,119 @@ const packs = function () {
                     },
                 },
             },
+            // 语文阅卷人
+            wechatyuedu: {
+                audio: 'ext:活动武将/audio/skill:2',
+                trigger: { global: 'useCardAfter' },
+                filter(event, player) {
+                    if (event.player == player) return false;
+                    if (!['basic', 'trick'].includes(get.type(event.card))) return false;
+                    return event.cards.someInD();
+                },
+                usable: 1,
+                prompt2(event, player) {
+                    const cards = event.cards.filterInD();
+                    return `将${get.translation(cards)}置于武将牌上`;
+                },
+                async content(event, trigger, player) {
+                    const cards = trigger.cards.filterInD();
+                    const next = player.addToExpansion(cards, 'gain2');
+                    next.gaintag.add(event.name);
+                    await next;
+                },
+                marktext: '文',
+                intro: {
+                    content: 'expansion',
+                    markcount: 'expansion',
+                },
+                onremove(player, skill) {
+                    const cards = player.getExpansions(skill);
+                    if (cards.length) player.loseToDiscardpile(cards);
+                },
+                ai: { combo: ['wechatyingyan', 'wechatfengmo'] },
+            },
+            wechatmoxie: {
+                audio: 'ext:活动武将/audio/skill:2',
+                enable: 'phaseUse',
+                filter(event, player) {
+                    return player.getExpansions('wechatyuedu').some(card => {
+                        if (!['basic', 'trick'].includes(get.type(card))) return false;
+                        return event.filterCard(get.autoViewAs({ name: get.name(card) }, 'unsure'), player, event);
+                    });
+                },
+                usable: 1,
+                chooseButton: {
+                    dialog(event, player) {
+                        const names = player.getExpansions('wechatyuedu').map(card => get.name(card)).toUniqued();
+                        const vcards = names.filter(name => {
+                            if (!['basic', 'trick'].includes(get.type(name))) return false;
+                            return event.filterCard(get.autoViewAs({ name }, 'unsure'), player, event);
+                        }).map(name => [get.translation(get.type(name)), '', name]);
+                        return ui.create.dialog('默写', [vcards, 'vcard']);
+                    },
+                    check(button) {
+                        return get.player().getUseValue({ name: button.link[2], nature: button.link[3] });
+                    },
+                    backup(links, player) {
+                        return {
+                            audio: 'wechatmoxie',
+                            popname: true,
+                            viewAs: { name: links[0][2], nature: links[0][3], isCard: true },
+                            filterCard: () => false,
+                            selectCard: -1,
+                        };
+                    },
+                    prompt(links, player) {
+                        return '视为使用' + (get.translation(links[0][3]) || '') + get.translation(links[0][2]);
+                    },
+                },
+                ai: {
+                    combo: 'wechatyanlong',
+                    order: 6,
+                    result: { player: 1 },
+                },
+            },
+            wechatzuowen: {
+                audio: 'ext:活动武将/audio/skill:2',
+                trigger: { player: 'phaseJieshuBegin' },
+                filter(event, player) {
+                    const cards = player.getExpansions('wechatyuedu');
+                    const names = cards.map(card => get.name(card)).toUniqued();
+                    return names.length >= 3;
+                },
+                async cost(event, trigger, player) {
+                    const cards = player.getExpansions('wechatyuedu');
+                    const result = await player.chooseButton(['作文：将三张牌名不同的文章”置入弃牌堆，然后摸两张牌并对一名其他角色造成1点伤害', cards], 3).set('filterButton', button => {
+                        const card = button.link;
+                        return !ui.selected.buttons.some(cardx => get.name(cardx.link) == get.name(card));
+                    }, true).set('ai', button => {
+                        const player = get.player();
+                        const card = button.link;
+                        if (!['basic', 'trick'].includes(get.type(card))) return 1;
+                        return 10 - player.getUseValue(card);
+                    }).forResult();
+                    event.result = {
+                        bool: result.bool,
+                        cost_data: result.links,
+                    }
+                },
+                async content(event, trigger, player) {
+                    await player.loseToDiscardpile(event.cost_data);
+                    await player.draw(2);
+                    if (game.hasPlayer(current => current != player)) {
+                        const result = await player.chooseTarget('作文：请选择一名其他角色对其造成1点伤害', true, lib.filter.notMe).set('ai', target => {
+                            const player = get.player();
+                            return get.damageEffect(target, player, player);
+                        }).forResult();
+                        if (result?.targets?.length) {
+                            const target = result.targets[0];
+                            player.line(target);
+                            await target.damage();
+                        }
+                    }
+                },
+                ai: { combo: 'wechatyanlong' },
+            },
         },
         dynamicTranslate: {
             wechatxiangzhi(player) {
@@ -25132,6 +25246,13 @@ const packs = function () {
             wechatxhhxiangzhi_info: '每轮开始时，你可以选择一名有手牌的角色，称为“襄智”角色。你观看其手牌，且当其本轮使用普通锦囊牌指定目标时，你可以选择本轮未选择过的一项：1.令此牌不可被响应；2.为此牌增加一个目标；3.令此牌对其中一个目标额外结算一次。',
             wechatzheyuan: '折愿',
             wechatzheyuan_info: `${get.poptip('rule_yizhiSkill')}，锁定技。当你死亡时，你令杀死你的角色：昔：将所有手牌交给你选择的一名角色；今：获得每名其他角色区域里的一张牌。你于“襄智”角色的回合内受到伤害时，其令你移志。`,
+            wechat_yuwenyuejuanren: '语文阅卷人',
+            wechatyuedu: '阅读',
+            wechatyuedu_info: '每回合限一次，其他角色使用基本牌或普通锦囊牌结算结束后，你可以将此牌对应的所有实体牌置于武将牌上，称为“文章”。',
+            wechatmoxie: '默写',
+            wechatmoxie_info: '出牌阶段限一次。你可以视为使用一张与“文章”牌名相同的基本牌或普通锦囊牌。',
+            wechatzuowen: '作文',
+            wechatzuowen_info: '结束阶段，若你拥有至少三张牌名不同的“文章”，你须将其中三张置入弃牌堆，然后你摸两张牌并对一名其他角色造成1点伤害。',
 
             // ----------------------- 台词部分 ----------------------- //
             '#ext:活动武将/audio/skill/wechatzhongxin1': '苍生之愿，即贫道所愿也。',

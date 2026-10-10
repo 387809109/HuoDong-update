@@ -822,7 +822,7 @@ export async function precontent(bilibilicharacter) {
                     _status.HDWJ_ChangeLog_character = {
                         MiNiAppkill: Object.keys(MiNiAppkill().character),
                         MiNikill: ['Mbaby_star_dongzhuo', 'Mbaby_star_sunjian', 'Mbaby_star_zhangzhao', 'Mbaby_zhanghu', 'Mbaby_yue_xiaoqiao', 'Mbaby_dc_sp_zhurong', 'Mbaby_shen_guojia', 'Mqing_lvdiao', 'Mbaby_feiyi', 'Mbaby_shen_pangtong', 'Mbaby_qiuliju', 'Mbaby_huangwudie', 'Mbaby_sb_xizhicai'],
-                        WeChatkill: ['wechat_sb_zhurong', 'wechat_zhi_yanghu', 'wechat_zhiyin_zhaoe', 'wechat_zhi_jiaxu', 'wechat_zhi_xiahouhui'],
+                        WeChatkill: ['wechat_sb_zhurong', 'wechat_zhi_yanghu', 'wechat_zhiyin_zhaoe', 'wechat_zhi_jiaxu', 'wechat_zhi_xiahouhui', 'wechat_yuwenyuejuanren'],
                     };
                     return Object.values(_status.HDWJ_ChangeLog_character).flat();
                 })(),
