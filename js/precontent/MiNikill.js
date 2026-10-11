@@ -43130,7 +43130,6 @@ const packs = function () {
                         }
                     }
                     if (result.all) {
-                        player.refreshSkill('mininianying_Mnian_sunquan');
                         const result3 = await player.chooseTarget(`${get.translation(event.name)}：是否令一名角色摸四张牌并回复4点体力？`).set('ai', target => {
                             const player = get.player();
                             return get.effect(target, { name: 'draw' }, player, player) + get.recoverEffect(target, player, player);
@@ -43206,14 +43205,6 @@ const packs = function () {
                         charlotte: true,
                         mark: true,
                         intro: { content: '本回合发动【念影】无次数限制' },
-                        trigger: { player: 'logSkill' },
-                        filter(event, player) {
-                            return event.skill === 'mininianying_Mnian_sunquan';
-                        },
-                        silent: true,
-                        async content(event, trigger, player) {
-                            player.refreshSkill(trigger.skill);
-                        },
                     },
                     add: {
                         charlotte: true,
@@ -43296,7 +43287,9 @@ const packs = function () {
                 filter(event, player, name) {
                     return Object.keys(lib.skill).some(i => !player.getStorage('mininianying_Mnian_sunquan').includes(i) && get.info(i)?.nianyingSkill && get.info(i).nianyingFilter(event, player, name));
                 },
-                usable: 1,
+                usable(skill, player) {
+                    return player.hasSkill('mininianquanheng_inf') ? Infinity : 1;
+                },
                 nianyingSkill: ['权御天下', '令当前回合角色重铸其体力值张牌（不足则全部重铸）'],
                 nianyingFilter(event, player, name) {
                     const target = _status.currentPhase;
