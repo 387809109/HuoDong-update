@@ -19030,52 +19030,41 @@ const packs = function () {
                 audio: 'nzry_kuizhu',
                 trigger: { player: 'phaseDiscardEnd' },
                 filter(event, player) {
-                    var cards = [];
-                    player.getHistory('lose', function (evt) {
-                        if (evt.type == 'discard' && evt.getParent('phaseDiscard') == event) cards.addArray(evt.cards2);
-                    });
-                    return cards.length;
+                    return player.hasHistory('lose', evt => evt.type === 'discard' && evt.getParent('phaseDiscard') === event && evt.cards2.length > 0);
                 },
                 async cost(event, trigger, player) {
-                    var cards = [];
-                    player.getHistory('lose', function (evt) {
-                        if (evt.type == 'discard' && evt.getParent('phaseDiscard') == trigger) cards.addArray(evt.cards2);
+                    let cards = [];
+                    player.getHistory('lose', evt => {
+                        if (evt.type == 'discard' && evt.getParent('phaseDiscard') === trigger) cards.addArray(evt.cards2);
                     });
-                    event.num = cards.length;
-                    event.str1 = '令至多' + event.num + '名角色摸一张牌';
-                    event.str2 = '对任意名体力值之和不大于' + event.num + '的角色造成一点伤害';
-                    const result = await player.chooseControl('cancel2').set('ai', function () {
-                        if (game.countPlayer(function (current) { return get.attitude(player, current) < 0 && current.hp <= event.num }) > 0) return 1;
-                        return 0;
-                    }).set('choiceList', [event.str1, event.str2]).set('prompt', get.prompt2('minikuizhu')).forResult();
-                    if (result?.control && result.control !== 'cancel2') {
-                        event.control = [event.str1, event.str2][result.index];
-                        var num = event.num, str = event.control;
-                        event.result = await player.chooseTarget('请选择〖溃诛〗的目标', str, [0, Infinity], function (card, player, target) {
-                            var num = _status.event.num;
-                            switch (event.control) {
-                                case event.str1:
-                                    return ui.selected.targets.length < num;
-                                    break;
-                                case event.str2:
-                                    if (!ui.selected.targets.length) return target.hp <= num;
-                                    var summer = 0;
-                                    for (var i of ui.selected.targets) summer += i.hp;
-                                    return summer + target.hp <= num;
-                                    break;
-                            }
-                        }).set('ai', function (target) {
-                            var player = _status.event.player;
-                            switch (event.control) {
-                                case event.str1:
-                                    return get.attitude(player, target);
-                                    break;
-                                case event.str2:
-                                    return get.damageEffect(target, player, player);
-                                    break;
-                            }
-                        }).set('num', num).set('complexSelect', true).set('complexTarget', true).forResult();
-                        if (event.result) event.result.cost_data = event.control === event.str1;
+                    const result = await player.bilibili_chooseTargetControl({
+                        prompt: get.prompt(event.skill),
+                        prompt2: `令至多${get.cnNumber(cards.length)}名角色摸一张牌，或对任意体力之和小于等于${cards.length}的角色各造成1点伤害`,
+                        filterTarget: true,
+                        selectTarget: [1, Math.min(game.countPlayer(), cards.length)],
+                        controls: ['摸牌', '造成伤害'],
+                        filterControl(control, player, event) {
+                            if (!ui.selected.targets.length) return false;
+                            if (control === '摸牌') return true;
+                            return ui.selected.targets.reduce((sum, target) => sum + target.getHp(), 0) <= event.num;
+                        },
+                        ai1(target) {
+                            const { player, num } = get.event();
+                            if (!game.hasPlayer(current => get.damageEffect(current, player, player) > 0 && currenr.getHp() <= num)) return get.effect(target, { name: 'draw' }, player, player);
+                            return get.damageEffect(target, player, player) / (target.getHp() + 1);
+                        },
+                        ai2() {
+                            const { player, num } = get.event();
+                            return game.hasPlayer(current => get.damageEffect(current, player, player) > 0 && currenr.getHp() <= num) ? 1 : 0;
+                        },
+                        num: cards.length,
+                    }).forResult();
+                    if (result?.bool) {
+                        event.result = {
+                            bool: true,
+                            targets: result.targets.sortBySeat(),
+                            cost_data: result.index === 0,
+                        };
                     }
                 },
                 content() {
