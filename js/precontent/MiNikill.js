@@ -19047,7 +19047,7 @@ const packs = function () {
                     const result = await player.chooseControl('cancel2').set('ai', function () {
                         if (game.countPlayer(function (current) { return get.attitude(player, current) < 0 && current.hp <= event.num }) > 0) return 1;
                         return 0;
-                    }).set('choiceList', [event.str1, event.str2]).set('prompt', get.prompt2('minikuizhu'));
+                    }).set('choiceList', [event.str1, event.str2]).set('prompt', get.prompt2('minikuizhu')).forResult();
                     if (result?.control && result.control !== 'cancel2') {
                         event.control = [event.str1, event.str2][result.index];
                         var num = event.num, str = event.control;
