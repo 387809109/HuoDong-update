@@ -43,7 +43,7 @@ const packs = function () {
                 MiNi_yueCharacter: ['xiaoqiao', 'caiwenji', 'zhoufei', 'diaochan', 'daqiao'].map(i => `Mbaby_yue_${i}`),
                 MiNi_miaoKill: ['bulianshi', 'mayunlu', 'guanyinping', 'caoying', 'caiwenji', 'diaochan', 'caifuren', 'zhangxingcai', 'zhurong', 'huangyueying', 'daqiao', 'wangyi', 'zhangchunhua', 'zhenji', 'sunshangxiang', 'xiaoqiao', 'lvlingqi'].map(i => `Mmiao_${i}`),
                 MiNi_nianKill: ['sunquan', 'caopi', 'zhugeliang', 'lvbu', 'zhouyu'].map(i => `Mnian_${i}`),
-                MiNi_fightKill: ['huangzhong', 'zhangliao', 'luxun', 'dianwei', 'machao', 'jiangwei', 'lvmeng'].map(i => `Mfight_${i}`),
+                MiNi_fightKill: ['huangzhong', 'zhangliao', 'luxun', 'dianwei', 'machao', 'jiangwei', 'lvmeng', 'yuanshao'].map(i => `Mfight_${i}`),
                 MiNi_yinKill: ['yuji', 'xushu'].map(i => `Myin_${i}`),
                 MiNi_fireKill: ['zhurong'].map(i => `Mfire_${i}`),
                 MiNi_qingKill: ['lvdiao', 'lvbu', 'diaochan'].map(i => `Mqing_${i}`),
@@ -571,6 +571,7 @@ const packs = function () {
             Mfight_machao: ['male', 'qun', 4, ['minifightdangfeng', 'minifighthaiji']],
             Mfight_jiangwei: ['male', 'shu', 4, ['minifightyilve', 'minifightqizhi']],
             Mfight_lvmeng: ['male', 'wu', 4, ['minifightandu', 'minifightmingtan']],
+            Mfight_yuanshao: ['male', 'qun', 4, ['minifightpozhan', 'minifighthedou']],
             //隐
             Myin_xushu: ['male', 'wei', 3, ['miniyinyinxing', 'miniyinjujian']],
             Myin_yuji: ['male', 'qun', 0, ['miniyinyinming', 'miniyinhuozhong']],
@@ -44820,6 +44821,288 @@ const packs = function () {
                 },
                 derivation: 'minikeji',
             },
+            //战袁绍
+            minifightpozhan: {
+                audio: 'ext:活动武将/audio/skill:2',
+                categories: () => ['战场技'],
+                trigger: {
+                    global: 'phaseBefore',
+                    player: 'enterGame',
+                },
+                forced: true,
+                locked: false,
+                filter(event, player) {
+                    return event.name !== 'phase' || game.phaseNumber === 0;
+                },
+                async content(event, trigger, player) {
+                    const skill = event.name;
+                    await lib.skill[skill].choosePo(skill, player);
+                },
+                onremove: ['minifightpozhan', 'minifightpozhan_lose'],
+                intro: {
+                    content(storage = 0, player) {
+                        return `<li>当前“迫”数：${storage}<br><li>进入界桥战场进度：${!ui._minifightpozhan_jieqiao ? `${player.countMark('minifightpozhan_lose')}/${6 - storage}` : '我要战斗！'}`;
+                    }
+                },
+                derivation: 'minifightluanji',
+                video(player, info) {
+                    if (info[0]) _status.tempBackground = info[1];
+                    else delete _status.tempBackground;
+                    game.updateBackground();
+                },
+                async choosePo(skill, player) {
+                    player.clearMark(skill, false);
+                    const result = await player.chooseControl(Array.from({ length: 4 }).map((_, i) => i + 2)).set('prompt', '迫战：请选择“迫”的点数').set('ai', () => '3').forResult();
+                    if (typeof result.index !== 'number') return;
+                    const num = result.index + 2;
+                    player.addMark(skill, num, false);
+                },
+                getNum: () => game.filterPlayer(current => current.hasSkill('minifightpozhan')).reduce((num, current) => num + current.countMark('minifightpozhan'), 0),
+                group: 'minifightpozhan_lose',
+                subSkill: {
+                    audio: 'minifightpozhan',
+                    lose: {
+                        trigger: {
+                            player: 'loseAfter',
+                            global: ['equipAfter', 'addJudgeAfter', 'gainAfter', 'loseAsyncAfter', 'addToExpansionAfter'],
+                        },
+                        filter(event, player) {
+                            if (ui._minifightpozhan_jieqiao) return false;
+                            const evt = event.getl(player);
+                            return evt?.cards2?.length > 0;
+                        },
+                        direct: true,
+                        async content(event, trigger, player) {
+                            const num = trigger.getl(player).cards2.length;
+                            const skill = event.name;
+                            player.addMark(skill, num, false);
+                            if (player.countMark(skill) >= 6 - player.countMark('minifightpozhan') && !ui._minifightpozhan_jieqiao) {
+                                player.clearMark(skill, false);
+                                player.logSkill(event.name);
+                                player.addSkill(['minifightpozhan_mark', 'minifightpozhan_effect']);
+                                player.$fullscreenpop('界桥战场', 'fire');
+                                const background = 'ext:活动武将/image/background/battlefield_jieqiao.jpg';
+                                game.broadcastAll(bg => {
+                                    if (get.is.phoneLayout()) ui._minifightpozhan_jieqiao = ui.create.div('.touchinfo.left', ui.window);
+                                    else ui._minifightpozhan_jieqiao = ui.create.div(ui.gameinfo);
+                                    ui._minifightpozhan_jieqiao.innerHTML = '<br>界桥战场';
+                                    _status.tempBackground = bg;
+                                    game.updateBackground();
+                                }, background);
+                                game.addVideo('skill', player, ['minifightpozhan', [true, background]]);
+                            }
+                        },
+                    },
+                    mark: {
+                        trigger: { global: ['useCard1', 'respond'] },
+                        filter(event, player) {
+                            if (!ui._minifightpozhan_jieqiao) return false;
+                            return event.card.name == 'sha';
+                        },
+                        marktext: '战',
+                        onremove: true,
+                        intro: {
+                            content(storage = 0, player) {
+                                return `界桥战场当前进度：${storage}/${player.countMark('minifightpozhan')}`
+                            }
+                        },
+                        direct: true,
+                        async content(event, trigger, player) {
+                            player.addMark(event.name, 1, false);
+                        },
+                    },
+                    effect: {
+                        charlotte: true,
+                        trigger: { global: ['useCardAfter', 'respondAfter'] },
+                        filter(event, player) {
+                            if (!ui._minifightpozhan_jieqiao) return false;
+                            return event.card.name == 'sha' && player.countMark('minifightpozhan_mark') >= player.countMark('minifightpozhan');
+                        },
+                        prompt2(event, player) {
+                            let str = '你可以摸四张牌';
+                            const target = _status.currentPhase;
+                            const num = get.info('minifightpozhan').getNum();
+                            if (target?.isIn()) str += `并令${get.translation(target)}发动一次${get.poptip('minifightluanji')}`;
+                            return str;
+                        },
+                        async content(event, trigger, player) {
+                            player.removeSkill(['minifightpozhan_mark', event.name]);
+                            const skill = 'minifightpozhan';
+                            await player.draw(4);
+                            const target = _status.currentPhase;
+                            if (target?.isIn()) await target.useSkill('minifightluanji');
+                            if (ui._minifightpozhan_jieqiao) {
+                                game.broadcastAll(() => {
+                                    ui._minifightpozhan_jieqiao.remove();
+                                    delete ui._minifightpozhan_jieqiao;
+                                    delete _status.tempBackground;
+                                    game.updateBackground();
+                                });
+                                game.addVideo('skill', player, [skill, [false]]);
+                            }
+                            await lib.skill[skill].choosePo(skill, player);
+                        },
+                    }
+                }
+            },
+            minifighthedou: {
+                audio: 'ext:活动武将/audio/skill:2',
+                trigger: { global: 'useCardToPlayered' },
+                filter(event, player) {
+                    if (!event.isFirstTarget) return false;
+                    const storage = player.getStorage('minifighthedou_used');
+                    if (!lib.skill.xunshi.isXunshi(event.card)) return false;
+                    return storage.length < 2;
+                },
+                async cost(event, trigger, player) {
+                    const { card, targets } = trigger;
+                    const str = get.translation(card);
+                    const cards = trigger.cards.filterInD();
+                    const choiceList = [
+                        `令${str}对其中一个目标生效两次且对其余目标无效`,
+                        `令${str}对其中一个目标无效${cards.length ? `且此牌进入弃牌堆后你获得${get.translation(cards)}` : ''}`,
+                    ];
+                    const result = await player.bilibili_chooseTargetControl({
+                        targets,
+                        prompt: get.prompt(event.skill),
+                        filterTarget(card, player, target) {
+                            return get.event().targets.includes(target);
+                        },
+                        controls: ['生效两次', '无效拿牌'],
+                        choiceList,
+                        displayIndex: false,
+                        filterControl(control, player, event) {
+                            if (!ui.selected.targets.length) return false;
+                            const storage = player.getStorage('minifighthedou_used');
+                            const i = event.controls.indexOf(control);
+                            return !storage.includes(i);
+                        },
+                        processAI() {
+                            const player = get.player();
+                            const trigger = get.event().getTrigger();
+                            const sum = trigger.targets.reduce((i, j) => i + get.effect(j, trigger.card, trigger.player, player), 0);
+                            const value = get.value(trigger.cards.filterInD(), player);
+                            const storage = player.getStorage('minifighthedou_used');
+                            const list = trigger.targets.map(target => {
+                                let index = undefined, max = undefined;
+                                const att = get.attitude(player, target), eff = get.effect(target, trigger.card, trigger.player, player);
+                                for (const num of [0, 1].filter(i => !storage.includes(i))) {
+                                    const num2 = num == 1 ? value - eff : (() => {
+                                        if (trigger.card.name == 'tiesuo') return eff > 0 ? 0 : get.sgn(att) * (2 + get.sgn(att));
+                                        return eff * 2 - sum;
+                                    })();
+                                    if (max === undefined || num2 > max) {
+                                        index = num;
+                                        max = num2;
+                                    }
+                                }
+                                return [target, index, max];
+                            }).sort((a, b) => b[2] - a[2])[0];
+                            const index = list[1], control = get.event().controls[list[1]];
+                            return { bool: control !== 'cancel2', targets: [list[0]], control, index };
+                        },
+                    }).forResult();
+                    if (result?.bool && result.targets?.length) {
+                        event.result = {
+                            bool: true,
+                            targets: result.targets,
+                            cost_data: result.index,
+                        };
+                    }
+                },
+                async content(event, trigger, player) {
+                    const { targets: [target], cost_data } = event;
+                    const skill = event.name + '_used';
+                    player.addTempSkill(skill);
+                    player.markAuto(skill, [cost_data]);
+                    if (cost_data === 0) {
+                        trigger.getParent().effectCount++;
+                        trigger.getParent().excluded.addArray(game.filterPlayer(current => trigger.targets.includes(current) && target != current));
+                    }
+                    else {
+                        trigger.getParent().excluded.add(target);
+                        player.when({ global: 'cardsDiscardAfter' }).filter(event => {
+                            if (!event.cards.filterInD('d').length) return false;
+                            const evt = event.getParent();
+                            if (evt.name != 'orderingDiscard') return false;
+                            const evtx = (evt.relatedEvent || evt.getParent());
+                            return evtx.player.hasHistory('useCard', evtxx => {
+                                return evtx.getParent() == (evtxx.relatedEvent || evtxx.getParent()) && evtxx == trigger.getParent();
+                            });
+                        }).step(async (event, trigger, player) => {
+                            const cards = trigger.cards.filterInD('d');
+                            await player.gain(cards, 'gain2');
+                        });
+                    }
+                },
+                subSkill: {
+                    used: {
+                        charlotte: true,
+                        onremove: true,
+                    },
+                },
+            },
+            minifightluanji: {
+                hasUseTarget(player, card, count) {
+                    const hs = player.getCards('h');
+                    const total = hs.length;
+                    if (total === 0) return false;
+                    function* combinations(cards, chooseCount) {
+                        const choose = new Array(chooseCount);
+                        function* dfs(start, depth) {
+                            if (depth === chooseCount) {
+                                yield choose.slice();
+                                return;
+                            }
+                            const limit = cards.length - (chooseCount - depth);
+                            for (let i = start; i <= limit; i++) {
+                                choose[depth] = cards[i];
+                                yield* dfs(i + 1, depth + 1);
+                            }
+                        }
+                        yield* dfs(0, 0);
+                    }
+                    for (const cards of combinations(hs, count)) {
+                        if (player.hasUseTarget(get.autoViewAs(card, cards))) return true;
+                    }
+                    return false;
+                },
+                async content(event, trigger, player) {
+                    const num = get.info('minifightpozhan').getNum();
+                    if (num <= 0) return;
+                    await player.drawTo(num);
+                    if (!get.info(event.name).hasUseTarget(player, { name: 'wanjian' }, num)) return;
+                    game.broadcastAll(num => {
+                        lib.skill.minifightluanji_backup.selectCard = num;
+                    }, num);
+                    const next = player.chooseToUse();
+                    next.set('openskilldialog', `乱击：请将${get.cnNumber(num)}张手牌当【万箭齐发】使用`);
+                    next.set('norestore', true);
+                    next.set('_backupevent', `${event.name}_backup`);
+                    next.set('custom', {
+                        add: {},
+                        replace: { window() { } },
+                    });
+                    next.set('forced', true);
+                    next.backup(`${event.name}_backup`);
+                    await next;
+                },
+                ai: { combo: 'minifightpozhan' },
+                subSkill: {
+                    backup: {
+                        viewAs: { name: 'wanjian' },
+                        filterCard(card) {
+                            return get.itemtype(card) == 'card';
+                        },
+                        position: 'h',
+                        allowChooseAll: true,
+                        check(card) {
+                            return 5 - get.value(card);
+                        },
+                        log: false,
+                    }
+                }
+            },
             //隐系列
             //徐庶
             miniyinyinxing: {
@@ -45638,7 +45921,7 @@ const packs = function () {
                                 type: 5,
                                 value: num,
                                 ranks,
-                                name: "炸弹牛",
+                                name: '炸弹牛',
                                 cards: list,
                             };
                         }
@@ -45648,7 +45931,7 @@ const packs = function () {
                             type: 4,
                             value: 0,
                             ranks,
-                            name: "五花",
+                            name: '五花',
                             cards: list,
                         };
                     }
@@ -45657,7 +45940,7 @@ const packs = function () {
                             type: 3,
                             value: 0,
                             ranks,
-                            name: "四花",
+                            name: '四花',
                             cards: list,
                         };
                     }
@@ -49045,6 +49328,7 @@ const packs = function () {
             Mfight_machao: '战马超',
             Mfight_jiangwei: '战姜维',
             Mfight_lvmeng: '战吕蒙',
+            Mfight_yuanshao: '战袁绍',
             minifightdingjun: '定军',
             minifightdingjun_info: `战场技。①任意角色使用【杀】每造成1点伤害，士气+1。②士气每增加1点，你摸一张牌。③士气达到X层时，进入“定军山战场”（X为本局游戏人数）。④“定军山战场”下，任意角色使用【杀】时，你可以消耗2层士气，令其于此牌结算中视为拥有${get.poptip('minifightreliegong')}。⑤一名角色的回合结束时，若士气为0，则退出“定军山战场”。`,
             minifightliegong: '烈弓',
@@ -49083,6 +49367,12 @@ const packs = function () {
             minifightandu_info: `战场技。①你的回合开始时或一名角色的弃牌阶段未弃牌时，进入“江陵战场”，令所有角色获得${get.poptip('minikeji')}直到其下回合结束。②一名角色失去${get.poptip('minikeji')}时，你摸一张牌，然后若场上没有角色拥有${get.poptip('minikeji')}，退出“江陵战场”。③处于“江陵战场”时，其他角色的回合结束时，若其本回合发动过${get.poptip('minikeji')}，你可以获得其手牌中所有的【杀】，否则你可以获得其一张牌并视为对其使用一张【杀】。`,
             minifightmingtan: '明探',
             minifightmingtan_info: `准备阶段，你可以视为对一名其他角色使用至多X张【过河拆桥】并摸X张牌，然后所有拥有${get.poptip('minikeji')}的角色须对其使用一张【杀】或失去${get.poptip('minikeji')}（X为拥有${get.poptip('minikeji')}的角色数，且至少为1，至多为5）。`,
+            minifightpozhan: '迫战',
+            minifightpozhan_info: `战场技。①游戏开始时，你选择2至5之间的一个点数，称之为“迫”。②当你累计失去至少6-X张牌后，进入“界桥战场”。处于“界桥战场”时，全场角色累计使用或打出至少X张【杀】后，你可以摸四张牌并令当前回合角色发动一次${get.poptip('minifightluanji')}，然后退出“界桥战场”并重新选择“迫”。（X为你的“迫”的点数）`,
+            minifighthedou: '合斗',
+            minifighthedou_info: '每回合每项各限一次。一名角色使用多目标锦囊牌指定目标后，你可以选择一项：1.令此牌对其中一个目标生效两次且对其余目标无效；2.令此牌对其中一个目标无效且此牌进入弃牌堆后你获得之。',
+            minifightluanji: '乱击',
+            minifightluanji_info: `你将手牌摸至X张，然后使用X张手牌当【万箭齐发】使用。（X为有${get.poptip('minifightpozhan')}的角色的“迫”的点数之和）`,
             //隐
             Myin_xushu: '隐徐庶',
             Myin_yuji: '隐于吉',
