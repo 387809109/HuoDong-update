@@ -3692,7 +3692,7 @@ const packs = function () {
                 enable: 'chooseToUse',
                 viewAs: { name: 'wanjian' },
                 filterCard(card, player) {
-                    return !player.storage.oldluanji?.includes(get.suit(card));
+                    return !player.getStorage('oldluanji_count').includes(get.suit(card));
                 },
                 selectCard: 2,
                 check(card) {

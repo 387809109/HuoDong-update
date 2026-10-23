@@ -2136,7 +2136,7 @@ const packs = function () {
                                     const targets = result.targets.slice();
                                     result = await player.chooseTarget(`${get.translation(event.name)}：视为对其中一名角色使用【杀】`, (card, player, target) => {
                                         const sha = new lib.element.VCard({ name: 'sha' });
-                                        return player.canUse(sha, target);
+                                        return player.canUse(sha, target) && get.event().targets.includes(target);
                                     }).set('ai', target => {
                                         const player = get.player(), sha = new lib.element.VCard({ name: 'sha' });
                                         return get.effect(target, sha, player, player);
@@ -2185,14 +2185,14 @@ const packs = function () {
             },
             //姜维
             mptiaoxin: {
-                inherit: 'retiaoxin',
+                audio: 'tiaoxin',
+                enable: 'phaseUse',
                 filter(event, player) {
                     return game.hasPlayer(target => lib.skill.mptiaoxin.filterTarget(null, player, target));
                 },
                 filterTarget(card, player, target) {
                     return target !== player && !player.getStorage('mptiaoxin_used').includes(target);
                 },
-                usable: Infinity,
                 async content(event, trigger, player) {
                     const target = event.target;
                     player.addTempSkill('mptiaoxin_used', 'phaseUseAfter');
@@ -2207,6 +2207,12 @@ const packs = function () {
                     }).set('targetRequired', true).set('complexSelect', true).set('complexTarget', true).set('sourcex', player).forResult();
                     if (!result?.bool && target.countCards('he') > 0) await player.discardPlayerCard(target, 'he', true);
                 },
+                subSkill: {
+                    used: {
+                        charlotte: true,
+                        onremove: true,
+                    }
+                }
             },
             mpzhiji: {
                 audio: 'zhiji',
@@ -2269,6 +2275,7 @@ const packs = function () {
                             }).forResult();
                         },
                         async content(event, trigger, player) {
+                            await player.discard(event.cards);
                             const [target] = event.targets;
                             target.markSkillCharacter('mpfangquan', player, '放权', '进行一个额外回合');
                             const next = target.insertPhase();
