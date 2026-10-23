@@ -44860,8 +44860,8 @@ const packs = function () {
                 getNum: () => game.filterPlayer(current => current.hasSkill('minifightpozhan')).reduce((num, current) => num + current.countMark('minifightpozhan'), 0),
                 group: 'minifightpozhan_lose',
                 subSkill: {
-                    audio: 'minifightpozhan',
                     lose: {
+                        audio: 'minifightpozhan',
                         trigger: {
                             player: 'loseAfter',
                             global: ['equipAfter', 'addJudgeAfter', 'gainAfter', 'loseAsyncAfter', 'addToExpansionAfter'],
