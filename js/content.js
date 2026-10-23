@@ -1132,12 +1132,12 @@ export async function content(config, pack) {
 		if (lib.config.extension_活动武将_ShenZhangJiao && player.countMark('yizhao') >= 184) return false;
 		return yizhaoFilter.call(this, event, player, ...args);
 	};
-	// if (lib.skill.dcyizhao.intro?.markcount) delete lib.skill.dcyizhao.intro.markcount;
-	// let dcyizhaoFilter = lib.skill.dcyizhao.filter;
-	// lib.skill.dcyizhao.filter = function (event, player, ...args) {
-	// 	if (lib.config.extension_活动武将_ShenZhangJiao && player.countMark('yizhao') >= 184) return false;
-	// 	return dcyizhaoFilter.call(this, event, player, ...args);
-	// };
+	if (lib.skill.dcyizhao.intro?.markcount) delete lib.skill.dcyizhao.intro.markcount;
+	let dcyizhaoFilter = lib.skill.dcyizhao.filter;
+	lib.skill.dcyizhao.filter = function (event, player, ...args) {
+		if (lib.config.extension_活动武将_ShenZhangJiao && player.countMark('yizhao') >= 184) return false;
+		return dcyizhaoFilter.call(this, event, player, ...args);
+	};
 	let yizhaoAddMark = lib.element.player.addMark;
 	lib.element.player.addMark = function (mark, num, ...args) {
 		if (typeof num !== 'number' || !num) num = 1;
