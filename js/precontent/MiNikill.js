@@ -44262,8 +44262,10 @@ const packs = function () {
                                 }
                                 num = Math.ceil(num / 2);
                                 if (event.result.card.name == 'sha') {
+                                    event.result.card.storage ??= {};
                                     event.result.card.storage.minifightkuangji_count = num;
-                                    player.when('useCard2').filter(evt => evt.skill == 'minifightkuangji_backup' && evt.card.name == 'sha' && evt.getParent() == event.getParent()).step((event, trigger) => {
+                                    player.when('useCard2').filter(evt => evt.skill == 'minifightkuangji_backup' && evt.card.name == 'sha' && evt.getParent() == event.getParent()).step((event, trigger, player) => {
+                                        trigger.card.storage ??= {};
                                         trigger.card.storage.minifightkuangji_targets = trigger.targets.slice();
                                     });
                                 }
@@ -44858,7 +44860,7 @@ const packs = function () {
                 },
                 async choosePo(skill, player) {
                     player.clearMark(skill, false);
-                    const result = await player.chooseControl(Array.from({ length: 4 }).map((_, i) => i + 2)).set('prompt', '迫战：请选择“迫”的点数').set('ai', () => '3').forResult();
+                    const result = await player.chooseControl(Array.from({ length: 4 }).map((_, i) => i + 2)).set('prompt', '迫战：请选择“迫”的点数').set('ai', () => 1).forResult();
                     if (typeof result.index !== 'number') return;
                     const num = result.index + 2;
                     player.addMark(skill, num, false);
@@ -46875,9 +46877,118 @@ const packs = function () {
             // 蔡夫人
             miniyujiaoyin: {
                 audio: 'ext:活动武将/audio/skill:2',
+                mod: {
+                    globalFrom(from, to) {
+                        if (to.isDamaged()) return -Infinity;
+                    },
+                    trigger: { target: 'useCardToTargeted' },
+                    filter(event, player) {
+                        return event.player != player && get.color(event.card) == 'black' && event.cards.someInD();
+                    },
+                    forced: true,
+                    prompt2(event, player) {
+                        return `获得${get.translation(event.cards.filterInD())}`
+                    },
+                    check(event, player) {
+                        return get.value(event.cards.filterInD()) > 0;
+                    },
+                    async content(event, trigger, player) {
+                        await player.gain(trigger.cards.filterInD(), 'gain2');
+                        const target = trigger.player;
+                        if (player.getHp() == target.getDamagedHp() && player.hasCards('he')) {
+                            const result = await player.chooseToDiscard('娇吟：是否弃置一张牌令' + get.translation(trigger.card) + '对你无效？', 'he').set('ai', function (card) {
+                                if (get.event().goon) return 7 - get.value(card);
+                                return 0;
+                            }).set('goon', get.effect(player, trigger.card, target, player) < 0).forResult();
+                            if (result?.bool) {
+                                trigger.excluded.push(player);
+                                game.log(trigger.card, '对', player, '无效');
+                            }
+                        }
+                    },
+                },
             },
             miniyumeiyu: {
                 audio: 'ext:活动武将/audio/skill:2',
+                mod: {
+                    ignoredHandcard(card, player) {
+                        if (card.hasGaintag('miniyumeiyu')) return true;
+                    },
+                    cardDiscardable(card, player, name) {
+                        if (name == 'phaseDiscard' && card.hasGaintag('miniyumeiyu')) return false;
+                    },
+                },
+                locked: false,
+                enable: 'phaseUse',
+                usable(skill, player) {
+                    return 1 + player.countMark(skill + '_add');
+                },
+                filterCard(card, player) {
+                    return get.suit(card) === 'spade';
+                },
+                position: 'hes',
+                selectCard: [1, Infinity],
+                viewAs: { name: 'shunshou' },
+                ai1(card) {
+                    return 12 - get.value(card);
+                },
+                async precontent(event, trigger, player) {
+                    const num = event.result.cards.length;
+                    event.result._apply_args = { effectCount: num };
+                    player.addSkill('miniyumeiyu_mark');
+                },
+                group: 'miniyumeiyu_effect',
+                subSkill: {
+                    mark: {
+                        charlotte: true,
+                        trigger: { player: 'gainBegin' },
+                        filter(event, player) {
+                            return event.getParent(2).skill == 'miniyumeiyu';
+                        },
+                        silent: true,
+                        firstDo: true,
+                        async content(event, trigger, player) {
+                            trigger.gaintag.add('miniyumeiyu');
+                        },
+                    },
+                    effect: {
+                        audio: 'miniyumeiyu',
+                        trigger: {
+                            player: 'loseAfter',
+                            global: ['equipAfter', 'addJudgeAfter', 'gainAfter', 'loseAsyncAfter', 'addToExpansionAfter'],
+                        },
+                        filter(event, player) {
+                            const evt = event.getl(player);
+                            if (!evt?.hs?.length || player.hasCards('h', card => card.hasGaintag('miniyumeiyu'))) return false;
+                            return Object.values(evt.gaintag_map).flat().includes('miniyumeiyu');
+                        },
+                        forced: true,
+                        locked: false,
+                        async content(event, trigger, player) {
+                            const goon = player.isHealthy();
+                            const result = goon ? { index: 1 } : await player.chooseControl().set('choiceList', ['回复1点体力', '本阶段〖媚御〗可发动次数+1']).set('prompt', '媚御：请选择一项').set('ai', () => {
+                                const player = get.player();
+                                if (player.hasCards('hes', card => get.suit(card) == 'spade') && player.hasValueTarget({ name: 'shunshou' })) return 1;
+                                return 0;
+                            }).forResult();
+                            if (result.index == 0) await player.recover();
+                            else {
+                                for (const name of lib.phaseName) {
+                                    const evt = _status.event.getParent(name);
+                                    if (!evt || evt.name != name) continue;
+                                    player.addTempSkill('miniyumeiyu_add', name + 'After');
+                                    player.addMark('miniyumeiyu_add', 1, false);
+                                    break;
+                                }
+                            }
+                        },
+                    },
+                    add: {
+                        charlotte: true,
+                        onremove: true,
+                        intro: { content: '本阶段〖媚御〗可发动次数+#' },
+                    }
+                }
             },
         },
         dynamicTranslate: {
