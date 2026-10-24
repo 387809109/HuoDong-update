@@ -47,6 +47,7 @@ const packs = function () {
                 MiNi_yinKill: ['yuji', 'xushu'].map(i => `Myin_${i}`),
                 MiNi_fireKill: ['zhurong'].map(i => `Mfire_${i}`),
                 MiNi_qingKill: ['lvdiao', 'lvbu', 'diaochan'].map(i => `Mqing_${i}`),
+                MiNi_yuKill: ['ganfuren', 'bianfuren', 'wuguotai', 'caifuren'].map(i => `Myu_${i}`),
                 MiNi_shengzhiyifa: ['jingwei', 'sunwukong', 'dalanmao', 'libai', 'change', 'nvwa', 'tunxingmenglix', 'xiaoshan'].map(i => `Mbaby_${i}`),
             },
         },
@@ -581,6 +582,11 @@ const packs = function () {
             Mqing_lvdiao: ['double', 'qun', 4, ['miniqingchan', 'miniqingzhan', 'miniqingyuan'], ['name:null|null-吕|布', 'extraCharacter:Mqing_lvbu:Mqing_diaochan']],
             Mqing_diaochan: ['female', 'qun', 3, ['miniqingchan', 'miniqingyuan'], ['name:null|null', 'unseen', 'die:Mqing_lvdiao']],
             Mqing_lvbu: ['male', 'qun', 5, ['miniqingchan', 'miniqingzhan'], ['unseen', 'die:Mqing_lvdiao']],
+            //御（盟）
+            Myu_ganfuren: ['female', 'shu', 3, ['miniyushuming', 'miniyuxianyu'], ['name:甘|null']],
+            Myu_bianfuren: ['female', 'wei', 3, ['miniyuqingxiao', 'miniyulingyu'], ['name:卞|null']],
+            Myu_wuguotai: ['female', 'wu', 3, ['miniyushiyu', 'miniyuquanyu'], ['name:甘|null']],
+            Myu_caifuren: ['female', 'qun', 3, ['miniyujiaoyin', 'miniyumeiyu'], ['name:才|null']],
         },
         characterIntro: {
             Mbaby_change: '嫦娥，中国古代神话中的人物，又名恒我、恒娥、姮娥、常娥、素娥，羿之妻，因偷吃了不死药而飞升至月宫。嫦娥的故事最早出现在商朝卦书 《归藏》。而嫦娥奔月的完整故事最早记载于西汉《淮南子·览冥训》。东汉时期，嫦娥与羿的夫妻关系确立，而嫦娥在进入月宫后变成了捣药的蟾蜍。南北朝以后，嫦娥的形象回归为女儿身。汉画像中，嫦娥人头蛇身，头梳高髻，身着宽袖长襦，身后长尾上饰有倒钩状细短羽毛。南北朝以后，嫦娥的形象被描绘成绝世美女。南朝陈后主陈叔宝曾把宠妃张丽华比作嫦娥。唐朝诗人白居易曾用嫦娥夸赞邻家少女不可多得的容貌。',
@@ -46844,6 +46850,35 @@ const packs = function () {
                     },
                 },
             },
+            // 御
+            // 甘夫人
+            miniyushuming: {
+                audio: 'ext:活动武将/audio/skill:2',
+            },
+            miniyuxianyu: {
+                audio: 'ext:活动武将/audio/skill:2',
+            },
+            // 卞夫人
+            miniyuqingxiao: {
+                audio: 'ext:活动武将/audio/skill:2',
+            },
+            miniyulingyu: {
+                audio: 'ext:活动武将/audio/skill:2',
+            },
+            // 吴国太
+            miniyushiyu: {
+                audio: 'ext:活动武将/audio/skill:2',
+            },
+            miniyuquanyu: {
+                audio: 'ext:活动武将/audio/skill:2',
+            },
+            // 蔡夫人
+            miniyujiaoyin: {
+                audio: 'ext:活动武将/audio/skill:2',
+            },
+            miniyumeiyu: {
+                audio: 'ext:活动武将/audio/skill:2',
+            },
         },
         dynamicTranslate: {
             minizhongjian(player) {
@@ -47039,6 +47074,7 @@ const packs = function () {
             MiNi_yinKill: '欢乐三国杀·隐系列',
             MiNi_fireKill: '欢乐三国杀·焰系列',
             MiNi_qingKill: '欢乐三国杀·七夕系列',
+            MiNi_yuKill: '欢乐三国杀·御系列',
             MiNi_shengzhiyifa: '欢乐三国杀·限时地主',
             //牌
             miniyanxiao_card: '言笑',
@@ -49457,6 +49493,27 @@ const packs = function () {
             miniqingzhan_info: '出牌阶段限一次，你可以选择一名其他角色A，你与其轮流选择一项：1.对对方使用一张无距离和次数限制的【杀】；2.失去1点体力。若A为你的“情敌”，则重复此流程直到你与其中的一名角色进入濒死。',
             miniqingyuan: '情援',
             miniqingyuan_info: '锁定技。①当你对一名角色造成伤害后或成为一名角色使用的伤害牌的目标后，你摸一张牌，若该角色为你的“情敌”，则你随机弃置其一张手牌。②每轮开始时，你可以选择一名没有〖情援〗的非“情敌”角色，直到本轮结束，你失去〖情援①〗，其获得〖情援①〗。',
+            //御
+            Myu_ganfuren: '御甘夫人',
+            Myu_bianfuren: '御卞夫人',
+            Myu_wuguotai: '御吴夫人',
+            Myu_caifuren: '御蔡夫人',
+            miniyushuming: '淑鸣',
+            miniyushuming_info: '当你使用与你使用的上一张牌花色不同的牌时，你可以弃置一名其他角色的一张牌，若弃置的牌与你使用的牌花色相同，则你摸一张牌。',
+            miniyuxianyu: '贤御',
+            miniyuxianyu_info: '锁定技。①准备阶段或结束阶段，你令一名角色摸两张牌，称为“贤御”牌。②有“贤御”牌的角色使用的♥牌不能被响应。③当你造成或受到伤害后，你弃置所有角色的非♥“贤御”牌。',
+            miniyuqingxiao: '清啸',
+            miniyuqingxiao_info: '出牌阶段限一次，你可以观看并分配牌堆随机三张牌。若获得牌的角色数或因此获得牌的角色各获得的牌数：为1，因此获得牌的角色各失去1点体力；均不为1，你失去1点体力。',
+            miniyulingyu: '聆御',
+            miniyulingyu_info: '每回合限三次。当一张♣伤害牌结算后，若你造成或受到过渠道为此牌的伤害，你可以从牌堆随机获得与此牌花色各不相同的牌各一张。',
+            miniyushiyu: '势语',
+            miniyushiyu_info: '锁定技。每名角色每种类型限一次。其他角色使用：基本牌结算后，你获得此牌对应的所有实体牌；锦囊牌令你成为目标后，此牌对你无效；装备牌时，改为对你使用之。',
+            miniyuquanyu: '权御',
+            miniyuquanyu_info: `当你回复体力后，或当你的场上牌数增加后，你可以观看一名角色的手牌并选择其中一张♦牌，令其用此牌与你选择的另一名角色拼点。每名其他角色限一次，拼点结算后，你可以清除拼点没赢的角色的${get.poptip('miniyushiyu')}记录并获得所有拼点牌。`,
+            miniyujiaoyin: '娇吟',
+            miniyujiaoyin_info: '锁定技。①你计算与已受伤角色的距离视为1。②当你成为其他角色使用的黑色牌的目标后，你获得此牌对应的所有实体牌，然后若你的体力值等于其已损失的体力值，你可以弃置一张牌令此牌大对你无效。',
+            miniyumeiyu: '媚御',
+            miniyumeiyu_info: '出牌阶段限一次。你可以将任意张花色相同的♠牌当结算等量次的【顺手牵羊】使用，你以此此法获得的牌不计入你的手牌上限，且当失去最后一张以此法获得的牌后，你回复1点体力或令本技能本阶段发动次数+1。',
 
             // ----------------------- 台词部分 ----------------------- //
             '#ext:活动武将/audio/skill/minidoumao1': '喵～呜～',
@@ -50153,6 +50210,7 @@ const packs = function () {
             else if (MiNikill.translate[i].startsWith('隐')) MiNikill.translate[i + '_prefix'] = '隐';
             else if (MiNikill.translate[i].startsWith('焰')) MiNikill.translate[i + '_prefix'] = '焰';
             else if (MiNikill.translate[i].startsWith('情')) MiNikill.translate[i + '_prefix'] = '情';
+            else if (MiNikill.translate[i].startsWith('御')) MiNikill.translate[i + '_prefix'] = '御';
         }
     }
     lib.namePrefix.set('喵', {
@@ -50174,6 +50232,10 @@ const packs = function () {
     lib.namePrefix.set('情', {
         color: '#ff00aa',
         showName: '❤',
+    });
+    lib.namePrefix.set('御', {
+        color: '#f9b9e4',
+        showName: '♘',
     });
     lib.namePrefix.set('欢杀', {
         color: '#ff6a6a',
