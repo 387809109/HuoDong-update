@@ -585,8 +585,8 @@ const packs = function () {
             //御（盟）
             Myu_ganfuren: ['female', 'shu', 3, ['miniyushuming', 'miniyuxianyu'], ['name:甘|null']],
             Myu_bianfuren: ['female', 'wei', 3, ['miniyuqingxiao', 'miniyulingyu'], ['name:卞|null']],
-            Myu_wuguotai: ['female', 'wu', 3, ['miniyushiyu', 'miniyuquanyu'], ['name:甘|null']],
-            Myu_caifuren: ['female', 'qun', 3, ['miniyujiaoyin', 'miniyumeiyu'], ['name:才|null']],
+            Myu_wuguotai: ['female', 'wu', 3, ['miniyushiyu', 'miniyuquanyu'], ['name:吴|null']],
+            Myu_caifuren: ['female', 'qun', 3, ['miniyujiaoyin', 'miniyumeiyu'], ['name:蔡|null']],
         },
         characterIntro: {
             Mbaby_change: '嫦娥，中国古代神话中的人物，又名恒我、恒娥、姮娥、常娥、素娥，羿之妻，因偷吃了不死药而飞升至月宫。嫦娥的故事最早出现在商朝卦书 《归藏》。而嫦娥奔月的完整故事最早记载于西汉《淮南子·览冥训》。东汉时期，嫦娥与羿的夫妻关系确立，而嫦娥在进入月宫后变成了捣药的蟾蜍。南北朝以后，嫦娥的形象回归为女儿身。汉画像中，嫦娥人头蛇身，头梳高髻，身着宽袖长襦，身后长尾上饰有倒钩状细短羽毛。南北朝以后，嫦娥的形象被描绘成绝世美女。南朝陈后主陈叔宝曾把宠妃张丽华比作嫦娥。唐朝诗人白居易曾用嫦娥夸赞邻家少女不可多得的容貌。',
@@ -46924,7 +46924,10 @@ const packs = function () {
                     return 1 + player.countMark(skill + '_add');
                 },
                 filterCard(card, player) {
-                    return get.suit(card) === 'spade';
+                    const suit = get.suit(card);
+                    const suits = game.getExtensionConfig('活动武将', `miniyumeiyu_suit`) || ['spade'];
+                    if (!ui.selected.cards.length) return suits.includes(suit);
+                    return get.suit(ui.selected.cards[0]) === suit;
                 },
                 position: 'hes',
                 selectCard: [1, Infinity],
@@ -49612,19 +49615,31 @@ const packs = function () {
             miniyushuming: '淑鸣',
             miniyushuming_info: '当你使用与你使用的上一张牌花色不同的牌时，你可以弃置一名其他角色的一张牌，若弃置的牌与你使用的牌花色相同，则你摸一张牌。',
             miniyuxianyu: '贤御',
-            miniyuxianyu_info: '锁定技。①准备阶段或结束阶段，你令一名角色摸两张牌，称为“贤御”牌。②有“贤御”牌的角色使用的♥牌不能被响应。③当你造成或受到伤害后，你弃置所有角色的非♥“贤御”牌。',
+            miniyuxianyu_info: (() => {
+                let suits = ['heart', 'diamond', 'spade', 'club'].filter(suit => (game.getExtensionConfig('活动武将', `miniyuxianyu_suit`) || ['heart']).includes(suit)).map(suit => get.translation(suit)).join('');
+                return `锁定技。①准备阶段或结束阶段，你令一名角色摸两张牌，称为“贤御”牌。②有“贤御”牌的角色使用的${suits}牌不能被响应。③当你造成或受到伤害后，你弃置所有角色的非${suits}“贤御”牌。`;
+            })(),
             miniyuqingxiao: '清啸',
             miniyuqingxiao_info: '出牌阶段限一次，你可以观看并分配牌堆随机三张牌。若获得牌的角色数或因此获得牌的角色各获得的牌数：为1，因此获得牌的角色各失去1点体力；均不为1，你失去1点体力。',
             miniyulingyu: '聆御',
-            miniyulingyu_info: '每回合限三次。当一张♣伤害牌结算后，若你造成或受到过渠道为此牌的伤害，你可以从牌堆随机获得与此牌花色各不相同的牌各一张。',
+            miniyulingyu_info: (() => {
+                let suits = ['heart', 'diamond', 'spade', 'club'].filter(suit => (game.getExtensionConfig('活动武将', `miniyulingyu_suit`) || ['club']).includes(suit)).map(suit => get.translation(suit)).join('');
+                return `每回合限三次，当一张${suits}伤害牌结算后，若你造成或受到此牌造成的伤害，你可以从牌堆随机获得与此牌花色各不相同的牌各一张。`;
+            })(),
             miniyushiyu: '势语',
             miniyushiyu_info: '锁定技。每名角色每种类型限一次。其他角色使用：基本牌结算后，你获得此牌对应的所有实体牌；锦囊牌令你成为目标后，此牌对你无效；装备牌时，改为对你使用之。',
             miniyuquanyu: '权御',
-            miniyuquanyu_info: `当你回复体力后，或当你的场上牌数增加后，你可以观看一名角色的手牌并选择其中一张♦牌，令其用此牌与你选择的另一名角色拼点。每名其他角色限一次，拼点结算后，你可以清除拼点没赢的角色的${get.poptip('miniyushiyu')}记录并获得所有拼点牌。`,
+            miniyuquanyu_info: (() => {
+                let suits = ['heart', 'diamond', 'spade', 'club'].filter(suit => (game.getExtensionConfig('活动武将', `miniyuquanyu_suit`) || ['diamond']).includes(suit)).map(suit => get.translation(suit)).join('');
+                return `当你回复体力后，或当你的场上牌数增加后，你可以观看一名角色的手牌并选择其中一张${suits}牌，令其用此牌与你选择的另一名角色拼点。每名其他角色限一次，拼点结算后，你可以清除拼点没赢的角色的${get.poptip('miniyushiyu')}记录并获得所有拼点牌。`;
+            })(),
             miniyujiaoyin: '娇吟',
             miniyujiaoyin_info: '锁定技。①你计算与已受伤角色的距离视为1。②当你成为其他角色使用的黑色牌的目标后，你获得此牌对应的所有实体牌，然后若你的体力值等于其已损失的体力值，你可以弃置一张牌令此牌大对你无效。',
             miniyumeiyu: '媚御',
-            miniyumeiyu_info: '出牌阶段限一次。你可以将任意张花色相同的♠牌当结算等量次的【顺手牵羊】使用，你以此此法获得的牌不计入你的手牌上限，且当失去最后一张以此法获得的牌后，你回复1点体力或令本技能本阶段发动次数+1。',
+            miniyumeiyu_info: (() => {
+                let suits = ['heart', 'diamond', 'spade', 'club'].filter(suit => (game.getExtensionConfig('活动武将', `miniyumeiyu_suit`) || ['spade']).includes(suit)).map(suit => get.translation(suit)).join('');
+                return `出牌阶段限一次。你可以将任意张花色相同的${suits}牌当结算等量次的【顺手牵羊】使用，你以此此法获得的牌不计入你的手牌上限，且当失去最后一张以此法获得的牌后，你回复1点体力或令本技能本阶段发动次数+1。`;
+            })(),
 
             // ----------------------- 台词部分 ----------------------- //
             '#ext:活动武将/audio/skill/minidoumao1': '喵～呜～',
@@ -50751,6 +50766,8 @@ const packs = function () {
         };
         //捂嘴千幻弹窗
         game.saveConfig('qhly_mentionConflitCC', true);
+        const miniyuSuitSkill = { miniyuxianyu: 'heart', miniyulingyu: 'club', miniyuquanyu: 'diamond', miniyumeiyu: 'spade' };
+        const miniyuSuitOrder = ['heart', 'diamond', 'spade', 'club'];
         let charactercardHistory = [];
         let isCharactercardNavigating = false;
         const ori7 = ui.click.charactercard;
@@ -50760,11 +50777,69 @@ const packs = function () {
             const layer = document.querySelector('.popup-container:last-child');
             const charactercard = layer?.querySelector('.menubg.charactercard');
             if (get.character(name).isNull || !layer || !charactercard) return;
+            //御系列花色显示
+            const miniyuIntro2 = charactercard.querySelector('.intro2');
+            const renderMiniyuSuit = function (container, skill) {
+                const fixed = miniyuSuitSkill[skill];
+                if (!fixed || !container) return;
+                const key = skill + '_suit';
+                let selected = game.getExtensionConfig('活动武将', key);
+                if (!Array.isArray(selected)) selected = [fixed];
+                const chooser = ui.create.div('.miniyu-suit-chooser', container);
+                chooser.style.padding = '6px 0';
+                chooser.style.display = 'block';
+                chooser.style.position = 'relative';
+                chooser.style.width = 'max-content';
+                const title = ui.create.div('.miniyu-suit-title', chooser, `<br>〖${get.translation(skill)}〗花色选择（重启生效）`);
+                title.style.fontWeight = 'bold';
+                title.style.marginBottom = '4px';
+                title.style.whiteSpace = 'nowrap';
+                title.style.textAlign = 'left';
+                const row = ui.create.div('.miniyu-suit-row', chooser);
+                row.style.display = 'flex';
+                row.style.gap = '8px';
+                row.style.flexWrap = 'wrap';
+                for (const suit of miniyuSuitOrder) {
+                    const isFixed = suit === fixed;
+                    const checked = isFixed || selected.includes(suit);
+                    const item = ui.create.div('.miniyu-suit-item' + (checked ? ' checked' : '') + (isFixed ? ' locked' : ''), row, function () {
+                        if (isFixed) return;
+                        const idx = selected.indexOf(suit);
+                        if (idx >= 0) selected.remove(suit);
+                        else selected.add(suit);
+                        const nowChecked = selected.includes(suit);
+                        this.classList.toggle('checked', nowChecked);
+                        this.style.backgroundColor = nowChecked ? 'rgba(255,214,106,.9)' : 'rgba(0,0,0,.4)';
+                        this.style.color = nowChecked ? '#4a2c00' : '#fff';
+                        game.saveExtensionConfig('活动武将', key, selected.slice());
+                    });
+                    item.style.transition = 'none';
+                    item.style.display = 'flex';
+                    item.style.alignItems = 'center';
+                    item.style.gap = '4px';
+                    item.style.padding = '3px 8px';
+                    item.style.borderRadius = '4px';
+                    item.style.border = '1px solid rgba(255,255,255,.35)';
+                    item.style.backgroundColor = checked ? 'rgba(255,214,106,.9)' : 'rgba(0,0,0,.4)';
+                    item.style.color = checked ? '#4a2c00' : '#fff';
+                    item.style.cursor = isFixed ? 'default' : 'pointer';
+                    item.innerHTML = '<span style="color:' + (suit === 'heart' || suit === 'diamond' ? 'red' : 'inherit') + '">' + get.translation(suit) + '</span>' + get.translation(`${suit}2`);
+                }
+            };
+            for (const miniyuBtn of charactercard.querySelectorAll('.characterskill .menubutton')) {
+                miniyuBtn.listen(function () {
+                    renderMiniyuSuit(miniyuIntro2, this.link);
+                });
+            }
+            const miniyuActive = charactercard.querySelector('.characterskill .menubutton.active');
+            if (miniyuActive) renderMiniyuSuit(miniyuIntro2, miniyuActive.link);
+            //双体力条血量显示
             const hpTextDiv = charactercard.querySelector('.text');
             if (hpTextDiv && typeof get.character(name).hp2 === 'number') {
                 const { hp, hp2, maxHp } = get.character(name);
                 hpTextDiv.innerHTML = `×${hp}&${hp2}${hp === maxHp ? '' : `/${maxHp}`}`;
             }
+            //衍生角色显示
             let extraCharacters = [];
             if (Array.isArray(get.character(name).extraCharacter)) extraCharacters.addArray(get.character(name).extraCharacter);
             let extraCharacter = get.character(name).trashBin?.find(i => i.startsWith('extraCharacter'));
@@ -50862,6 +50937,82 @@ const packs = function () {
                 nameDiv.style.overflow = 'hidden';
                 nameDiv.style.textOverflow = 'ellipsis';
             }
+        };
+        const ori9 = get.nodeintro;
+        get.nodeintro = function (node, simple, evt, uiintro) {
+            const result = ori9.apply(this, arguments);
+            if (!node || !node.classList || !node.classList.contains('character')) return result;
+            const intro = result;
+            if (!intro || !intro.content) return result;
+            for (const skillEl of intro.content.querySelectorAll('.skill')) {
+                const text = skillEl.textContent || '';
+                const skillId = Object.keys(miniyuSuitSkill).find(sid => text.includes(get.translation(sid).slice(0, 2)));
+                if (!skillId) continue;
+                const fixed = miniyuSuitSkill[skillId];
+                const key = skillId + '_suit';
+                let selected = game.getExtensionConfig('活动武将', key);
+                if (!Array.isArray(selected)) selected = [fixed];
+                const outerDiv = skillEl.parentNode;
+                if (!outerDiv) continue;
+                if (outerDiv.querySelector('.miniyu-suit-chooser')) continue;
+                const table = document.createElement('table');
+                table.className = 'miniyu-suit-chooser';
+                table.style.borderCollapse = 'separate';
+                table.style.borderSpacing = '2px';
+                table.style.margin = '6px auto 0';
+                table.style.tableLayout = 'auto';
+                table.style.width = 'max-content';
+                const caption = document.createElement('caption');
+                caption.className = 'miniyu-suit-title';
+                caption.textContent = `〖${get.translation(skillId)}〗花色选择（重启生效）`;
+                caption.style.fontSize = '12px';
+                caption.style.color = '#ffe9a8';
+                caption.style.textAlign = 'center';
+                caption.style.paddingBottom = '4px';
+                caption.style.whiteSpace = 'nowrap';
+                table.appendChild(caption);
+                for (let i = 0; i < miniyuSuitOrder.length; i += 2) {
+                    const tr = document.createElement('tr');
+                    table.appendChild(tr);
+                    for (let j = 0; j < 2; j++) {
+                        const suit = miniyuSuitOrder[i + j];
+                        if (!suit) continue;
+                        const td = document.createElement('td');
+                        td.style.width = '80px';
+                        td.style.padding = '0';
+                        tr.appendChild(td);
+                        const isFixed = suit === fixed;
+                        const checked = isFixed || selected.includes(suit);
+                        const item = ui.create.div('.miniyu-suit-item' + (checked ? ' checked' : '') + (isFixed ? ' locked' : ''), td, function (e) {
+                            if (e && e.stopPropagation) e.stopPropagation();
+                            if (isFixed) return;
+                            const idx = selected.indexOf(suit);
+                            if (idx >= 0) selected.remove(suit);
+                            else selected.add(suit);
+                            const nowChecked = selected.includes(suit);
+                            this.classList.toggle('checked', nowChecked);
+                            this.style.backgroundColor = nowChecked ? 'rgba(255,214,106,.85)' : 'rgba(0,0,0,.35)';
+                            this.style.color = nowChecked ? '#4a2c00' : '#fff';
+                            game.saveExtensionConfig('活动武将', key, selected.slice());
+                        });
+                        item.style.transition = 'none';
+                        item.style.position = 'relative';
+                        item.style.display = 'block';
+                        item.style.padding = '4px 2px';
+                        item.style.borderRadius = '3px';
+                        item.style.border = '1px solid rgba(255,255,255,.3)';
+                        item.style.backgroundColor = checked ? 'rgba(255,214,106,.85)' : 'rgba(0,0,0,.35)';
+                        item.style.color = checked ? '#4a2c00' : '#fff';
+                        item.style.fontSize = '12px';
+                        item.style.textAlign = 'center';
+                        item.style.cursor = isFixed ? 'default' : 'pointer';
+                        item.style.whiteSpace = 'nowrap';
+                        item.innerHTML = '<span style="color:' + (suit === 'heart' || suit === 'diamond' ? '#ff5a5a' : 'inherit') + '">' + get.translation(suit) + '</span> ' + get.translation(`${suit}2`);
+                    }
+                }
+                outerDiv.appendChild(table);
+            }
+            return result;
         };
         const ori8 = game.gameDraw;
         game.gameDraw = function (...args) {
