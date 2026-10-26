@@ -19057,12 +19057,12 @@ const packs = function () {
                         },
                         ai1(target) {
                             const { player, num } = get.event();
-                            if (!game.hasPlayer(current => get.damageEffect(current, player, player) > 0 && currenr.getHp() <= num)) return get.effect(target, { name: 'draw' }, player, player);
+                            if (!game.hasPlayer(current => get.damageEffect(current, player, player) > 0 && current.getHp() <= num)) return get.effect(target, { name: 'draw' }, player, player);
                             return get.damageEffect(target, player, player) / (target.getHp() + 1);
                         },
                         ai2() {
                             const { player, num } = get.event();
-                            return game.hasPlayer(current => get.damageEffect(current, player, player) > 0 && currenr.getHp() <= num) ? 1 : 0;
+                            return game.hasPlayer(current => get.damageEffect(current, player, player) > 0 && current.getHp() <= num) ? 1 : 0;
                         },
                         num: cards.length,
                     }).forResult();
@@ -46709,7 +46709,7 @@ const packs = function () {
                 ai: {
                     order: 10,
                     result: {
-                        platyer(player, target) {
+                        player(player, target) {
                             if (!get.nameList(player).includes('Mqing_lvdiao')) return 1;
                             if (game.hasPlayer(current => {
                                 if (get.attitude(player, current) > 0) return false;
@@ -46856,9 +46856,155 @@ const packs = function () {
             // 甘夫人
             miniyushuming: {
                 audio: 'ext:活动武将/audio/skill:2',
+                locked: false,
+                mod: {
+                    aiOrder(player, card, num) {
+                        if (typeof card == 'object') {
+                            const evt = lib.skill.dcjianying.getLastUsed(player);
+                            if (evt?.card && get.suit(evt.card) && get.suit(evt.card) !== get.suit(card)) return num + 10;
+                        }
+                    },
+                },
+                trigger: { player: 'useCard' },
+                filter(event, player) {
+                    if (!game.hasPlayer(current => current != player && current.hasDiscardableCards(player, 'he'))) return false;
+                    const evt = lib.skill.dcjianying.getLastUsed(player, event);
+                    if (!evt?.card) return false;
+                    return get.suit(evt.card) !== get.suit(event.card);
+                },
+                async cost(event, trigger, player) {
+                    event.result = await player.chooseTarget(get.prompt2(event.skill), (csrd, player, target) => {
+                        return target != player && target.hasDiscardableCards(player, 'he');
+                    }).set('ai', target => {
+                        const player = get.player();
+                        return get.effect(target, { name: 'guohe_copy2' }, player, player);
+                    }).forResult();
+                },
+                async content(event, trigger, player) {
+                    const target = event.targets[0];
+                    const suit = get.suit(trigger.card);
+                    const result = await player.discardPlayerCard(target, 'he', true).set('ai', button => {
+                        const suit = get.event().suit;
+                        return get.suit(button.link) == suit ? 5 : 1;
+                    }).set('suit', suit).forResult();
+                    if (result?.cards?.length && result.cards.every(card => get.suit(card) == suit)) await player.draw();
+                },
+                group: 'miniyushuming_mark',
+                init(player, skill) {
+                    const history = player.getAllHistory('useCard');
+                    if (history.length) {
+                        const trigger = history[history.length - 1];
+                        const suit = get.suit(trigger.card, player);
+                        const mark = skill + '_mark';
+                        player.setStorage(mark, trigger.card, true);
+                        game.broadcastAll((player, suit) => {
+                            if (player.marks.miniyushuming_mark) player.marks.miniyushuming_mark.firstChild.innerHTML = get.translation(suit);
+                        }, player, suit);
+                        player.addTip(mark, `${get.translation(mark)} ${get.translation(suit)}`);
+                    }
+                },
+                onremove(player, skill) {
+                    const mark = skill + '_mark';
+                    player.unmarkSkill(mark);
+                    delete player.storage[mark];
+                    player.removeTip(mark);
+                },
+                subSkill: {
+                    mark: {
+                        charlotte: true,
+                        trigger: { player: 'useCard1' },
+                        forced: true,
+                        popup: false,
+                        firstDo: true,
+                        async content(event, trigger, player) {
+                            const suit = get.suit(trigger.card, player);
+                            player.setStorage(event.name, trigger.card, true);
+                            game.broadcastAll((player, suit) => {
+                                if (player.marks.miniyushuming_mark) player.marks.miniyushuming_mark.firstChild.innerHTML = get.translation(suit);
+                            }, player, suit);
+                            player.addTip(event.name, `${get.translation(event.name)} ${get.translation(suit)}`);
+                        },
+                        intro: {
+                            content(card, player) {
+                                const suit = get.suit(card, player);
+                                return '<li>上一张牌的花色：' + get.translation(suit);
+                            },
+                        },
+                    },
+                },
             },
             miniyuxianyu: {
                 audio: 'ext:活动武将/audio/skill:2',
+                trigger: { player: ['phaseZhunbeiBegin', 'phaseJieshuBegin'] },
+                direct: true,
+                forced: true,
+                async content(event, trigger, player) {
+                    const result = await player.chooseTarget('贤御：令一名角色摸两张牌', true).set('ai', target => {
+                        const player = get.player();
+                        return get.effect(target, { name: 'wuzhong' }, player, player);
+                    }).forResult();
+                    if (result?.targets?.length) {
+                        const target = result.targets[0];
+                        player.logSkill(event.name, target);
+                        const next = target.draw(2);
+                        next.gaintag = [event.name];
+                        await next;
+                    }
+                },
+                global: 'miniyuxianyu_ai',
+                group: ['miniyuxianyu_discard', 'miniyuxianyu_buff'],
+                subSkill: {
+                    discard: {
+                        audio: 'miniyuxianyu',
+                        trigger: {
+                            player: 'damageEnd',
+                            source: 'damageSource',
+                        },
+                        filter(event, trigger, player) {
+                            const suits = game.getExtensionConfig('活动武将', `miniyuxianyu_suit`) || ['heart'];
+                            return game.hasPlayer(current => current.hasCards('he', card => card.hasGaintag('miniyuxianyu') && !suits.includes(get.suit(card))));
+                        },
+                        forced: true,
+                        logTarget(event, player) {
+                            const suits = game.getExtensionConfig('活动武将', `miniyuxianyu_suit`) || ['heart'];
+                            return game.filterPlayer(current => current.hasCards('he', card => card.hasGaintag('miniyuxianyu') && !suits.includes(get.suit(card)))).sortBySeat();
+                        },
+                        async content(event, trigger, player) {
+                            const suits = game.getExtensionConfig('活动武将', `miniyuxianyu_suit`) || ['heart'];
+                            const lose_list = [], { targets } = event;
+                            targets.forEach(current => {
+                                const cards = current.getCards('he', card => card.hasGaintag('miniyuxianyu') && !suits.includes(get.suit(card)));
+                                if (cards.length) lose_list.push([current, cards]);
+                            });
+                            if (lose_list.length) await game.loseAsync({ lose_list, discarder: player, }).setContent('discardMultiple');
+                        }
+                    },
+                    buff: {
+                        audio: 'miniyuxianyu',
+                        trigger: { global: 'useCard' },
+                        filter(event, player) {
+                            if (!event.player.hasCards('he', card => card.hasGaintag('miniyuxianyu'))) return false;
+                            const suits = game.getExtensionConfig('活动武将', `miniyuxianyu_suit`) || ['heart'];
+                            return suits.includes(get.suit(event.card));
+                        },
+                        forced: true,
+                        logTarget: 'player',
+                        async content(event, trigger, player) {
+                            const targets = game.filterPlayer();
+                            trigger.directHit.addArray(targets);
+                        },
+                    },
+                    ai: {
+                        charlotte: true,
+                        ai: {
+                            directHit_ai: true,
+                            skillTagFilter(player, tag, arg) {
+                                const suits = game.getExtensionConfig('活动武将', `miniyuxianyu_suit`) || ['heart'];
+                                return player.hasCards('he', card => card.hasGaintag('miniyuxianyu')) && arg?.card && suits.includes(get.suit(arg.card)) && game.hasPlayer(current => current.hasSkill('miniyuxianyu'));
+                            },
+                        },
+                    },
+                }
             },
             // 卞夫人
             miniyuqingxiao: {
