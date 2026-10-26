@@ -46960,7 +46960,7 @@ const packs = function () {
                             player: 'damageEnd',
                             source: 'damageSource',
                         },
-                        filter(event, trigger, player) {
+                        filter(event, player) {
                             const suits = game.getExtensionConfig('活动武将', `miniyuxianyu_suit`) || ['heart'];
                             return game.hasPlayer(current => current.hasCards('he', card => card.hasGaintag('miniyuxianyu') && !suits.includes(get.suit(card))));
                         },
@@ -47009,9 +47009,108 @@ const packs = function () {
             // 卞夫人
             miniyuqingxiao: {
                 audio: 'ext:活动武将/audio/skill:2',
+                enable: 'phaseUse',
+                usable: 1,
+                manualConfirm: true,
+                async content(event, trigger, player) {
+                    const cards = [];
+                    while (cards.length < 3) {
+                        const card = get.cardPile(cardx => !cards.includes(cardx) && get.is.damageCard(cardx), 'random');
+                        if (card) cards.push(card);
+                        else break;
+                    }
+                    event.cards = cards.slice();
+                    if (!cards.length) {
+                        player.say('MJ！不跟你们玩了！');
+                        return;
+                    }
+                    await game.cardsGotoOrdering(cards);
+                    if (_status.connectMode) game.broadcastAll(function () {
+                        _status.noclearcountdown = true;
+                    });
+                    const given_map = new Map();
+                    while (cards.length) {
+                        const result = cards.length > 1 ? await player.chooseButtonTarget({
+                            createDialog: [`清啸：请选择要分配的牌`, cards],
+                            selectButton: [1, Infinity],
+                            forced: true,
+                            filterTarget: true,
+                            ai1(button) {
+                                return get.value(button.link);
+                            },
+                            canHidden: true,
+                            ai2(target) {
+                                const player = get.player();
+                                const card = ui.selected.buttons[0].link;
+                                if (card) return get.value(card, target) * get.attitude(player, target);
+                                return 1;
+                            },
+                        }).set('allowChooseAll', true).forResult() : await player.chooseTarget(`清啸：令一名角色获得${get.translation(cards)}`, true).set('ai', target => {
+                            const { player, enemy } = get.event();
+                            const att = get.attitude(player, target);
+                            if (enemy) return -att;
+                            else if (att > 0) return att / (1 + target.countCards('h'));
+                            else return att / 100;
+                        }).set('enemy', get.value(cards[0], player, 'raw') < 0)
+                            .forResult();
+                        if (result?.bool) {
+                            let links;
+                            if (!result.links?.length) links = cards.slice();
+                            else links = result.links;
+                            cards.removeArray(links);
+                            const [target] = result.targets;
+                            if (!given_map.has(target)) given_map.set(target, links);
+                            else given_map.get(target).addArray(links);
+                        } else break;
+                    }
+                    if (_status.connectMode) game.broadcastAll(() => {
+                        delete _status.noclearcountdown;
+                        game.stopCountChoose();
+                    });
+                    if (given_map.size) {
+                        const targets = Array.from(given_map.keys());
+                        event.targets = targets;
+                        await game.loseAsync({
+                            gain_list: Array.from(given_map),
+                            cards: Object.values(given_map).slice().flat(),
+                            giver: player,
+                            animate: 'gain2',
+                        }).setContent('gaincardMultiple');
+                        if (given_map.size == 1 || given_map.size == 3) {
+                            for (const target of targets.sortBySeat()) await target.loseHp();
+                        }
+                        else await player.recover();
+                    }
+                },
+                ai: {
+                    order: 10,
+                    result: { player: 1 },
+                }
             },
             miniyulingyu: {
                 audio: 'ext:活动武将/audio/skill:2',
+                trigger: {
+                    player: 'damageEnd',
+                    source: 'damageSource',
+                },
+                filter(event, player) {
+                    const suits = game.getExtensionConfig('活动武将', `miniyulingyu_suit`) || ['club'];
+                    return event.card && suits.includes(get.suit(event.card));
+                },
+                usable: 3,
+                prompt2(event, player) {
+                    const suit = get.suit(event.card);
+                    return `获得花色不为${get.translation(suit)}的牌各一张`;
+                },
+                async content(event, trigger, player) {
+                    const suits = lib.suit.slice().remove(get.suit(trigger.card));
+                    const cards = [];
+                    for (const suit of suits) {
+                        const card = get.cardPile(cardx => !cards.includes(cardx) && get.suit(cardx) == suit, 'random');
+                        if (card) cards.push(card);
+                    }
+                    if (cards.length) await player.gain(cards, 'gain2');
+                },
             },
             // 吴国太
             miniyushiyu: {
@@ -49766,11 +49865,11 @@ const packs = function () {
                 return `锁定技。①准备阶段或结束阶段，你令一名角色摸两张牌，称为“贤御”牌。②有“贤御”牌的角色使用的${suits}牌不能被响应。③当你造成或受到伤害后，你弃置所有角色的非${suits}“贤御”牌。`;
             })(),
             miniyuqingxiao: '清啸',
-            miniyuqingxiao_info: '出牌阶段限一次，你可以观看并分配牌堆随机三张牌。若获得牌的角色数或因此获得牌的角色各获得的牌数：为1，因此获得牌的角色各失去1点体力；均不为1，你失去1点体力。',
+            miniyuqingxiao_info: '出牌阶段限一次，你可以观看并分配牌堆或弃牌堆中随机三张牌。若获得牌的角色数或因此获得牌的角色各获得的牌数：为1，因此获得牌的角色各失去1点体力；均不为1，你失去1点体力。',
             miniyulingyu: '聆御',
             miniyulingyu_info: (() => {
                 let suits = ['heart', 'diamond', 'spade', 'club'].filter(suit => (game.getExtensionConfig('活动武将', `miniyulingyu_suit`) || ['club']).includes(suit)).map(suit => get.translation(suit)).join('');
-                return `每回合限三次，当一张${suits}伤害牌结算后，若你造成或受到此牌造成的伤害，你可以从牌堆随机获得与此牌花色各不相同的牌各一张。`;
+                return `每回合限三次，当一张${suits}伤害牌结算后，若你造成或受到此牌造成的伤害，你可以从牌堆或弃牌堆中随机获得与此牌花色各不相同的牌各一张。`;
             })(),
             miniyushiyu: '势语',
             miniyushiyu_info: '锁定技。每名角色每种类型限一次。其他角色使用：基本牌结算后，你获得此牌对应的所有实体牌；锦囊牌令你成为目标后，此牌对你无效；装备牌时，改为对你使用之。',
