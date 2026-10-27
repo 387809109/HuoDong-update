@@ -47115,9 +47115,118 @@ const packs = function () {
             // 吴国太
             miniyushiyu: {
                 audio: 'ext:活动武将/audio/skill:2',
+                trigger: {
+                    global: ['useCard', 'useCardAfter'],
+                    target: 'useCardToTargeted',
+                },
+                filter(event, player, name) {
+                    const type = get.type(event.card);
+                    const storage = player.getStorage('miniyushiyu', new Map()).get(event.player) || [];
+                    if (!['basic', 'equip', 'trick'].includes(type) || storage.includes(type)) return false;
+                    if (name == 'useCard') return type == 'equip';
+                    if (name == 'useCardAfter') return type == 'basic' && event.cards.someInD();
+                    return type == 'trick';
+                },
+                forced: true,
+                logTarget: 'player',
+                async content(event, trigger, player) {
+                    const type = get.type(trigger.card);
+                    const target = event.targets[0];
+                    const effect = event.name + '_used';
+                    const storage = player.getStorage(effect, new Map());
+                    if (!storage.has(target)) storage.set(target, []);
+                    storage.get(target).add(type);
+                    player.addSkill(effect);
+                    player.setStorage(effect, storage, true);
+                    if (type == 'basic') await player.gain(trigger.cards.filterInD(), 'gain2');
+                    if (type == 'equip') trigger.targets = [player];
+                    if (type == 'trick') {
+                        trigger.getParent().excluded.add(player);
+                        game.log(trigger.card, '对', player, '无效');
+                    }
+                },
+                subSkill: {
+                    used: {
+                        charlotte: true,
+                        onremove: true,
+                        intro: {
+                            content(storage = new Map(), player) {
+                                if (!storage.size) return '无信息';
+                                let str = '已记录角色及其对应的类别：<br>';
+                                for (const [target, types] of storage) {
+                                    str += `<li>${get.translation(target)}：${types.map(type => get.translation(type)).join('、')}`;
+                                }
+                                return str;
+                            }
+                        },
+                    }
+                },
             },
             miniyuquanyu: {
                 audio: 'ext:活动武将/audio/skill:2',
+                trigger: { player: ['equipAfter', 'addJudgeAfter', 'recoverAfter'] },
+                filter(event, player) {
+                    if (!game.hasPlayer(current => current.hasCards('h'))) return false;
+                    return true;
+                },
+                async cost(event, trigger, player) {
+                    event.result = await player.chooseTarget(get.prompt2(event.skill), (card, player, target) => {
+                        return target.hasCards('h');
+                    }).set('ai', target => {
+                        const player = get.player();
+                        return -get.attitude(player, target);
+                    }).forResult();
+                },
+                async content(event, trigger, player) {
+                    const target = event.targets[0];
+                    const suits = game.getExtensionConfig('活动武将', `miniyuquanyu_suit`) || ['diamond'];
+                    if (!target.hasCards('h', card => suits.includes(get.suit(card)))) await player.viewHandcards(target);
+                    else {
+                        let result = await player.choosePlayerCard(target, 'h', true, `权御：请选择其中一张${suits.map(suit => get.translation(suit)).join('、')}牌并令${get.translation(target)}用此牌与你选择的一名角色拼点`).set('filterButton', button => {
+                            const suit = get.suit(button.link);
+                            return get.event().suits?.includes(suit);
+                        }).set('suits', suits).set('ai', button => {
+                            return get.value(button.link);
+                        }).forResult();
+                        if (result?.bool) {
+                            const [card] = result.links;
+                            const targets = game.filterPlayer(current => current != target && current.canCompare(target));
+                            if (!targets.length) return;
+                            result = await player.chooseTarget(true, `请选择${get.translation(target)}拼点的目标`, (card, player, target) => {
+                                return get.event().targets?.includes(target);
+                            }).set('targets', targets).set('ai', target => {
+                                const player = get.player();
+                                return -get.attitude(player, target);
+                            }).forResult();
+                            if (result?.bool) {
+                                const target2 = result.targets[0];
+                                result = await target.chooseToCompare(target2).set('fixedResult', { [target.playerid]: card }).forResult();
+                                const skill = event.name + '_used';
+                                const losers = [target, target2].filter(current => current != player && !player.getStorage(skill).includes(current) && current != result?.winner);
+                                if (losers.length) {
+                                    const cards = [result.target, result.target2].filterInD('d');
+                                    result = await player.chooseBool(`是否清除${get.translation(losers)}的“势语”记录${cards.length ? `并获得${get.translation(cards)}` : ''}`).forResult();
+                                    if (result?.bool) {
+                                        const storage = player.getStorage('miniyushiyu_used', new Map());
+                                        losers.filter(current => storage.has(current)).forEach(current => storage.delete(target));
+                                        player.addSkill('miniyushiyu_used');
+                                        player.setStorage('miniyushiyu_used', storage, true);
+                                        player.addSkill(skill);
+                                        player.markAuto(skill, losers);
+                                        if (cards.length) await player.gain(cards, 'gain2');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                subSkill: {
+                    used: {
+                        charlotte: true,
+                        onremove: true,
+                        intro: { content: '已记录角色：$' },
+                    }
+                },
             },
             // 蔡夫人
             miniyujiaoyin: {
@@ -49855,7 +49964,8 @@ const packs = function () {
             //御
             Myu_ganfuren: '御甘夫人',
             Myu_bianfuren: '御卞夫人',
-            Myu_wuguotai: '御吴夫人',
+            Myu_wuguotai: '御吴国太',
+            Myu_wuguotai_ab: '御吴夫人',
             Myu_caifuren: '御蔡夫人',
             miniyushuming: '淑鸣',
             miniyushuming_info: '当你使用与你使用的上一张牌花色不同的牌时，你可以弃置一名其他角色的一张牌，若弃置的牌与你使用的牌花色相同，则你摸一张牌。',
