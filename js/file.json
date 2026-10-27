@@ -5106,7 +5106,7 @@
         },
         {
             "path": "extension.css",
-            "size": 11068
+            "size": 11346
         },
         {
             "path": "extension.js",
@@ -7257,6 +7257,10 @@
             "size": 141705
         },
         {
+            "path": "image/character/Myin_jiaxu.jpg",
+            "size": 120554
+        },
+        {
             "path": "image/character/Myin_xushu.jpg",
             "size": 144823
         },
@@ -9258,7 +9262,7 @@
         },
         {
             "path": "js/precontent/MiNikill.js",
-            "size": 3053383
+            "size": 3063899
         },
         {
             "path": "js/precontent/MiNikill_sight.js",

@@ -892,6 +892,12 @@ const packs = function () {
                 },
                 ai: { basic: { equipValue: -5 } },
             },
+            miniyinyinceCard: {
+                enable: true,
+                filterTarget: true,
+                async content(event, trigger, player) { },
+                global: 'miniyinyince_real',
+            }
         },
         skill: {
             //魏
@@ -46448,7 +46454,7 @@ const packs = function () {
                 async cost(event, trigger, player) {
                     event.result = await player.chooseCardTarget({
                         prompt: get.prompt(event.skill),
-                        prompt: '你可以交给至多三名角色各一张牌并摸等量的牌',
+                        prompt2: '你可以交给至多三名角色各一张牌并摸等量张牌',
                         selectCard: [1, 3],
                         position: 'he',
                         filterCard: true,
@@ -46465,6 +46471,7 @@ const packs = function () {
                 },
                 async content(event, trigger, player) {
                     const { cards, targets } = event;
+                    targets.forEach(target => target.addSkill(event.name + '_effect'));
                     await game.loseAsync({
                         gain_list: targets.map((target, i) => [target, cards[i]]),
                         giver: player,
@@ -46473,7 +46480,170 @@ const packs = function () {
                         gaintag: [event.name],
                         animate: 'draw',
                     }).setContent('gaincardMultiple');
+                    await player.draw(event.cards.length);
+                    player.addSkill(event.name + '_draw');
                 },
+                subSkill: {
+                    effect: {
+                        charlotte: true,
+                        init(player) {
+                            const skill = 'miniyinyince';
+                            game.broadcastAll((player, skill) => {
+                                const observer = new MutationObserver(mutationsList => {
+                                    for (const mutation of mutationsList) {
+                                        if (mutation.type === 'childList') {
+                                            if (player.node.handcards1.cardMod[skill]) {
+                                                for (const card of mutation.addedNodes) {
+                                                    if (card.hasGaintag('miniyinyince')) {
+                                                        game.broadcastAll((card, player, skill) => {
+                                                            card.classList.add(skill);
+                                                            game.addVideo('skill', player, [skill, [true, [get.cardInfo(card)]]]);
+                                                        }, card, player, skill);
+                                                    }
+                                                }
+                                            }
+                                            for (const card of mutation.removedNodes) {
+                                                if (!card.hasGaintag('miniyinyince')) {
+                                                    game.broadcastAll((card, player, skill) => {
+                                                        card.classList.remove(skill);
+                                                        game.addVideo('skill', player, [skill, [false, [get.cardInfo(card)]]]);
+                                                    }, card, player, skill);
+                                                }
+                                            }
+                                        }
+                                    }
+                                });
+                                const config = { childList: true };
+                                observer.observe(player.node.handcards1, config);
+                                observer.observe(player.node.handcards2, config);
+                                player.node.handcards1.cardMod ??= {};
+                                player.node.handcards2.cardMod ??= {};
+                                const cardMod = card => {
+                                    if (card.hasGaintag('miniyinyince')) {
+                                        return ['隐策', '此牌对你不可见'];
+                                    }
+                                };
+                                player.node.handcards1.cardMod[skill] = cardMod;
+                                player.node.handcards2.cardMod[skill] = cardMod;
+                                player.node.handcards1.classList.add(skill);
+                                player.node.handcards2.classList.add(skill);
+                                const { card, blank, ...others } = ui.create.buttonPresets;
+                                ui.create.buttonPresets = {
+                                    ...others,
+                                    card(item, ...args) {
+                                        if (item.classList.contains(skill) && args[args.length - 1] !== skill) return blank(item, ...args, skill);
+                                        return card(item, ...args);
+                                    },
+                                    blank(item, ...args) {
+                                        if (item.classList.contains(skill) && args[args.length - 1] !== skill) return card(item, ...args, skill);
+                                        return blank(item, ...args);
+                                    },
+                                };
+                            }, player, skill);
+                        },
+                        onremove(player) {
+                            const skill = 'miniyinyince';
+                            game.broadcastAll((player, skill) => {
+                                player.node.handcards1.classList.remove(skill);
+                                player.node.handcards2.classList.remove(skill);
+                                delete player.node.handcards1.cardMod[skill];
+                                delete player.node.handcards2.cardMod[skill];
+                                player.getCards('h').forEach(card => {
+                                    if (card.classList.contains(skill)) {
+                                        card.classList.remove(skill);
+                                        game.addVideo('skill', player, [skill, [false, [get.cardInfo(card)]]]);
+                                    }
+                                });
+                            }, player, skill);
+                        },
+                        video(player, info) {
+                            for (const cardid of info[1]) {
+                                for (const card of player.getCards('h')) {
+                                    if (card.cardid === cardid[4]) {
+                                        card.classList[info[0] ? 'add' : 'remove']('miniyinyince');
+                                    }
+                                }
+                            }
+                        },
+                        mod: {
+                            cardname(card, player) {
+                                if (get.itemtype(card) == 'card' && card.hasGaintag('miniyinyince')) return 'miniyinyinceCard';
+                            },
+                            suit(card) {
+                                if (get.itemtype(card) == 'card' && card.hasGaintag('miniyinyince')) return 'none';
+                            },
+                            cardUsable(card, player) {
+                                if (get.name(card) == 'miniyinyinceCard' && (card.cards || []).length == 1 && card.cards[0].hasGaintag('miniyinyince')) return Infinity;
+                            },
+                            targetInRange(card, player) {
+                                if (get.name(card) == 'miniyinyinceCard') return true;
+                            },
+                        },
+                        trigger: { player: 'phaseBegin' },
+                        silent: true,
+                        firstDo: true,
+                        async content(event, trigger, player) {
+                            player.addTempSkill('miniyinyince_nouse');
+                        }
+                    },
+                    draw: {
+                        audio: 'miniyinyince',
+                        charlotte: true,
+                        trigger: { global: ['equipAfter', 'addJudgeAfter', 'loseAfter', 'gainAfter', 'loseAsyncAfter', 'addToExpansionAfter'] },
+                        getIndex(event, player) {
+                            return game.filterPlayer(current => {
+                                const evt = event.getl(current);
+                                if (!evt.hs.length) return false;
+                                return Object.values(evt.gaintag_map).flat().includes('miniyinyince');
+                            }).sortBySeat().flatMap(target => {
+                                const evt = event.getl(target);
+                                return evt.cards2.filter(card => event.gaintag_map?.[card.cardid]?.includes('miniyinyince')).map(card => [card, target]);
+                            });
+                        },
+                        forced: true,
+                        async content(event, trigger, player) {
+                            const [card, target] = event.indexedData;
+                            await player.draw();
+                            const cards = target.getCards('h', cardx => {
+                                return lib.filter.canBeGained(cardx, target, player) && get.name(cardx) == card.name;
+                            });
+                            if (cards.length) await player.gain(cards.randomGet(), target, 'giveAuto');
+                        }
+                    },
+                    nouse: {
+                        charlotte: true,
+                        mod: {
+                            cardEnabled(card) {
+                                if (card.name != 'miniyinyinceCard') return false;
+                            },
+                            cardSavable(card) {
+                                if (card.name != 'miniyinyinceCard') return false;
+                            },
+                        },
+                    },
+                    real: {
+                        charlotte: true,
+                        trigger: { player: 'useCard0' },
+                        filter(event, playe) {
+                            return event.card.name == 'miniyinyinceCard';
+                        },
+                        silent: true,
+                        firstDo: true,
+                        async content(event, trigger, player) {
+                            const card = trigger.cards[0];
+                            const { targets: [target] } = trigger;
+                            const info = get.info(card);
+                            if (!info || info.notarget || !info.filterTarget) {
+                                await game.cardsDiscard(trigger.cards);
+                                return;
+                            }
+                            trigger.card.name = card.name;
+                            trigger.card.nature = card.nature;
+                            trigger.card.suit = card.suit;
+                            if (get.type(card) == 'equip') trigger.player = target;
+                        },
+                    }
+                }
             },
             miniyinshenmou: {
                 audio: 'ext:活动武将/audio/skill:2',
@@ -50058,7 +50228,9 @@ const packs = function () {
             miniyinhuozhong: '惑众',
             miniyinhuozhong_info: `出牌阶段限一次，你可以与所有其他角色${get.poptip('miniyindouniu_ox')}并根据自己的牌型等级确定体力和体力上限并亮出体力条，${get.poptip('miniyindouniu_ox')}完毕后，你获得武将牌上的“斗牛牌”，然后你从本次所有${get.poptip('miniyindouniu_ox')}成功的“斗牛牌”中选择X张获得（X为你本次赢的次数，因此选择获得的红色【杀】本回合无次数限制）。`,
             miniyinyince: '隐策',
-            miniyinyince_info: '①每轮开始时，你可以交给至多三名角色各一张牌并摸等量的牌。你以此法交出的牌称为“隐策”牌，且此牌牌面信息不可见。②有“隐策”牌的角色：1.回合内只能使用“隐策”牌；2.出牌阶段，其可以对一名角色无视限制地对一名角色使用此牌，若此牌：为装备牌，目标代替其成为使用者；不能使用，将此牌置入弃牌堆；3.不因死亡而失去一张“隐策”牌后，你摸一张牌，若该角色不为你，则你随机获得其一张与此牌牌名相同的手牌。',
+            miniyinyince_info: '①每轮开始时，你可以交给至多三名角色各一张牌并摸等量张牌。你以此法交出的牌称为“隐策”牌，且此牌牌面信息不可见。②有“隐策”牌的角色：1.回合内只能使用“隐策”牌；2.出牌阶段，其可以对一名角色无视限制地对一名角色使用此牌，若此牌：为装备牌，目标代替其成为使用者；不能使用，将此牌置入弃牌堆。③一名存活角色失去一张“隐策”牌后，你摸一张牌，若该角色不为你，则你随机获得其一张与此牌牌名相同的手牌。',
+            miniyinyinceCard: '隐策',
+            miniyinyinceCard_info: '',
             miniyinshenmou: '深谋',
             miniyinshenmou_info: '转换技，锁定技。当你使用或打出一张：阳：基本牌后，你使用的下一张牌不可被响应且你可以交给一名其他角色一张牌，称为“隐策”牌；阴：非基本牌后，你摸一张牌且你使用的下一张牌无任何次数限制。',
             //焰
