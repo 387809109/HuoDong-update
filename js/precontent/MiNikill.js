@@ -44,7 +44,7 @@ const packs = function () {
                 MiNi_miaoKill: ['bulianshi', 'mayunlu', 'guanyinping', 'caoying', 'caiwenji', 'diaochan', 'caifuren', 'zhangxingcai', 'zhurong', 'huangyueying', 'daqiao', 'wangyi', 'zhangchunhua', 'zhenji', 'sunshangxiang', 'xiaoqiao', 'lvlingqi'].map(i => `Mmiao_${i}`),
                 MiNi_nianKill: ['sunquan', 'caopi', 'zhugeliang', 'lvbu', 'zhouyu'].map(i => `Mnian_${i}`),
                 MiNi_fightKill: ['huangzhong', 'zhangliao', 'luxun', 'dianwei', 'machao', 'jiangwei', 'lvmeng', 'yuanshao'].map(i => `Mfight_${i}`),
-                MiNi_yinKill: ['yuji', 'xushu'].map(i => `Myin_${i}`),
+                MiNi_yinKill: ['jiaxu', 'yuji', 'xushu'].map(i => `Myin_${i}`),
                 MiNi_fireKill: ['zhurong'].map(i => `Mfire_${i}`),
                 MiNi_qingKill: ['lvdiao', 'lvbu', 'diaochan'].map(i => `Mqing_${i}`),
                 MiNi_yuKill: ['ganfuren', 'bianfuren', 'wuguotai', 'caifuren'].map(i => `Myu_${i}`),
@@ -576,6 +576,7 @@ const packs = function () {
             //隐
             Myin_xushu: ['male', 'wei', 3, ['miniyinyinxing', 'miniyinjujian']],
             Myin_yuji: ['male', 'qun', 0, ['miniyinyinming', 'miniyinhuozhong']],
+            Myin_jiaxu: ['male', 'qun', 3, ['miniyinyince', 'miniyinshenmou']],
             //焰
             Mfire_zhurong: ['female', 'shu', 4, ['minifirehuosi', 'minifirerongyan'], ['name:null|null']],
             //情
@@ -46437,6 +46438,130 @@ const packs = function () {
                     },
                 },
             },
+            // 贾诩
+            miniyinyince: {
+                audio: 'ext:活动武将/audio/skill:2',
+                trigger: { global: 'roundStart' },
+                filter(event, player) {
+                    return player.hasCards('he');
+                },
+                async cost(event, trigger, player) {
+                    event.result = await player.chooseCardTarget({
+                        prompt: get.prompt(event.skill),
+                        prompt: '你可以交给至多三名角色各一张牌并摸等量的牌',
+                        selectCard: [1, 3],
+                        position: 'he',
+                        filterCard: true,
+                        complexSelect: true,
+                        selectTarget: () => ui.selected.cards.length,
+                        ai1(card) {
+                            return 6 - get.value(card);
+                        },
+                        ai2(target) {
+                            const player = get.player();
+                            return -get.attitude(player, target);
+                        }
+                    }).forResult();
+                },
+                async content(event, trigger, player) {
+                    const { cards, targets } = event;
+                    await game.loseAsync({
+                        gain_list: targets.map((target, i) => [target, cards[i]]),
+                        giver: player,
+                        player,
+                        cards,
+                        gaintag: [event.name],
+                        animate: 'draw',
+                    }).setContent('gaincardMultiple');
+                },
+            },
+            miniyinshenmou: {
+                audio: 'ext:活动武将/audio/skill:2',
+                mark: true,
+                zhuanhuanji: true,
+                marktext: '☯',
+                intro: {
+                    content(storage, player, skill) {
+                        return `当你使用或打出一张${storage ? '非基本牌后，你摸一张牌且你使用的下一张牌无任何次数限制' : '基本牌后，你使用的下一张牌不可被响应且你可以交给一名其他角色一张牌，称为“隐策”牌'}。`;
+                    },
+                },
+                trigger: { player: ['useCardAfter', 'respondAfter'] },
+                filter(event, player) {
+                    const type = get.type(event.card)
+                    const bool = player.storage.miniyinshenmou;
+                    return (type == 'basic' && !bool) | (type !== 'basic' && bool);
+                },
+                forced: true,
+                async content(event, trigger, player) {
+                    player.changeZhuanhuanji(event.name);
+                    const bool = player.storage[event.name];
+                    if (bool) {
+                        player.addSkill(event.name + '_directHit');
+                        if (player.hasCards('he') && game.hasPlayer(current => current != player)) {
+                            const result = await player.chooseCardTarget({
+                                prompt: '深谋：你可以交给一名其他角色一张牌',
+                                filterCard: true,
+                                filterTarget: lib.filter.notMe,
+                                position: 'he',
+                                ai1(card) {
+                                    return 6 - get.value(card);
+                                },
+                                ai2(target) {
+                                    const player = get.player();
+                                    return -get.attitude(player, target);
+                                },
+                            }).forResult();
+                            if (result?.cards?.length && result.targets.length) {
+                                const { cards, targets: [target] } = result;
+                                const next = target.gain(cards, 'draw');
+                                next.giver = player;
+                                next.gaintag.add('miniyinshenmou');
+                                await next;
+                            }
+                        }
+                    } else {
+                        await player.draw();
+                        player.addSkill(event.name + '_unlimit');
+                    }
+                },
+                subSkill: {
+                    unlimit: {
+                        charlotte: true,
+                        mod: { cardUsable: () => Infinity },
+                        trigger: { player: 'useCard1' },
+                        filter(event, player) {
+                            return event.addCount !== false;
+                        },
+                        forced: true,
+                        popup: false,
+                        firstDo: true,
+                        async content(event, trigger, player) {
+                            player.removeSkill(event.name);
+                            if (trigger.addCount !== false) {
+                                trigger.addCount = false;
+                                const stat = player.getStat().card, name = trigger.card.name;
+                                if (typeof stat[name] === 'number') stat[name]--;
+                            }
+                        },
+                        mark: true,
+                        intro: { content: '使用的下一张牌无任何次数限制' },
+                    },
+                    directHit: {
+                        charlotte: true,
+                        trigger: { player: 'useCard' },
+                        forced: true,
+                        popup: false,
+                        firstDo: true,
+                        async content(event, trigger, player) {
+                            player.removeSkill(event.name);
+                            trigger.directHit.addArray(game.filterPlayer());
+                        },
+                        mark: true,
+                        intro: { content: '使用的下一张牌不可被响应' },
+                        ai: { directHit_ai: true },
+                    },
+                }
+            },
             //焰系列
             //祝融
             minifirehuosi: {
@@ -47089,13 +47214,10 @@ const packs = function () {
             },
             miniyulingyu: {
                 audio: 'ext:活动武将/audio/skill:2',
-                trigger: {
-                    player: 'damageEnd',
-                    source: 'damageSource',
-                },
+                trigger: { global: 'useCardAfter' },
                 filter(event, player) {
                     const suits = game.getExtensionConfig('活动武将', `miniyulingyu_suit`) || ['club'];
-                    return event.card && suits.includes(get.suit(event.card));
+                    return suits.includes(get.suit(event.card)) && ['damage', 'sourceDamage'].some(key => player.hasHistory(key, evt => evt.card == event.card));
                 },
                 usable: 3,
                 prompt2(event, player) {
@@ -47522,6 +47644,14 @@ const packs = function () {
                 if (bool) yin = `<span class='bluetext'>${yin}</span>`;
                 else yang = `<span class='firetext'>${yang}</span>`;
                 return `转换技。①游戏开始可自选阴阳状态。②出牌阶段限一次，你可令你或一名{${yang}}；{${yin}}将手牌调整至体力上限（至多摸五张）并视为使用一张仅指定单目标的普通锦囊牌（此牌牌名与目标由你指定）。若以此法摸牌，此牌可额外增加一个目标；若以此法弃牌，此牌额外结算一次。`;
+            },
+            miniyinshenmou(player, skill) {
+                const storage = player.storage[skill];
+                let yang = '基本牌后，你使用的下一张牌不可被响应且你可以交给一名其他角色一张牌，称为“隐策”牌', yin = '非基本牌后，你摸一张牌且你使用的下一张牌无任何次数限制';
+                if (storage) yin = `<span class='bluetext'>${yin}</span>`
+                else yang = `<span class='firetext'>${yang}</span>`;
+                let start = '转换技，锁定技。当你使用或打出一张：', end = '。';
+                return `${start}阳：${yang}；阴：${yin}${end}`;
             },
         },
         translate: {
@@ -49880,6 +50010,7 @@ const packs = function () {
             //隐
             Myin_xushu: '隐徐庶',
             Myin_yuji: '隐于吉',
+            Myin_jiaxu: '隐贾诩',
             miniyinyinxing: '隐姓',
             miniyinyinxing_info: `锁定技。①当你需要使用或打出牌时，你只能使用或打出虚拟牌或转化，且你可以将任意张手牌按以下规则使用或打出：1.${get.poptip({
                 id: 'miniyinyinxing_duizi',
@@ -49926,6 +50057,10 @@ const packs = function () {
             })}。若你赢，则隐于吉获得其本次的“斗牛牌”且根据牌型等级确定体力和体力上限并亮出体力条；若隐于吉赢，则隐于吉获得一张挑战方的“斗牛牌”。`,
             miniyinhuozhong: '惑众',
             miniyinhuozhong_info: `出牌阶段限一次，你可以与所有其他角色${get.poptip('miniyindouniu_ox')}并根据自己的牌型等级确定体力和体力上限并亮出体力条，${get.poptip('miniyindouniu_ox')}完毕后，你获得武将牌上的“斗牛牌”，然后你从本次所有${get.poptip('miniyindouniu_ox')}成功的“斗牛牌”中选择X张获得（X为你本次赢的次数，因此选择获得的红色【杀】本回合无次数限制）。`,
+            miniyinyince: '隐策',
+            miniyinyince_info: '①每轮开始时，你可以交给至多三名角色各一张牌并摸等量的牌。你以此法交出的牌称为“隐策”牌，且此牌牌面信息不可见。②有“隐策”牌的角色：1.回合内只能使用“隐策”牌；2.出牌阶段，其可以对一名角色无视限制地对一名角色使用此牌，若此牌：为装备牌，目标代替其成为使用者；不能使用，将此牌置入弃牌堆；3.不因死亡而失去一张“隐策”牌后，你摸一张牌，若该角色不为你，则你随机获得其一张与此牌牌名相同的手牌。',
+            miniyinshenmou: '深谋',
+            miniyinshenmou_info: '转换技，锁定技。当你使用或打出一张：阳：基本牌后，你使用的下一张牌不可被响应且你可以交给一名其他角色一张牌，称为“隐策”牌；阴：非基本牌后，你摸一张牌且你使用的下一张牌无任何次数限制。',
             //焰
             Mfire_zhurong: '焰祝融',
             minifirehuosi: '火祀',
