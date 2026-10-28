@@ -46531,13 +46531,9 @@ const packs = function () {
                                 ui.create.buttonPresets = {
                                     ...others,
                                     card(item, ...args) {
-                                        if (item.classList.contains(skill) && args[args.length - 1] !== skill) return blank(item, ...args, skill);
-                                        return card(item, ...args);
+                                        return [item.classList.contains(skill) ? 'blank' : 'card'](item, ...args);
                                     },
-                                    blank(item, ...args) {
-                                        if (item.classList.contains(skill) && args[args.length - 1] !== skill) return card(item, ...args, skill);
-                                        return blank(item, ...args);
-                                    },
+                                    blank,
                                 };
                             }, player, skill);
                         },
