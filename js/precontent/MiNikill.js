@@ -8,7 +8,7 @@ const packs = function () {
         characterSort: {
             MiNikill: {
                 MiNi_wei: ['zhanghu', 'yj_majun', 'caoyi', 'lvqian', 'hanlong', 'xiahoumao', 'guohuai', 'caochong', 'caochun', 'caoying', 'dc_jiachong', 'zhugeruoxue', 'dukui', 'xinpi', 'caimaozhangyun', 'bianyue', 'caoanmin', 'zhaoang', 'zhanggong', 'simalang', 'hanhaoshihuan', 'chentai', 'zhenghun', 'guanlu', 'guanqiujian', 'dc_liuye', 'chenlin', 'wangshuang', 'yanrou', 'dc_yanghu', 'ruanyu', 'chengyu', 'jianggan', 'yuejin', 'bianfuren', 'zhugedan', 'caohong', 'yinfuren', 'kuailiangkuaiyue', 'chenqun', 'xiahoulingnv', 'wenyang', 'caozhang', 'dufuren', 'yangxiu', 'zhangchangpu', 'zhonghui', 'caoxiu', 'xunyou', 'lidian', 'zhongyao', 'caozhen', 'guohuanghou', 'xinxianying', 'xiahouyuan', 'xizhicai', 'caorui', 'xunyu', 'dengai', 'caozhi', 'caopi', 'caoang', 'zhenji', 'old_caoren', 'zhangchunhua', 'xiahoudun', 'dianwei', 'zhanghe', 'yujin', 'xuhuang'].map(i => `Mbaby_${i}`),
-                MiNi_shu: ['wuyi', 'ol_feiyi', 'wenyuan', 'xizheng', 'malingli', 'dc_wuban', 'pangtong', 'mifangfushiren', 'guanyue', 'xianglang', 'huanghao', 'zhaotongzhaoguang', 'wulan', 'leitong', 'zongyu', 're_mazhong', 're_dengzhi', 'dc_hujinding', 'jiangfei', 'zhangyi', 'guanzhang', 'wolongfengchu', 'wangtao', 'wangyue', 'xf_yiji', 'mizhu', 'mifuren', 'liuyong', 'ganfuren', 'lvkai', 'zhoucang', 'yangwan', 'liuchen', 'liyan', 'chendao', 'yanyan', 'xiahouba', 'huaman', 'sp_zhugeliang', 'zhugeguo', 'jianyong', 'wangping', 'mayunlu', 'guansuo', 'xiahoushi', 'shamoke', 'wuxian', 'zhugezhan', 'qinmi', 'guanyinping', 'guanyu', 'zhugeliang', 'liubei', 'machao', 'zhurong', 'zhangfei', 'zhaoyun', 'huangzhong', 'weiyan', 'liaohua', 'menghuo', 'ol_jiangwei', 'liushan', 'xin_fazheng', 'madai', 'guanping', 'liufeng', 'zhangxingcai', 'dongyun', 'xushu', 'xin_masu', 'huangwudie'].map(i => `Mbaby_${i}`),
+                MiNi_shu: ['ol_jiangwan', 'dc_huangwudie', 'wuyi', 'ol_feiyi', 'wenyuan', 'xizheng', 'malingli', 'dc_wuban', 'pangtong', 'mifangfushiren', 'guanyue', 'xianglang', 'huanghao', 'zhaotongzhaoguang', 'wulan', 'leitong', 'zongyu', 're_mazhong', 're_dengzhi', 'dc_hujinding', 'jiangfei', 'zhangyi', 'guanzhang', 'wolongfengchu', 'wangtao', 'wangyue', 'xf_yiji', 'mizhu', 'mifuren', 'liuyong', 'ganfuren', 'lvkai', 'zhoucang', 'yangwan', 'liuchen', 'liyan', 'chendao', 'yanyan', 'xiahouba', 'huaman', 'sp_zhugeliang', 'zhugeguo', 'jianyong', 'wangping', 'mayunlu', 'guansuo', 'xiahoushi', 'shamoke', 'wuxian', 'zhugezhan', 'qinmi', 'guanyinping', 'guanyu', 'zhugeliang', 'liubei', 'machao', 'zhurong', 'zhangfei', 'zhaoyun', 'huangzhong', 'weiyan', 'liaohua', 'menghuo', 'ol_jiangwei', 'liushan', 'xin_fazheng', 'madai', 'guanping', 'liufeng', 'zhangxingcai', 'dongyun', 'xushu', 'xin_masu'].map(i => `Mbaby_${i}`),
                 MiNi_wu: ['sunhuan', 'gexuan', 'lvfan', 'xielingyu', 'zhupeilan', 'xugong', 'chendong', 'kanze', 're_panzhangmazhong', 'weiwenzhugezhi', 'zhangwen', 'dc_sunhanhua', 'heqi', 'lvdai', 'jiangqing', 're_guyong', 'quancong', 'yufan', 'dc_sunru', 'sunxiu', 'zhangfen', 'xuezong', 'panjun', 'luji', 'zhoufang', 'zhangxuan', 'yanjun', 'zhuhuan', 'luyusheng', 're_jsp_pangtong', 'sunhao', 'lukang', 'buzhi', 'xushi', 'zhugeke', 'zhoufei', 'zhangzhang', 'sunliang', 'sunjian', 'zhuzhi', 'bulianshi', 'chengpu', 'daqiao', 'ganning', 'huanggai', 'lusu', 'luxun', 'lvmeng', 'sunce', 'sunluban', 'sunluyu', 'sunquan', 'sunshangxiang', 'taishici', 'wuguotai', 'xiaoqiao', 'xusheng', 'old_zhoutai', 'zhouyu', 'zhugejin', 'zumao'].map(i => `Mbaby_${i}`),
                 MiNi_qun: ['qiuliju', 'dc_sp_zhurong', 'tianfeng', 'xunchen', 'dongguiren', 'zhangren', 'kebineng', 'mangyachang', 're_hucheer', 'sp_duyu', 'ol_lisu', 'zhangchu', 'leibo', 'wangcan', 'diaochan', 'xurong', 're_taoqian', 'hejin', 'jiling', 'zhangrang', 'duanwei', 're_chendeng', 'caiyong', 'mengjie', 'dc_gaolan', 'yl_luzhi', 'tadun', 're_hansui', 'dongxie', 'fuwan', 'wutugu', 'huangfusong', 'fanchou', 'guosi', 'yanbaihu', 'dc_huangzu', 'licaiwei', 'ol_dingyuan', 'liubian', 're_pangdegong', 'zhangning', 'zhanglu', 'wangyun', 'zoushi', 'dc_huangchengyan', 'simahui', 'tw_mateng', 'laiyinger', 'sp_kongrong', 'zhujun', 'gongsunyuan', 'guotufengji', 'yanfuren', 'tangji', 'caojie', 'liangxing', 'caoxing', 'wangrong', 'hetaihou', 'zhangji', 'dongbai', 'beimihu', 'chunyuqiong', 'zhangqiying', 'fuhuanghou', 'liuxie', 'quyi', 'lijue', 'panfeng', 'liuzhang', 'jiaxu', 'zhangbao', 'zhangliang', 'gaoshun', 'caifuren', 'xuyou', 'pangde', 'yj_jushou', 'liru', 'dongzhuo', 'sp_zhangjiao', 'huatuo', 'lvbu', 'huaxiong', 'yuji', 'liubiao', 'yuanshao', 'yuanshu', 'chengong', 'zuoci'].map(i => `Mbaby_${i}`),
                 MiNi_shen: [
@@ -262,7 +262,8 @@ const packs = function () {
             Mbaby_xizheng: ['male', 'shu', 3, ['dcdanyi', 'miniwencan']],
             Mbaby_ol_feiyi: ['male', 'shu', 3, ['yanru', 'minihezhong']],
             Mbaby_wuyi: ['male', 'shu', 4, ['minibenxi']],
-            Mbaby_huangwudie: ['female', 'shu', 4, ['minishuangrui', 'dcfuxie'], ['die:dc_huangwudie']],
+            Mbaby_dc_huangwudie: ['female', 'shu', 4, ['minishuangrui', 'dcfuxie']],
+            Mbaby_ol_jiangwan: ['male', 'shu', 3, ['olziruo', 'minixufa']],
             //吴
             Mbaby_bulianshi: ['female', 'wu', 3, ['minianxu', 'zhuiyi']],
             Mbaby_chengpu: ['male', 'wu', 4, ['minilihuo', 'minichunlao']],
@@ -16417,6 +16418,173 @@ const packs = function () {
                     directHit_ai: true,
                 },
                 derivation: ['dcshouxing', 'dcshaxue'],
+            },
+            // 蒋琬
+            minixufa: {
+                audio: 'olxvfa',
+                enable: 'phaseUse',
+                filter(event, player) {
+                    const list = player.getStorage('minixufa_used');
+                    return (!list.includes('0') && player.hasCards('h') && player.countExpansions('minixufa') < 20) || (!list.includes('1') && player.hasExpansions('minixufa'));
+                },
+                chooseButton: {
+                    dialog(event, player) {
+                        let dialog = ui.create.dialog('蓄发：请选择一项', 'hidden');
+                        const list = [
+                            ['0', '将至少一张手牌称为“蓄发”置于武将牌上，然后可以将一张牌当作“蓄发”牌中的一张普通锦囊牌使用'],
+                            ['1', '移去至少一张“蓄发”牌，然后可以将一张牌当作其中一张普通锦囊牌使用'],
+                        ].filter(listx => {
+                            if (player.getStorage('minixufa_used').includes(listx[0])) return false;
+                            if (listx[0] == '0') return player.hasCards('h') && player.countExpansions('minixufa') < 20;
+                            return player.hasExpansions('minixufa');
+                        });
+                        dialog.add([list, 'textbutton']);
+                        if (list.length == 1) dialog.direct = true;
+                        return dialog;
+                    },
+                    filter(button, player) {
+                        if (player.getStorage('minixufa_used').includes(button.link)) return false;
+                        if (button.link == '0') return player.hasCards('h') && player.countExpansions('minixufa') < 20;
+                        return player.hasExpansions('minixufa');
+                    },
+                    check: () => 1 + Math.random(),
+                    backup: links => get.copy(lib.skill['minixufa_' + ['put', 'remove'][parseInt(links[0])]]),
+                    prompt(links) {
+                        if (links[0] == '0') return '###蓄发###将至少一张手牌称为“蓄发”置于武将牌上，然后可以将一张牌当作“蓄发”牌中的一张普通锦囊牌使用';
+                        return '###蓄发###移去至少一张“蓄发”牌，然后可以将一张牌当作其中一张普通锦囊牌使用';
+                    },
+                },
+                intro: {
+                    content: 'expansion',
+                    markcount: 'expansion',
+                },
+                onremove(player, skill) {
+                    const cards = player.getExpansions(skill);
+                    if (cards.length) player.loseToDiscardpile(cards);
+                },
+                subSkill: {
+                    backup: {},
+                    used: { charlotte: true, onremove: true },
+                    put: {
+                        audio: 'minixufa',
+                        filterCard: true,
+                        selectCard: () => [1, 20 - get.player().countExpansions('minixufa')],
+                        position: 'h',
+                        check(card) {
+                            const player = get.event().player, value = player.getUseValue(card, true);
+                            if (value > 0) return get.type(card) == 'trick' ? 20 + value : 0;
+                            return 15 - get.value(card) - get.useful(card);
+                        },
+                        allowChooseAll: true,
+                        lose: false,
+                        discard: false,
+                        delay: 0,
+                        async content(event, trigger, player) {
+                            player.addTempSkill('minixufa_used', 'phaseUseAfter');
+                            player.markAuto('minixufa_used', ['0']);
+                            await player.addToExpansion(event.cards, player, 'give').set('gaintag', ['minixufa']);
+                            const cards = player.getExpansions('minixufa');
+                            if (cards.some(card => get.type(card) == 'trick' && player.hasCards('hes', cardx => player.hasUseTarget(get.autoViewAs({ name: card.name }, [cardx]), true)))) {
+                                const result = await player.chooseButton(['###蓄发###<div class="text center">是否将一张牌当作一张“蓄发”牌使用？</div>', cards]).set('filterButton', button => {
+                                    const player = get.event().player, card = button.link;
+                                    return get.type(card) == 'trick' && player.hasCards('hes', cardx => player.hasUseTarget(get.autoViewAs({ name: card.name }, [cardx]), true));
+                                }).set('ai', button => {
+                                    const player = get.event().player, card = button.link;
+                                    return player.getUseValue({ name: card.name, isCard: true }, true);
+                                }).forResult();
+                                if (result?.bool) {
+                                    const card = result.links[0];
+                                    game.broadcastAll(function (card) {
+                                        lib.skill.minixufa_backupx.viewAs = { name: card.name };
+                                    }, card);
+                                    const next = player.chooseToUse();
+                                    next.set('openskilldialog', '###蓄发###将一张牌当作【' + get.translation(card.name) + '】使用');
+                                    next.set('norestore', true);
+                                    next.set('addCount', false)
+                                    next.set('_backupevent', 'minixufa_backupx')
+                                    next.set('custom', {
+                                        add: {},
+                                        replace: { window() { } },
+                                    });
+                                    next.backup('minixufa_backupx');
+                                    await next;
+                                }
+                            }
+                        },
+                    },
+                    remove: {
+                        audio: 'minixufa',
+                        filterCard: () => false,
+                        selectCard: -1,
+                        delay: 0,
+                        async content(event, trigger, player) {
+                            player.addTempSkill('minixufa_used', 'phaseUseAfter');
+                            player.markAuto('minixufa_used', ['1']);
+                            const cards = player.getExpansions('minixufa');
+                            if (!cards.length) return;
+                            const result = await player.chooseButton(['###蓄发###<div class="text center">请移去至少一张“蓄发”牌</div>', cards], [1, Infinity], true, 'allowChooseAll').set('ai', button => {
+                                const player = get.event().player, value = player.getUseValue(button.link, true);
+                                if (value > 0 && get.type(button.link) == 'trick') {
+                                    if (!ui.selected.buttons.some(but => {
+                                        return get.type(but.link) == 'trick' && player.getUseValue(but.link, true) > 0;
+                                    })) return 20 + value;
+                                    return 0;
+                                }
+                                return 1 / (get.useful(button.link) || 0.5);
+                            }).forResult();
+                            if (result?.bool) {
+                                const cardx = result.links;
+                                await player.loseToDiscardpile(cardx);
+                                if (cardx.some(card => get.type(card) == 'trick' && player.hasCards('hes', cardxx => player.hasUseTarget(get.autoViewAs({ name: card.name }, [cardxx]), true)))) {
+                                    const result2 = await player.chooseButton(['###蓄发###<div class="text center">是否将一张牌当作一张移去的“蓄发”牌使用？</div>', cardx]).set('filterButton', button => {
+                                        const player = get.event().player, card = button.link;
+                                        return get.type(card) == 'trick' && player.hasCards('hes', cardx => player.hasUseTarget(get.autoViewAs({ name: card.name }, [cardx]), true));
+                                    }).set('ai', button => {
+                                        const player = get.event().player, card = button.link;
+                                        return player.getUseValue({ name: card.name, isCard: true }, true);
+                                    }).forResult();
+                                    if (result2?.bool) {
+                                        const card = result2.links[0];
+                                        game.broadcastAll(function (card) {
+                                            lib.skill.minixufa_backupx.viewAs = { name: card.name };
+                                        }, card);
+                                        const next = player.chooseToUse();
+                                        next.set('openskilldialog', '###蓄发###将一张牌当作【' + get.translation(card.name) + '】使用');
+                                        next.set('norestore', true);
+                                        next.set('addCount', false)
+                                        next.set('_backupevent', 'minixufa_backupx')
+                                        next.set('custom', {
+                                            add: {},
+                                            replace: { window() { } },
+                                        });
+                                        next.backup('minixufa_backupx');
+                                        await next;
+                                    }
+                                }
+                            }
+                        },
+                    },
+                    backupx: {
+                        filterCard(card) {
+                            return get.itemtype(card) == 'card';
+                        },
+                        position: 'hes',
+                        check(card) {
+                            const player = get.event().player;
+                            if (player.hasValueTarget(card, true, true)) return 0;
+                            if (player.hasSkill('olziruo')) {
+                                const cards = player.getCards('h');
+                                if (cards.indexOf(card) == (player.storage.olziruo ? cards.length - 1 : 0)) return 15 - get.value(card);
+                            }
+                            return 5 - get.value(card);
+                        },
+                        log: false,
+                    },
+                },
+                ai: {
+                    order: 1,
+                    result: { player: 1 },
+                },
             },
             //吴
             //孙权
@@ -48370,7 +48538,8 @@ const packs = function () {
             Mbaby_xizheng: '欢杀郤正',
             Mbaby_ol_feiyi: '欢杀费祎',
             Mbaby_wuyi: '欢杀吴懿',
-            Mbaby_huangwudie: '欢杀黄舞蝶',
+            Mbaby_dc_huangwudie: '欢杀黄舞蝶',
+            Mbaby_ol_jiangwan: '欢杀蒋琬',
             miniwusheng: '武圣',
             miniwusheng_info: '锁定技。①你使用红色【杀】造成的伤害+1。②回合开始时，你从牌堆或弃牌堆中获得一张红色【杀】。',
             miniguanxing: '观星',
@@ -48693,6 +48862,8 @@ const packs = function () {
             minibenxi_info: '锁定技，当你于回合内使用牌时，本回合你计算与其他角色的距离-1；你的回合内，若你与所有其他角色的距离均为1，则你使用仅指定一个目标的【杀】或普通锦囊牌时依次选择至多两项：①此牌目标+1；②此牌无视防具；③此牌不能被抵消；④此牌造成伤害时，摸一张牌。',
             minishuangrui: '双锐',
             minishuangrui_info: `准备阶段，你可以选择一名其他角色，视为对其使用一张【杀】。若其：①不在你的攻击范围内，此【杀】不可被响应，你获得${get.poptip('dcshouxing')}；②在你的攻击范围内，此【杀】伤害+1，你获得${get.poptip('dcshaxue')}。`,
+            minixufa: '蓄发',
+            minixufa_info: '出牌阶段各限一次，你可以：①将至少一张手牌称为“蓄发”置于武将牌上，然后你可以将一张牌当作“蓄发”牌中的一张普通锦囊牌使用（你至多拥有二十张“蓄发”）；②移去至少一张“蓄发”牌，然后你可以将一张牌当作其中一张普通锦囊牌使用。',
             //吴
             Mbaby_bulianshi: '欢杀步练师',
             Mbaby_chengpu: '欢杀程普',
