@@ -46519,9 +46519,7 @@ const packs = function () {
                                 player.node.handcards1.cardMod ??= {};
                                 player.node.handcards2.cardMod ??= {};
                                 const cardMod = card => {
-                                    if (card.hasGaintag('miniyinyince')) {
-                                        return ['隐策', '此牌对你不可见'];
-                                    }
+                                    if (card.hasGaintag('miniyinyince')) return ['隐策', lib.translate.miniyinyinceCard_info];
                                 };
                                 player.node.handcards1.cardMod[skill] = cardMod;
                                 player.node.handcards2.cardMod[skill] = cardMod;
@@ -46574,13 +46572,14 @@ const packs = function () {
                             targetInRange(card, player) {
                                 if (get.name(card) == 'miniyinyinceCard') return true;
                             },
+                            cardEnabled(card, player) {
+                                if (!player.hasCard(cardx => get.name(cardx) === 'miniyinyinceCard', 'h') || _status.currentPhase !== player) return;
+                                if (card.name !== 'miniyinyinceCard') return false;
+                            },
+                            cardSavable(...args) {
+                                return lib.skill.miniyinyince_effect.mod.cardEnabled.call(this, ...args);
+                            },
                         },
-                        trigger: { player: 'phaseBegin' },
-                        silent: true,
-                        firstDo: true,
-                        async content(event, trigger, player) {
-                            player.addTempSkill('miniyinyince_nouse');
-                        }
                     },
                     draw: {
                         audio: 'miniyinyince',
@@ -46605,17 +46604,6 @@ const packs = function () {
                             });
                             if (cards.length) await player.gain(cards.randomGet(), target, 'giveAuto');
                         }
-                    },
-                    nouse: {
-                        charlotte: true,
-                        mod: {
-                            cardEnabled(card) {
-                                if (card.name != 'miniyinyinceCard') return false;
-                            },
-                            cardSavable(card) {
-                                if (card.name != 'miniyinyinceCard') return false;
-                            },
-                        },
                     },
                     real: {
                         charlotte: true,
@@ -46679,9 +46667,8 @@ const packs = function () {
                             }).forResult();
                             if (result?.cards?.length && result.targets.length) {
                                 const { cards, targets: [target] } = result;
-                                const next = target.gain(cards, 'draw');
-                                next.giver = player;
-                                next.gaintag.add('miniyinshenmou');
+                                const next = player.give(cards, target);
+                                next.gaintag.add('miniyinyince');
                                 await next;
                             }
                         }
@@ -50226,7 +50213,7 @@ const packs = function () {
             miniyinyince: '隐策',
             miniyinyince_info: '①每轮开始时，你可以交给至多三名角色各一张牌并摸等量张牌。你以此法交出的牌称为“隐策”牌，且此牌牌面信息不可见。②有“隐策”牌的角色：1.回合内只能使用“隐策”牌；2.出牌阶段，其可以对一名角色无视限制地对一名角色使用此牌，若此牌：为装备牌，目标代替其成为使用者；不能使用，将此牌置入弃牌堆。③一名存活角色失去一张“隐策”牌后，你摸一张牌，若该角色不为你，则你随机获得其一张与此牌牌名相同的手牌。',
             miniyinyinceCard: '隐策',
-            miniyinyinceCard_info: '',
+            miniyinyinceCard_info: '此牌牌面信息不可见。出牌阶段，你可以对一名角色无视限制地对一名角色使用此牌，若此牌：为装备牌，目标代替其成为使用者；不能使用，将此牌置入弃牌堆。',
             miniyinshenmou: '深谋',
             miniyinshenmou_info: '转换技，锁定技。当你使用或打出一张：阳：基本牌后，你使用的下一张牌不可被响应且你可以交给一名其他角色一张牌，称为“隐策”牌；阴：非基本牌后，你摸一张牌且你使用的下一张牌无任何次数限制。',
             //焰
