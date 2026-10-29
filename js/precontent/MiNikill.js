@@ -51131,10 +51131,6 @@ const packs = function () {
         if (MiNikill.skill[skill].欢杀将池) MiNikill.translate[skill + '_append'] = MiNikill.translate.Mbaby_characterlist_append;
         //念影效果添加注释
         if (MiNikill.skill[skill].nianyingSkill) {
-            MiNikill.skill[skill].derivation ??= [];
-            MiNikill.skill[skill].derivation.push(skill + '_faq');
-            MiNikill.translate[skill + '_faq'] = '念影——' + MiNikill.skill[skill].nianyingSkill[0];
-            MiNikill.translate[skill + '_faq_info'] = '<br>' + MiNikill.skill[skill].nianyingSkill[1];
             MiNikill.translate[skill + '_append'] = '<span style="font-family: yuanli"><li>念影——' + MiNikill.skill[skill].nianyingSkill[0] + '<br>' + MiNikill.skill[skill].nianyingSkill[1] + '</span>';
         }
     }
