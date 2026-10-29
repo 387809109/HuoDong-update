@@ -321,6 +321,7 @@ const packs = function () {
             wechat_yanlongxia: ['male', 'qun', 4, ['wechatyanlong', 'wechatyingyan', 'wechatfengmo'], ['name:李|炘南-张|健-殿|南']],
             wechat_yuwenyuejuanren: ['none', 'qun', 6, ['wechatyuedu', 'wechatmoxie', 'wechatzuowen'], ['name:闹动|导近']],
             wechat_shuxueyazhouren: ['none', 'qun', 6, ['wechathanshu', 'wechatjihe', 'wechatjixian'], ['name:牢|骚哥']],
+            wechat_wenzongmingtizu: ['none', 'qun', 6, ['wechatdili', 'wechatlishi', 'wechatzhengzhi'], ['name:牢|骚哥']],
         },
         characterIntro: {
             get wechat_nailong() {
@@ -24011,6 +24012,94 @@ const packs = function () {
                     }
                 },
             },
+            // 文综命题组
+            wechatdili: {
+                audio: 'ext:活动武将/audio/skill:2',
+                trigger: { global: 'phaseBegin' },
+                filter(event, player) {
+                    return event.player != player;
+                },
+                forced: true,
+                async content(event, trigger, player) {
+                    const card = get.cards()[0];
+                    await player.showCards(card, `${get.translation(player)}发动了【地理】`);
+                    await player.gain(card, 'gain2').set('gaintag', ['visible_wechatdili']);
+                    player.addTempSkill(event.name + '_effect');
+                },
+                subSkill: {
+                    effect: {
+                        charlotte: true,
+                        onremove(player) {
+                            player.removeGaintag('visible_wechatdili');
+                        },
+                    }
+                }
+            },
+            wechatlishi: {
+                audio: 'ext:活动武将/audio/skill:2',
+                trigger: { global: 'useCardAfter' },
+                filter(event, player) {
+                    const target = event.player;
+                    const card = get.autoViewAs({ name: event.card.name, isCard: true });
+                    if (!player.canUse(card, target, false)) return false;
+                    if (!['basic', 'trick'].includes(get.type(event.card))) return false;
+                    if (!player.hasCards('h', card => card.hasGaintag('visible_wechatdili') && get.color(card) == get.color(event.card))) return false;
+                    const identityMode = ['identity', 'guozhan'].includes(get.mode());
+                    return identityMode ? target != player : target.isEnemyOf(player);
+                },
+                usable: 1,
+                prompt2(event, player) {
+                    const target = event.player;
+                    const card = get.autoViewAs({ name: event.card.name, isCard: true });
+                    return `视为对${get.translation(target)}使用一张${get.translation(card)}`;
+                },
+                check(event, player) {
+                    const target = event.player;
+                    const card = get.autoViewAs({ name: event.card.name, isCard: true });
+                    return get.effect(target, card, player, player) > 0;
+                },
+                logTarget: 'player',
+                async content(event, trigger, player) {
+                    const target = event.targets[0];
+                    const card = get.autoViewAs({ name: trigger.card.name, isCard: true });
+                    if (player.canUse(card, target, false)) await player.useCard(card, target, false);
+                },
+                ai: { combo: 'wechatdili' },
+            },
+            wechatzhengzhi: {
+                audio: 'ext:活动武将/audio/skill:2',
+                trigger: { target: 'useCardToTarget' },
+                filter(event, player) {
+                    const target = event.player;
+                    if (!player.hasCards('h', card => card.hasGaintag('visible_wechatdili') && get.color(card) !== get.color(event.card))) return false;
+                    const identityMode = ['identity', 'guozhan'].includes(get.mode());
+                    return identityMode ? target != player : target.isEnemyOf(player);
+                },
+                usable: 1,
+                prompt2(event, player) {
+                    const target = event.player;
+                    const type = get.type2(event.card);
+                    return `令${get.translation(target)}选择是否弃置一张${get.translation(type)}牌，若其不弃牌，则${get.translation(event.card)}对你无效且你摸一张牌`;
+                },
+                check(event, player) {
+                    const target = event.player;
+                    const card = event.card;
+                    if (get.attitude(player, target) > 0) return false;
+                    return get.effect(target, card, player, player) < 0;
+                },
+                logTarget: 'player',
+                async content(event, trigger, player) {
+                    const target = event.targets[0];
+                    const type = get.type2(trigger.card);
+                    const result = await target.chooseToDiscard('he', (card) => get.type2(card) == get.event().typex, `${get.translation(player)}对你发动了【政治】`, `是否弃置一张${get.translation(type)}牌？或点击“取消”，令${get.translation(trigger.card)}对其无效且其摸一张牌`).set('typex', type).set('ai', card => 10 - get.value(card) * (get.event().att < 0 ? 1 : 0)).set('att', get.attitude(target, player)).forResult();
+                    if (!result?.bool) {
+                        trigger.getParent().excluded.add(player);
+                        game.log(trigger.card, '对', player, '无效');
+                        await player.draw();
+                    }
+                },
+                ai: { combo: 'wechatdili' },
+            },
         },
         dynamicTranslate: {
             wechatxiangzhi(player) {
@@ -25383,6 +25472,14 @@ const packs = function () {
             wechatjihe_info: '当你使用点数为X的牌时，此牌不可被响应。',
             wechatjixian: '极限',
             wechatjixian_info: `锁定技。当你因${get.poptip('wechathanshu')}摸牌后或发动${get.poptip('wechatjihe')}后，你获得1枚“极限”标记。你的阶段变化时，若你有至少3枚“极限”标记，你可以移去所有“极限”标记对所有其他角色造成1点伤害。`,
+            wechat_wenzongmingtizu: '文综命题组',
+            wechatdili: '地理',
+            visible_wechatdili: '舆图',
+            wechatdili_info: '锁定技。其他角色的回合开始时，你展示并标记牌堆顶的一张牌，称为“舆图”，然后你获得此牌并展示此牌标记直到当前回合结束。',
+            wechatlishi: '历史',
+            wechatlishi_info: '每回合限一次。当对手使用的与“舆图”同颜色的基本牌或普通锦囊牌结算结束后，你可以视为对其使用一张同名牌。',
+            wechatzhengzhi: '政治',
+            wechatzhengzhi_info: '每回合限一次。当对手使用的与“舆图”不同颜色的牌指定你为目标时，你可以令其弃置一张与此牌类别相同的牌，否则此牌对你无效且你摸一张牌。',
 
             // ----------------------- 台词部分 ----------------------- //
             '#ext:活动武将/audio/skill/wechatzhongxin1': '苍生之愿，即贫道所愿也。',
