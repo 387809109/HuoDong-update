@@ -11798,7 +11798,7 @@ const packs = function () {
                     if (result?.links?.length) await player.addSkills(result.links);
                     if (player.isMinHp()) await player.recover();
                 },
-                derivation: 'Mbaby_characterlist_faq',
+                欢杀将池: true,
             },
             //夏侯霸
             minibaobian: {
@@ -21799,7 +21799,7 @@ const packs = function () {
                     if (result?.links?.length) await player.changeSkills(result.links, ['dchuishu']);
                     else await player.draw(3);
                 },
-                derivation: 'Mbaby_characterlist_faq',
+                欢杀将池: true,
             },
             //蒋钦
             minijianyi: {
@@ -26799,7 +26799,7 @@ const packs = function () {
                     player.storage.minipingjian_remove[result.control] = (trigger.name == 'damage' ? trigger : 'phaseJieshu');
                 },
                 group: 'minipingjian_use',
-                derivation: 'Mbaby_characterlist_faq',
+                欢杀将池: true,
                 subSkill: {
                     use: {
                         audio: 'pingjian',
@@ -31208,7 +31208,7 @@ const packs = function () {
                     }
                     _status.minidunshi_list = skills;
                 },
-                derivation: 'Mbaby_characterlist_faq',
+                欢杀将池: true,
                 subSkill: {
                     backup: { audio: 'dunshi' },
                     damage: {
@@ -37196,7 +37196,7 @@ const packs = function () {
                         if (skills.length) await player.addAdditionalSkills('minitunxing', skills);
                     }
                 },
-                derivation: 'minitunxing_faq',
+                欢杀将池: true,
                 onremove(player) {
                     if (player.additionalSkills.minitunxing?.length) player.removeAdditionalSkills('minitunxing');
                 },
@@ -49573,9 +49573,7 @@ const packs = function () {
             minijixu_info: '出牌阶段限一次，若你有手牌，你可以令至多四名其他角色猜测你的手牌中是否有【杀】。所有角色猜测结束后，你依次弃置所有猜错的角色的一张牌并视为对其使用一张【杀】，然后你摸X张牌且本回合的手牌上限+X（X为猜对的角色数+1）。',
             minipingjian: '评荐',
             minipingjian_info: '结束阶段/当你受到伤害后/出牌阶段限一次，你可以令系统从欢杀将池中随机检索出三张拥有发动时机为结束阶段/当你受到伤害后/出牌阶段的技能的武将牌。然后你可以选择尝试发动其中一个技能。每个技能每局只能选择一次。',
-            Mbaby_characterlist_append: '<span style="font-family:yuanli">欢杀将池：<br>活动武将扩展页面自定义欢杀将池（未自定义将池/联机模式默认为欢乐三国杀全武将）。</span>',
-            Mbaby_characterlist_faq: '欢杀将池',
-            Mbaby_characterlist_faq_info: '<br>活动武将扩展页面自定义欢杀将池（未自定义将池/联机模式默认为欢乐三国杀全武将）。',
+            Mbaby_characterlist_append: '<span style="font-family:yuanli">此技能使用欢杀将池，可在活动武将扩展页面进行修改（未自定义将池/联机模式默认为欢乐三国杀全武将）。</span>',
             minirelijian: '离间',
             minirelijian_info: '出牌阶段限两次，你可以弃置一张牌并选择两名角色（不能选择本回合因你发动〖离间〗受到伤害的角色），视为一名角色对另一名角色使用一张【决斗】（不可被【无懈可击】响应）。',
             minibiyue: '闭月',
@@ -50053,9 +50051,6 @@ const packs = function () {
             minituantu_info: '出牌阶段限一次，你可以从弃牌堆中获得你手牌中有的牌名的牌各一张。',
             minitunxing: '吞星',
             minitunxing_info: '锁定技，游戏开始时或你发动〖梦狸〗后，你从随机三张主公武将牌中选择一张，然后获得此武将牌上所有主公技和觉醒技外的技能直到你下次发动此技能。',
-            minitunxing_faq: '〖吞星〗将池',
-            minitunxing_faq_info: '活动武将扩展页面自定义欢杀〖评鉴〗将池的全部武将（未自定义将池/联机模式默认为欢乐三国杀全武将）。',
-            minitunxing_append: '<span style="font-family:yuanli">〖吞星〗将池：<br>活动武将扩展页面自定义欢杀〖评鉴〗将池的全部武将（未自定义将池/联机模式默认为欢乐三国杀全武将）。</span>',
             minimengli: '梦狸',
             minimengli_info: '锁定技，当你的体力值发生变化后，若你变化前和变化后的体力值与3的大小关系不同，则你变换形态，然后你摸一张牌。',
             minihuanshu: '幻术',
@@ -51133,7 +51128,7 @@ const packs = function () {
     MiNikill_sight();//加载欢杀界面逻辑
     for (var skill in MiNikill.skill) {
         //特定化身将池添加注释
-        if (MiNikill.skill[skill].derivation === 'Mbaby_characterlist_faq') MiNikill.translate[skill + '_append'] = MiNikill.translate.Mbaby_characterlist_append;
+        if (MiNikill.skill[skill].欢杀将池) MiNikill.translate[skill + '_append'] = MiNikill.translate.Mbaby_characterlist_append;
         //念影效果添加注释
         if (MiNikill.skill[skill].nianyingSkill) {
             MiNikill.skill[skill].derivation ??= [];
