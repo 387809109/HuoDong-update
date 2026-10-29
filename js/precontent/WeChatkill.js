@@ -322,6 +322,7 @@ const packs = function () {
             wechat_yuwenyuejuanren: ['none', 'qun', 6, ['wechatyuedu', 'wechatmoxie', 'wechatzuowen'], ['name:闹动|导近']],
             wechat_shuxueyazhouren: ['none', 'qun', 6, ['wechathanshu', 'wechatjihe', 'wechatjixian'], ['name:牢|骚哥']],
             wechat_wenzongmingtizu: ['none', 'qun', 6, ['wechatdili', 'wechatlishi', 'wechatzhengzhi'], ['name:牢|骚哥']],
+            wechat_lizongshiyanyuan: ['none', 'qun', 6, ['wechatshengwu', 'wechathuaxue', 'wechatwuli'], ['name:牢|骚哥']],
         },
         characterIntro: {
             get wechat_nailong() {
@@ -24100,6 +24101,132 @@ const packs = function () {
                 },
                 ai: { combo: 'wechatdili' },
             },
+            // 理综实验员
+            wechatshengwu: {
+                audio: 'ext:活动武将/audio/skill:2',
+                trigger: { player: 'damageEnd' },
+                filter(event) {
+                    return event.num > 0;
+                },
+                getIndex(event, player, triggername) {
+                    return event.num;
+                },
+                forced: true,
+                locked: false,
+                async content(event, trigger, player) {
+                    player.addMark(event.name, 1);
+                },
+                marktext: '生',
+                intro: {
+                    name: '细胞(生物/化学)',
+                    name2: '细胞',
+                    content: 'mark',
+                },
+                group: 'wechatshengwu_recover',
+                subSkill: {
+                    recover: {
+                        audio: 'wechatshengwu',
+                        trigger: { player: 'phaseBegin' },
+                        filter(event, player) {
+                            return player.countMark('wechatshengwu') > 1;
+                        },
+                        prompt2(event, player) {
+                            return `你可以移去2枚“细胞”标记${player.isDamaged() ? '，然后回复1点体力' : ''}`;
+                        },
+                        check(event, player) {
+                            return get.recoverEffect(player, player, player) > 0;
+                        },
+                        async content(event, trigger, player) {
+                            player.removeMark('wechatshengwu', 2);
+                            await player.recover();
+                        },
+                    }
+                }
+            },
+            wechathuaxue: {
+                audio: 'ext:活动武将/audio/skill:2',
+                enable: 'phaseUse',
+                usable: 1,
+                filter(event, player) {
+                    if (!player.hasMark('wechatshengwu')) return false;
+                    return player.hasCards('he') && game.hasPlayer(current => current != player);
+                },
+                position: 'he',
+                filterCard: lib.filter.cardDiscardable,
+                filterTarget: lib.filter.notMe,
+                check(card) {
+                    let player = get.player();
+                    return 6 - get.value(card);
+                },
+                discard: false,
+                lose: false,
+                delay: false,
+                async content(event, trigger, player) {
+                    player.removeMark('wechatshengwu', 1);
+                    await player.discard(event.cards);
+                    await event.targets[0].damage('fire')
+                },
+                ai: {
+                    combo: 'wechatshengwu',
+                    order: 7,
+                    result: {
+                        target(player, target) {
+                            return get.damageEffect(target, player, target, 'fire');
+                        },
+                    },
+                },
+            },
+            wechatwuli: {
+                audio: 'ext:活动武将/audio/skill:2',
+                enable: 'phaseUse',
+                filter(event, player) {
+                    return player.countMark('wechatwuli') > 2 && game.hasPlayer(current => current != player);
+                },
+                prompt(event) {
+                    return '出牌阶段，若你的“能量”标记数不小于3，你可以移去所有“能量”标记对所有其他角色造成1点雷电伤害并摸一张牌。';
+                },
+                filterTarget: lib.filter.notMe,
+                selectTarget: -1,
+                multitarget: true,
+                multiline: true,
+                manualConfirm: true,
+                async content(event, trigger, player) {
+                    player.clearMark(event.name);
+                    for (const target of event.targets.sortBySeat()) await target.damage('thunder');
+                    await player.draw();
+                },
+                ai: {
+                    order: 7,
+                    result: {
+                        player: 0.3,
+                        target: -1,
+                    },
+                },
+                marktext: '物',
+                intro: {
+                    name: '能量',
+                    name2: '能量',
+                    content: 'mark',
+                },
+                group: 'wechatwuli_add',
+                subSkill: {
+                    add: {
+                        audio: 'wechatwuli',
+                        trigger: {
+                            player: 'damageEnd',
+                            source: 'damageSource'
+                        },
+                        filter(event) {
+                            return event.hasNature();
+                        },
+                        forced: true,
+                        locked: false,
+                        async content(event, trigger, player) {
+                            player.addMark('wechatwuli', 1);
+                        },
+                    }
+                }
+            },
         },
         dynamicTranslate: {
             wechatxiangzhi(player) {
@@ -25480,6 +25607,13 @@ const packs = function () {
             wechatlishi_info: '每回合限一次。当对手使用的与“舆图”同颜色的基本牌或普通锦囊牌结算结束后，你可以视为对其使用一张同名牌。',
             wechatzhengzhi: '政治',
             wechatzhengzhi_info: '每回合限一次。当对手使用的与“舆图”不同颜色的牌指定你为目标时，你可以令其弃置一张与此牌类别相同的牌，否则此牌对你无效且你摸一张牌。',
+            wechat_lizongshiyanyuan: '理综实验员',
+            wechatshengwu: '生物',
+            wechatshengwu_info: '①当你受到1点伤害后，你获得1枚“细胞”标记。②回合开始时，你可以移去2枚“细胞”标记，然后回复1点体力。',
+            wechathuaxue: '化学',
+            wechathuaxue_info: '出牌阶段限一次，你可以移去1枚“细胞”标记并弃置一张牌，然后对一名其他角色造成1点火属性伤害。',
+            wechatwuli: '物理',
+            wechatwuli_info: '①当你造成或受到属性伤害后，你获得1枚“能量”标记。②出牌阶段，若你的“能量”标记数不小于3，你可以移去所有“能量”标记对所有其他角色造成1点雷电伤害并摸一张牌。',
 
             // ----------------------- 台词部分 ----------------------- //
             '#ext:活动武将/audio/skill/wechatzhongxin1': '苍生之愿，即贫道所愿也。',
