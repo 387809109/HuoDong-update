@@ -51096,7 +51096,7 @@ const packs = function () {
             '#ext:活动武将/audio/skill/minifightpozhan1': '并立西向，会师虎牢！',
             '#ext:活动武将/audio/skill/minifightpozhan2': '万箭齐发，歼敌一处！',
             '#ext:活动武将/audio/skill/minifighthedou1': '号令齐出，诸军并进！',
-            '#ext:活动武将/audio/skill/minifighthedou2': '合兵一处，共讨国！',
+            '#ext:活动武将/audio/skill/minifighthedou2': '合兵一处，共讨国贼！',
             '#ext:活动武将/audio/die/Mfight_yuanshao:die': '天下事，从此休矣。',
             '#ext:活动武将/audio/skill/miniyushuming1': '凤栖梧桐，非清露不饮，非其时不鸣。',
             '#ext:活动武将/audio/skill/miniyushuming2': '龙吟破空，自有淑鸣相和。',
