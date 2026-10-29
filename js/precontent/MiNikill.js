@@ -47189,7 +47189,7 @@ const packs = function () {
                 audioname2: { Mqing_diaochan: 'miniqingyuan_Mqing_diaochan' },
                 trigger: {
                     source: 'damageSource',
-                    target: 'useCardToTargeted',
+                    target: 'useCardToTarget',
                 },
                 filter(event, player) {
                     if (player.hasSkill('miniqingyuan_block')) return false;
@@ -50413,7 +50413,7 @@ const packs = function () {
             miniqingzhan: '情战',
             miniqingzhan_info: '出牌阶段限一次，你可以选择一名其他角色A，你与其轮流选择一项：1.对对方使用一张无距离和次数限制的【杀】；2.失去1点体力。若A为你的“情敌”，则重复此流程直到你与其中的一名角色进入濒死。',
             miniqingyuan: '情援',
-            miniqingyuan_info: '锁定技。①当你对一名角色造成伤害后或成为一名角色使用的伤害牌的目标后，你摸一张牌，若该角色为你的“情敌”，则你随机弃置其一张手牌。②每轮开始时，你可以选择一名没有〖情援〗的非“情敌”角色，直到本轮结束，你失去〖情援①〗，其获得〖情援①〗。',
+            miniqingyuan_info: '锁定技。①当你对一名角色造成伤害后或成为一名角色使用的伤害牌的目标时，你摸一张牌，若该角色为你的“情敌”，则你随机弃置其一张手牌。②每轮开始时，你可以选择一名没有〖情援〗的非“情敌”角色，直到本轮结束，你失去〖情援①〗，其获得〖情援①〗。',
             //御
             Myu_ganfuren: '御甘夫人',
             Myu_bianfuren: '御卞夫人',

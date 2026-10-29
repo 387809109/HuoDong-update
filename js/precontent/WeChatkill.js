@@ -10837,49 +10837,64 @@ const packs = function () {
                 audio: 'ext:活动武将/audio/skill:2',
                 trigger: {
                     global: 'phaseBefore',
-                    player: ['enterGame', 'phaseDrawBegin2'],
+                    player: 'enterGame',
                 },
                 filter(event, player) {
-                    if (event.name == 'phaseDraw') return !event.numFixed;
+                    if (!game.hasPlayer(current => current != player)) return false;
                     return event.name != "phase" || game.phaseNumber == 0;
                 },
                 async cost(event, trigger, player) {
-                    if (trigger.name == 'phaseDraw') event.result = { bool: true };
-                    else {
-                        event.result = await player.chooseTarget(get.prompt2(event.skill), lib.filter.notMe).set('ai', target => {
-                            return 1 - get.attitude(get.player(), target);
-                        }).forResult();
-                    }
+                    event.result = await player.chooseTarget(get.prompt2(event.skill), lib.filter.notMe).set('ai', target => {
+                        return 1 - get.attitude(get.player(), target);
+                    }).forResult();
                 },
                 async content(event, trigger, player) {
-                    if (trigger.name == 'phaseDraw') {
-                        trigger.num += 3;
-                        player.when('phaseDrawEnd')
-                            .filter(evt => evt == trigger && game.hasPlayer(current => current.countMark('wechatfuyin_effect')) && player.hasCards('he', card => trigger.cards?.includes(card)))
-                            .step(async (event, trigger, player) => {
-                                const targets = game.filterPlayer(current => current.countMark('wechatfuyin_effect')).sortBySeat();
+                    const { targets: [target] } = event;
+                    target.addSkill(event.name + '_effect');
+                    target.addMark(event.name, 1);
+                },
+                intro: { content: 'mark' },
+                group: 'wechatfuyin_draw',
+                subSkill: {
+                    draw: {
+                        audio: 'wechatfuyin',
+                        trigger: { player: 'phaseDrawBegin2' },
+                        filter(event, player) {
+                            return !event.numFixed;
+                        },
+                        forced: true,
+                        locked: false,
+                        async content(event, trigger, player) {
+                            trigger.num += 3;
+                            player.when('phaseDrawEnd').filter(evt => evt == trigger && game.hasPlayer(current => current.hasMark('wechatfuyin')) && player.hasCards('he', card => trigger.cards?.includes(card))).step(async (event, trigger, player) => {
+                                const targets = game.filterPlayer(current => current.hasMark('wechatfuyin')).sortBySeat();
                                 for (const target of targets) {
+                                    const num = game.getRoundHistory('everything', evt => evt.name == 'phaseDraw' && evt.player == target)?.[0]?.num || 2;
                                     const cards = player.getCards('he').filter(card => trigger.cards?.includes(card))
-                                    if (cards.length) await player.chooseToGive(target, 'he', Math.min(2, cards.length), true, (card) => get.event().cardsx?.includes(card)).set('cardsx', cards);
+                                    if (cards.length) await player.chooseToGive(target, 'he', Math.min(num, cards.length), true, (card) => get.event().cardsx?.includes(card)).set('cardsx', cards);
                                 }
                             });
-                    }
-                    else {
-                        const { targets: [target] } = event;
-                        target.addSkill(event.name + '_effect');
-                        target.addMark(event.name + '_effect', 1);
-                    }
-                },
-                subSkill: {
+                        },
+                    },
                     effect: {
-                        trigger: { player: 'phaseDrawBefore' },
                         charlotte: true,
+                        onremove: true,
+                        trigger: { player: 'phaseDrawBefore' },
+                        filter(event, player) {
+                            return !player.hasMark('wechatfuyin_skipped');
+                        },
                         forced: true,
                         popup: false,
                         async content(event, trigger, player) {
+                            player.addTempSkill('wechatfuyin_skipped');
+                            player.addMark('wechatfuyin_skipped', 1, false);
                             trigger.cancel();
                         },
-                        intro: { content: 'mark' },
+
+                    },
+                    skipped: {
+                        charlotte: true,
+                        onremove: true,
                     },
                 }
             },
@@ -25075,7 +25090,7 @@ const packs = function () {
             wechatyanfeng_info: `${get.poptip('rule_shiwuSkill')}，出牌阶段，你可以将一张牌当作火【杀】使用。此牌结算完毕后，若此牌未造成伤害且仅指定唯一目标，则你令目标角色选择一项：①对你造成1点伤害，然后随机弃置一张牌；②令你摸一张牌，然后本回合你对其使用的下一张【杀】无效。`,
             wechat_zhiyin_hetaihou: '极何太后',
             wechatfuyin: '覆胤',
-            wechatfuyin_info: '①游戏开始时，你可令一名其他角色获得1枚“覆胤”标记。拥有“覆胤”标记的角色跳过其摸牌阶段。②摸牌阶段，你额外摸三张牌，然后此阶段结束时你依次交给场上拥有“覆胤”标记的存活角色其中两张牌。',
+            wechatfuyin_info: '①游戏开始时，你可令一名其他角色获得1枚“覆胤”标记。拥有“覆胤”标记的角色跳过其每个回合的首个摸牌阶段。②摸牌阶段，你额外摸三张牌，然后此阶段结束时你依次交给场上拥有“覆胤”标记的存活角色其中X张牌（X为本轮摸牌阶段基础摸牌数）。',
             wechatqiangji: '强忌',
             wechatqiangji_info: '每回合限两次。一名其他角色于其回合外获得牌后，你可以猜测其手牌中最多的一种花色，若你猜测正确，你对其造成1点伤害。',
             wechat_zhiyin_zhangchunhua: '极张春华',
